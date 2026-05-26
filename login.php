@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+if (!file_exists(__DIR__ . '/db_config.php')) {
+    die('<pre style="font-family:monospace;padding:32px;color:#dc2626">db_config.php not found.<br>Run on server: cp db_config.example.php db_config.php<br>Then set DB_PASS to your MySQL password.</pre>');
+}
 require __DIR__ . '/db_config.php';
 
 const ALLOWED_EMAILS = [
@@ -90,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $step = 'otp';
                 }
             } catch (Exception $e) {
-                $error = 'Database error. Please try again.';
+                error_log('CVwebapp login send_otp: ' . $e->getMessage());
+                $error = 'Database error: ' . $e->getMessage();
             }
         }
 
@@ -121,7 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
             } catch (Exception $e) {
-                $error = 'Database error. Please try again.';
+                error_log('CVwebapp login verify_otp: ' . $e->getMessage());
+                $error = 'Database error: ' . $e->getMessage();
             }
         }
 
