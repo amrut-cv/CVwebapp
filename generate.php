@@ -238,6 +238,28 @@ function coTypeLegal(string $t): string {
     }
 }
 
+/* ─── signature block helper ─── */
+function renderSigBlock(string $sn, string $st, string $se,
+                        string $cn, string $ct, string $co2, string $ce): string {
+    $clientLine = array_filter([$ct, $co2]);
+    $o  = '<div class="ann-sig-sep"></div>';
+    $o .= '<p class="sig-intro">Agreed and accepted:</p>';
+    $o .= '<div class="sig-grid">';
+    $o .= '<div class="sig-block">';
+    if ($sn) $o .= '<div class="sig-name">'   . esc($sn) . '</div>';
+    if ($st) $o .= '<div class="sig-detail">'  . esc($st) . '</div>';
+    $o .= '<div class="sig-detail">Corebook Consulting Pvt. Ltd.</div>';
+    if ($se) $o .= '<div class="sig-detail">'  . esc($se) . '</div>';
+    $o .= '</div>';
+    $o .= '<div class="sig-block">';
+    if ($cn) $o .= '<div class="sig-name">'   . esc($cn) . '</div>';
+    if ($clientLine) $o .= '<div class="sig-detail">' . esc(implode(', ', $clientLine)) . '</div>';
+    if ($ce) $o .= '<div class="sig-detail">'  . esc($ce) . '</div>';
+    $o .= '</div>';
+    $o .= '</div>';
+    return $o;
+}
+
 $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' — ' . ($co ?: 'Client');
 ?>
 <!DOCTYPE html>
@@ -515,13 +537,46 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .nda-section  { margin-bottom: 16px; font-size: .87rem; line-height: 1.78; }
     .nda-num      { font-weight: 700; }
 
-    /* Print */
+    /* ─── Print header / footer (hidden on screen) ─── */
+    .print-header, .print-footer { display: none; }
+    .ann-sig-sep { border-top: 1px solid #e2e8f0; margin: 36px 0 20px; }
+
+    @page { size: A4; margin: 2.5cm 1.5cm; }
+
     @media print {
       body  { background: #fff; font-size: 9.5pt; }
       .page { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; }
       .toolbar { display: none !important; }
+
+      /* Repeating page header: logo top-right */
+      .print-header {
+        display: flex; position: fixed;
+        top: 0; left: 0; right: 0; height: 1.1cm;
+        align-items: center; justify-content: flex-end;
+        border-bottom: 1px solid #e2e8f0; background: #fff;
+      }
+      /* Repeating page footer: address bottom-centre */
+      .print-footer {
+        display: flex; position: fixed;
+        bottom: 0; left: 0; right: 0; height: 1cm;
+        align-items: center; justify-content: center;
+        border-top: 1px solid #e2e8f0; background: #fff;
+      }
+      .ph-logo        { font-family: 'Segoe UI', sans-serif; font-size: .78rem; font-weight: 700; }
+      .ph-logo .cv    { color: #1a1a2e; }
+      .ph-logo .voice { color: #C9972A; }
+      .pf-text        { font-family: 'Segoe UI', sans-serif; font-size: .68rem; color: #6b7280; text-align: center; }
+
+      /* Push content clear of fixed header/footer */
+      .con-body    { padding-top: 1.4cm; padding-bottom: 1.3cm; padding-left: 0; padding-right: 0; }
+      .prop-hero   { padding-top: 1.4cm; padding-left: 0; padding-right: 0; }
+      .prop-body   { padding-left: 0; padding-right: 0; }
+      .prop-footer { padding-left: 0; padding-right: 0; }
+
+      /* Annexures always start on a new page */
       .ann-header { page-break-before: always; }
-      .clause, .nda-section { page-break-inside: avoid; }
+
+      /* Clause and NDA paragraphs may break across pages freely */
     }
   </style>
 </head>
@@ -533,6 +588,13 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 </div>
 
 <div class="page">
+
+<div class="print-header">
+  <span class="ph-logo"><span class="cv">Core</span><span class="voice">Voice</span></span>
+</div>
+<div class="print-footer">
+  <span class="pf-text">Corebook Consulting Pvt. Ltd &nbsp;&middot;&nbsp; WeWork Vaishnavi Signature, Outer Ring Road, Bellandur, Bangalore 560103 &nbsp;&middot;&nbsp; corevoice.in</span>
+</div>
 
 <?php if ($isProposal): ?>
 <!-- ═══════════ PROPOSAL ═══════════ -->
@@ -899,6 +961,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     </ul>
     <div class="ann-gov-note">Note: The exact count of deliverables under each activity will be decided in governance calls based on live requirements. All items listed above are subject to change as per requirement changes noted in governance calls.</div>
 
+    <?= renderSigBlock($senderName, $senderTitle, $senderEmail, $sigName, $sigTitle, $co, $sigEmail) ?>
+
     <!-- ══════════ ANNEXURE B ══════════ -->
     <div class="ann-header">
       <div class="ann-tag">Annexure B</div>
@@ -937,6 +1001,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
         <tr><td>Bank IFSC</td><td>RATN0000091</td></tr>
       </tbody>
     </table>
+
+    <?= renderSigBlock($senderName, $senderTitle, $senderEmail, $sigName, $sigTitle, $co, $sigEmail) ?>
 
     <!-- ══════════ ANNEXURE C ══════════ -->
     <div class="ann-header">
@@ -978,6 +1044,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     <div class="nda-section">
       <span class="nda-num">8.&nbsp;&nbsp;Term and Survival.</span> The obligations of confidentiality and non-use under this Agreement shall remain in force during the term of the Agreement and for a period of one (1) year following its termination or expiry, regardless of the reason for termination. The obligations of this Agreement shall survive termination or expiry of the main Agreement.
     </div>
+
+    <?= renderSigBlock($senderName, $senderTitle, $senderEmail, $sigName, $sigTitle, $co, $sigEmail) ?>
 
   </div><!-- /con-body -->
 
