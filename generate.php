@@ -113,7 +113,7 @@ $engDescs = [
     'sales-video'      => '3–5 videos — product explainers, testimonials, or use-case demos — built specifically for sales enablement.',
     'custom'           => 'Scope defined as agreed between the parties.',
 ];
-$engRationale = [
+$engRationaleMap = [
     'full-retainer'    => 'Based on what you\'ve shared, a full-stack retainer makes the most sense. You need consistent output across strategy, content, and execution — not a one-time project. We\'d operate as your marketing function, with clear goals, a shared calendar, and regular governance to make sure the work stays aligned with where the business is going.',
     'outcome-retainer' => 'What you\'ve described is a time-boxed problem, not a forever engagement. An outcome-focused retainer lets us define the goal together, set a window, and deploy whatever\'s needed to get there — then reassess. No lock-in beyond what the goal requires.',
     'content-retainer' => 'Your content engine isn\'t running at the level it needs to be. A content retainer gives you consistent, quality output that builds over time — compounding rather than campaign-based. Volume plus consistency is what moves the needle.',
@@ -123,9 +123,9 @@ $engRationale = [
     'sales-video'      => 'Video is the most efficient format for a complex product or a crowded market. A short series of well-made videos — explainers, use cases, testimonials — gives your sales team something that travels across every channel and conversation.',
     'custom'           => 'The scope here has been defined specifically for this engagement, based on what you\'ve described and what we believe will move the needle. We\'ll work from this as our starting point and adjust as we go.',
 ];
-$engLabel     = $engLabels[$engType]     ?? ucwords(str_replace('-', ' ', $engType));
-$engDesc      = $engDescs[$engType]      ?? '';
-$engRationale = $engRationale[$engType]  ?? '';
+$engLabel     = $engLabels[$engType]         ?? ucwords(str_replace('-', ' ', $engType));
+$engDesc      = $engDescs[$engType]          ?? '';
+$engRationale = $engRationaleMap[$engType]   ?? '';
 
 /* ─────────────────────────────── scope groups ── */
 $strategyAll = [
@@ -151,8 +151,24 @@ $strategyScope = array_values(array_filter($scopeItems, fn($i) => in_array($i, $
 $contentScope  = array_values(array_filter($scopeItems, fn($i) => in_array($i, $contentAll)));
 $opsScope      = array_values(array_filter($scopeItems, fn($i) => in_array($i, $opsAll)));
 
+/* ─────────────────────────────── contract scope display labels ── */
+$scopeContractLabels = [
+    'Positioning & communication'       => 'Positioning &amp; communication — craft market-relative positioning, communication pillars and guides for each stakeholder and context',
+    'CMO office — goals & reporting'    => 'CMO office — goals, budgets &amp; reporting',
+    'Website design'                    => 'Website — new pages and updates (Figma + Webflow + native)',
+    'Social posts — text, image, carousels' => 'Social media content — text, images, carousels',
+    'Reels, shorts & social video'      => 'Short-form video — reels, shorts, social video',
+    'SEO blogs & newsletters'           => 'SEO blogs, newsletters &amp; long-form articles',
+    'Ad creatives — static & video'     => 'Ad creatives — static and video',
+    'Social media management'           => 'Social media management — LinkedIn, Instagram, YouTube, X',
+    'Paid ads — Google, Meta, LinkedIn' => 'Paid ads management — Google Ads, Meta Ads, LinkedIn Ads',
+];
+function scopeContractLabel(string $item): string {
+    global $scopeContractLabels;
+    return $scopeContractLabels[$item] ?? esc($item);
+}
+
 /* ─────────────────────────────── fee display ── */
-// Retainer display fee line
 function feeDisplay(string $feeType, string $currCode, string $monthlyFee, string $retDur,
                     string $totalFee, string $fixedAdv, string $milestones): string {
     switch ($feeType) {
@@ -176,29 +192,29 @@ function feeDisplay(string $feeType, string $currCode, string $monthlyFee, strin
 }
 $feeDisplayStr = feeDisplay($feeType, $currCode, $monthlyFee, $retDur, $totalFee, $fixedAdv, $milestones);
 
-// Payment sub-line
-$payDaysMap = ['Net 15' => '15 days', 'Net 30' => '30 days', 'Advance' => 'advance'];
-$payDays    = $payDaysMap[$payTerms] ?? ($payTerms ?: '15 days');
+/* ─────────────────────────────── payment terms ── */
+$payDaysMap    = ['Net 15' => '15 days', 'Net 30' => '30 days', 'Advance' => 'advance'];
+$payDays       = $payDaysMap[$payTerms]    ?? ($payTerms    ?: '15 days');
 $fixPayDaysMap = ['Net 15' => '15 days', 'Net 30' => '30 days'];
 $fixPayDays    = $fixPayDaysMap[$fixPayTerms] ?? ($fixPayTerms ?: '15 days');
 
-// OPE sub-text
+/* ─────────────────────────────── OPE texts ── */
 $opeSubMap = [
-    'preapproved'      => 'Out-of-pocket expenses pre-approved and reimbursed separately',
-    'casebycasetools'  => 'AI/SaaS tools not reimbursed; media/travel pre-approved case-by-case',
-    'none'             => 'No OPE reimbursement',
+    'preapproved'     => 'Out-of-pocket expenses pre-approved and reimbursed separately',
+    'casebycasetools' => 'AI/SaaS tools not reimbursed; media/travel pre-approved case-by-case',
+    'none'            => 'No OPE reimbursement',
 ];
 $opeSub = $opeSubMap[$expenses] ?? '';
 
-// OPE full text for Annexure B
-$opeFullMap = [
-    'preapproved'      => 'reimbursed after pre-approval in writing with receipts attached to invoice',
-    'casebycasetools'  => 'AI and SaaS tool costs are not reimbursed; media spends and travel are approved case-by-case in writing prior to being incurred',
-    'none'             => 'not reimbursed; all incidental costs are absorbed within the engagement fee',
+// Annexure B OPE line — exact approved wording
+$opeAnnexMap = [
+    'preapproved'     => 'Out of pocket expenses will be pre-approved and submitted for reimbursement.',
+    'casebycasetools' => 'Out of pocket expenses: AI/SaaS tools not reimbursed; media/travel to be pre-approved case-by-case.',
+    'none'            => 'Out of pocket expenses will not be reimbursed.',
 ];
-$opeFull = $opeFullMap[$expenses] ?? '';
+$opeAnnex = $opeAnnexMap[$expenses] ?? '';
 
-// Payment sub-line for proposal investment section
+/* ─────────────────────────────── proposal investment sub-line ── */
 $investSubParts = [];
 if ($feeType === 'retainer') {
     $investSubParts[] = 'Invoiced on the 1st of each month';
@@ -211,7 +227,7 @@ if ($feeType === 'retainer') {
 if ($opeSub) $investSubParts[] = $opeSub;
 $investSub = implode(' &middot; ', $investSubParts);
 
-/* ─────────────────────────────── company type legal desc ── */
+/* ─────────────────────────────── company type legal description ── */
 function coTypeLegal(string $t): string {
     switch ($t) {
         case 'Private Limited': return 'a company incorporated under the Companies Act, 2013';
@@ -241,7 +257,6 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       background: #f0f2f5;
     }
 
-    /* ── Shell ── */
     .page {
       max-width: 760px;
       margin: 32px auto 80px;
@@ -250,7 +265,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       border-radius: 3px;
     }
 
-    /* ── Toolbar (hidden on print) ── */
+    /* ── Toolbar ── */
     .toolbar {
       position: fixed; bottom: 24px; right: 24px;
       display: flex; gap: 10px; z-index: 100;
@@ -259,7 +274,6 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       background: #1a1a2e; color: #fff; border: none;
       border-radius: 8px; padding: 12px 24px; font-size: .88rem;
       font-weight: 600; cursor: pointer; font-family: 'Segoe UI', sans-serif;
-      letter-spacing: .03em;
     }
     .btn-print:hover { background: #2d2d4e; }
     .btn-back {
@@ -268,13 +282,10 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       font-weight: 600; cursor: pointer; font-family: 'Segoe UI', sans-serif;
     }
 
-    /* ════════════════════════════════════
+    /* ════════════════════
        PROPOSAL STYLES
-    ════════════════════════════════════ */
-    .prop-hero {
-      padding: 56px 56px 40px;
-      border-bottom: 1px solid #e8e8f0;
-    }
+    ════════════════════ */
+    .prop-hero { padding: 56px 56px 40px; border-bottom: 1px solid #e8e8f0; }
     .prop-tag {
       font-family: 'Segoe UI', sans-serif;
       font-size: .68rem; font-weight: 700;
@@ -284,22 +295,18 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .prop-h1 {
       font-family: 'Georgia', serif;
       font-size: 2.15rem; font-weight: 700;
-      line-height: 1.18; color: #1a1a2e;
-      margin-bottom: 18px;
+      line-height: 1.18; color: #1a1a2e; margin-bottom: 18px;
     }
     .prop-h1 em { font-style: italic; color: #C9972A; }
     .prop-meta {
       font-family: 'Segoe UI', sans-serif;
       font-size: .83rem; color: #6b7280;
-      letter-spacing: .01em;
     }
     .prop-meta .arrow { color: #C9972A; margin: 0 4px; }
     .prop-meta .dot   { margin: 0 8px; opacity: .4; }
     .prop-hr { border: none; border-top: 1.5px solid #e8e8f0; margin: 0; }
 
-    /* Proposal sections */
     .prop-body { padding: 0 56px 56px; }
-
     .prop-section { padding-top: 48px; }
     .prop-section + .prop-section { border-top: 1px solid #f0f0f5; }
 
@@ -314,16 +321,11 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       font-size: 1.28rem; font-weight: 700;
       color: #1a1a2e; margin-bottom: 24px;
     }
-
-    /* Note / personal message */
     .note-card {
-      border-left: 3px solid #C9972A;
-      padding: 22px 26px;
-      background: #fffdf7;
-      border-radius: 0 4px 4px 0;
+      border-left: 3px solid #C9972A; padding: 22px 26px;
+      background: #fffdf7; border-radius: 0 4px 4px 0;
       font-size: .93rem; line-height: 1.82;
-      white-space: pre-wrap;
-      color: #2a2a3e;
+      white-space: pre-wrap; color: #2a2a3e;
     }
     .note-sender {
       margin-top: 20px; padding-top: 16px;
@@ -332,48 +334,30 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       font-size: .83rem; color: #6b7280;
     }
     .note-sender strong { display: block; color: #1a1a2e; font-size: .88rem; margin-bottom: 1px; }
-
-    /* What we heard */
-    .heard-quote {
-      font-style: italic; color: #3a3a5e;
-      font-size: .96rem; line-height: 1.82;
-      margin-bottom: 20px;
-    }
+    .heard-quote { font-style: italic; color: #3a3a5e; font-size: .96rem; line-height: 1.82; margin-bottom: 20px; }
     .trigger-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
     .trigger-list li {
       background: #f4f4f8; border-radius: 20px;
       padding: 5px 14px; font-family: 'Segoe UI', sans-serif;
       font-size: .78rem; color: #1a1a2e;
     }
-
-    /* Recommendation */
-    .rec-card {
-      border: 1px solid #e8e8f0; border-radius: 8px;
-      padding: 24px 28px; margin-bottom: 0;
-    }
+    .rec-card { border: 1px solid #e8e8f0; border-radius: 8px; padding: 24px 28px; }
     .rec-badge {
-      display: inline-block;
-      background: #1a1a2e; color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .62rem; font-weight: 700;
+      display: inline-block; background: #1a1a2e; color: #fff;
+      font-family: 'Segoe UI', sans-serif; font-size: .62rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .12em;
-      padding: 3px 10px; border-radius: 3px;
-      margin-bottom: 14px;
+      padding: 3px 10px; border-radius: 3px; margin-bottom: 14px;
     }
-    .rec-name { font-size: 1.12rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
-    .rec-desc { font-size: .9rem; color: #4a4a6a; line-height: 1.7; margin-bottom: 20px; }
-    .rec-divider { border: none; border-top: 1px solid #e8e8f0; margin: 0 0 20px; }
-    .rec-rationale { font-style: italic; color: #5a5a7a; font-size: .88rem; line-height: 1.78; }
-
-    /* Scope */
-    .scope-obj { color: #3a3a5e; font-size: .93rem; margin-bottom: 24px; line-height: 1.75; }
+    .rec-name     { font-size: 1.12rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .rec-desc     { font-size: .9rem; color: #4a4a6a; line-height: 1.7; margin-bottom: 20px; }
+    .rec-divider  { border: none; border-top: 1px solid #e8e8f0; margin: 0 0 20px; }
+    .rec-rationale{ font-style: italic; color: #5a5a7a; font-size: .88rem; line-height: 1.78; }
+    .scope-obj    { color: #3a3a5e; font-size: .93rem; margin-bottom: 24px; line-height: 1.75; }
     .scope-categories { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; margin-bottom: 20px; }
     .scope-cat-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .63rem; font-weight: 700;
+      font-family: 'Segoe UI', sans-serif; font-size: .63rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .14em;
-      margin-bottom: 10px; padding-bottom: 6px;
-      border-bottom: 2px solid;
+      margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid;
     }
     .scope-cat-head.strategy { color: #1a1a2e; border-color: #1a1a2e; }
     .scope-cat-head.content  { color: #0d7a72; border-color: #0d9488; }
@@ -381,49 +365,23 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .scope-cat ul { list-style: none; padding: 0; }
     .scope-cat li { font-size: .82rem; color: #3a3a5e; padding: 3px 0; border-bottom: 1px solid #f4f4f8; }
     .scope-cat li:last-child { border-bottom: none; }
-    .scope-note {
-      font-style: italic; font-size: .84rem; color: #6b7280; margin-bottom: 8px;
-    }
-    .scope-cycle {
-      font-size: .84rem; color: #6b7280;
-    }
-
-    /* Relevant work (case studies) */
+    .scope-note  { font-style: italic; font-size: .84rem; color: #6b7280; margin-bottom: 8px; }
+    .scope-cycle { font-size: .84rem; color: #6b7280; }
     .cases { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    .case-card {
-      border: 1px solid #e8e8f0; border-radius: 6px; padding: 18px 18px 16px;
-    }
+    .case-card { border: 1px solid #e8e8f0; border-radius: 6px; padding: 18px 18px 16px; }
     .case-name {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .78rem; font-weight: 700;
-      color: #1a1a2e; text-transform: uppercase; letter-spacing: .06em;
-      margin-bottom: 4px;
+      font-family: 'Segoe UI', sans-serif; font-size: .78rem; font-weight: 700;
+      color: #1a1a2e; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px;
     }
-    .case-type {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .72rem; color: #C9972A; margin-bottom: 10px;
-    }
+    .case-type { font-family: 'Segoe UI', sans-serif; font-size: .72rem; color: #C9972A; margin-bottom: 10px; }
     .case-desc { font-size: .8rem; color: #5a5a7a; line-height: 1.65; }
-
-    /* Investment */
     .invest-big {
-      font-family: 'Georgia', serif;
-      font-size: 1.8rem; font-weight: 700;
+      font-family: 'Georgia', serif; font-size: 1.8rem; font-weight: 700;
       color: #1a1a2e; margin-bottom: 10px; line-height: 1.2;
     }
-    .invest-sub {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .82rem; color: #6b7280;
-      margin-bottom: 18px; line-height: 1.6;
-    }
-    .invest-note {
-      font-size: .86rem; color: #4a4a6a; line-height: 1.72;
-      padding: 14px 18px; background: #f9fafb;
-      border-radius: 4px; border: 1px solid #e8e8f0;
-    }
-
-    /* Next steps */
-    .steps-list { list-style: none; }
+    .invest-sub  { font-family: 'Segoe UI', sans-serif; font-size: .82rem; color: #6b7280; margin-bottom: 18px; line-height: 1.6; }
+    .invest-note { font-size: .86rem; color: #4a4a6a; line-height: 1.72; padding: 14px 18px; background: #f9fafb; border-radius: 4px; border: 1px solid #e8e8f0; }
+    .steps-list  { list-style: none; }
     .steps-list li {
       display: flex; align-items: flex-start; gap: 18px;
       padding: 14px 0; border-bottom: 1px solid #f0f0f5;
@@ -431,226 +389,139 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     }
     .steps-list li:last-child { border-bottom: none; }
     .step-num {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .7rem; font-weight: 700;
-      background: #1a1a2e; color: #fff;
-      width: 22px; height: 22px; border-radius: 50%;
+      font-family: 'Segoe UI', sans-serif; font-size: .7rem; font-weight: 700;
+      background: #1a1a2e; color: #fff; width: 22px; height: 22px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; margin-top: 1px;
     }
-
-    /* Proposal footer */
     .prop-footer {
-      border-top: 1px solid #e8e8f0;
-      padding: 20px 56px;
+      border-top: 1px solid #e8e8f0; padding: 20px 56px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .prop-footer-logo {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .88rem; font-weight: 700; letter-spacing: .03em;
-    }
-    .prop-footer-logo .cv { color: #1a1a2e; }
+    .prop-footer-logo { font-family: 'Segoe UI', sans-serif; font-size: .88rem; font-weight: 700; }
+    .prop-footer-logo .cv    { color: #1a1a2e; }
     .prop-footer-logo .voice { color: #C9972A; }
-    .prop-footer-contact {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .75rem; color: #9ca3af;
-    }
+    .prop-footer-contact { font-family: 'Segoe UI', sans-serif; font-size: .75rem; color: #9ca3af; }
 
-    /* ════════════════════════════════════
+    /* ════════════════════
        CONTRACT STYLES
-    ════════════════════════════════════ */
+    ════════════════════ */
     .con-body { padding: 52px 56px; }
 
     .con-logo-center {
-      text-align: center; margin-bottom: 28px;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 1.3rem; font-weight: 700; letter-spacing: .04em;
+      text-align: center; margin-bottom: 24px;
+      font-family: 'Segoe UI', sans-serif; font-size: 1.3rem; font-weight: 700;
     }
     .con-logo-center .cv    { color: #1a1a2e; }
     .con-logo-center .voice { color: #C9972A; }
-
     .con-title {
-      text-align: center;
-      font-family: 'Georgia', serif;
-      font-size: 1.08rem; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      color: #1a1a2e; margin-bottom: 8px;
+      text-align: center; font-family: 'Georgia', serif;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: #1a1a2e; margin-bottom: 8px;
     }
     .con-confidential {
-      text-align: center;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .72rem; font-weight: 700;
-      letter-spacing: .18em; text-transform: uppercase;
-      color: #9ca3af; margin-bottom: 36px;
+      text-align: center; font-family: 'Segoe UI', sans-serif;
+      font-size: .7rem; font-weight: 700; letter-spacing: .18em;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 36px;
     }
-    .con-intro { font-size: .9rem; margin-bottom: 28px; line-height: 1.78; }
+    .con-intro { font-size: .9rem; margin-bottom: 24px; line-height: 1.78; }
 
-    /* Parties block */
     .con-party-block {
       background: #f9fafb; border: 1px solid #e2e8f0;
-      border-radius: 6px; padding: 22px 24px; margin-bottom: 28px;
+      border-radius: 6px; padding: 22px 24px; margin-bottom: 24px;
     }
-    .con-party { margin-bottom: 16px; font-size: .88rem; line-height: 1.78; }
+    .con-party { font-size: .88rem; line-height: 1.8; margin-bottom: 14px; }
     .con-party:last-child { margin-bottom: 0; }
     .con-and {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .7rem; font-weight: 700;
+      font-family: 'Segoe UI', sans-serif; font-size: .7rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .12em;
-      color: #9ca3af; margin: 12px 0;
+      color: #9ca3af; margin: 10px 0;
     }
-
-    /* Effective line */
     .con-effective {
-      font-size: .9rem; margin-bottom: 28px;
-      padding: 12px 18px;
-      border-left: 3px solid #C9972A;
-      background: #fffdf7;
+      font-size: .9rem; margin-bottom: 24px; padding: 12px 18px;
+      border-left: 3px solid #C9972A; background: #fffdf7; line-height: 1.78;
     }
-
-    /* Whereas */
-    .con-whereas { margin-bottom: 32px; }
-    .con-whereas-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .7rem; font-weight: 700;
+    .con-section-head {
+      font-family: 'Segoe UI', sans-serif; font-size: .7rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .14em;
-      color: #9ca3af; margin-bottom: 12px;
+      color: #9ca3af; margin-bottom: 12px; margin-top: 28px;
     }
-    .con-whereas ol { padding-left: 20px; font-size: .88rem; line-height: 1.78; }
-    .con-whereas li { margin-bottom: 8px; }
+    .con-poa-intro { font-size: .88rem; line-height: 1.78; margin-bottom: 20px; color: #3a3a5e; }
 
-    /* Points of Agreement */
-    .con-poa-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .14em;
-      color: #9ca3af; margin-bottom: 20px;
-    }
-
-    /* Clauses */
-    .clause { margin-bottom: 28px; }
-    .clause-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-weight: 700; font-size: .9rem;
-      color: #1a1a2e; margin-bottom: 8px;
-    }
-    .clause p, .clause ol, .clause ul {
-      font-size: .86rem; line-height: 1.78; margin-bottom: 8px;
-    }
-    .clause ol { padding-left: 20px; }
-    .clause ul { padding-left: 20px; list-style: disc; }
-    .clause li { margin-bottom: 5px; }
-    .clause p:last-child { margin-bottom: 0; }
+    /* Clause numbering */
+    .clause       { margin-bottom: 22px; }
+    .clause > p   { font-size: .87rem; line-height: 1.78; margin-bottom: 0; }
+    .cl-head      { font-size: .87rem; line-height: 1.78; margin-bottom: 6px; }
+    .cl-num       { font-weight: 700; }
+    .cl-sub       { font-size: .87rem; line-height: 1.78; margin-bottom: 5px; padding-left: 20px; }
+    .cl-sub2      { font-size: .87rem; line-height: 1.78; margin-bottom: 4px; padding-left: 40px; }
 
     /* Signatures */
-    .sig-intro { font-size: .86rem; color: #4a4a6a; margin-bottom: 28px; }
-    .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 36px; }
-    .sig-party-label {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .66rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: #9ca3af; margin-bottom: 10px;
-    }
-    .sig-name   { font-weight: 700; font-size: .88rem; }
-    .sig-detail { font-size: .82rem; color: #6b7280; }
-    .sig-line-box {
-      border-top: 1px solid #1a1a2e; padding-top: 6px; margin-top: 40px;
-      font-size: .82rem;
-    }
-
-    /* Client details table */
-    .client-table { width: 100%; border-collapse: collapse; font-size: .86rem; margin-bottom: 32px; }
-    .client-table td { padding: 8px 12px; border: 1px solid #e2e8f0; vertical-align: top; }
-    .client-table td:first-child {
-      width: 38%; font-weight: 600; color: #6b7280;
-      background: #f9fafb; white-space: nowrap;
-    }
+    .sig-intro { font-size: .87rem; color: #3a3a5e; margin: 32px 0 20px; }
+    .sig-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    .sig-block { font-size: .87rem; line-height: 1.75; }
+    .sig-block .sig-name    { font-weight: 700; font-size: .9rem; }
+    .sig-block .sig-detail  { color: #4a4a6a; }
 
     /* Annexure headers */
     .ann-header {
       text-align: center; padding: 28px 0 20px;
-      border-top: 2px solid #e2e8f0;
-      margin: 48px 0 28px;
+      border-top: 2px solid #e2e8f0; margin: 48px 0 24px;
     }
-    .ann-tag {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .62rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .18em;
-      color: #9ca3af; margin-bottom: 4px;
-    }
-    .ann-title {
-      font-family: 'Georgia', serif;
-      font-size: 1.05rem; font-weight: 700;
-      color: #1a1a2e;
-    }
+    .ann-tag   { font-family: 'Segoe UI', sans-serif; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; color: #9ca3af; margin-bottom: 4px; }
+    .ann-title { font-family: 'Georgia', serif; font-size: 1.05rem; font-weight: 700; color: #1a1a2e; }
 
-    /* Annexure A — Scope */
-    .ann-eng-type {
-      display: inline-block;
-      background: #1a1a2e; color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .62rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      padding: 3px 10px; border-radius: 3px;
-      margin-bottom: 14px;
+    /* Annexure A */
+    .ann-kv { font-size: .87rem; margin-bottom: 14px; }
+    .ann-kv strong { color: #1a1a2e; }
+    .ann-obj { font-size: .87rem; line-height: 1.78; margin-bottom: 20px; }
+    .ann-services-head {
+      font-family: 'Segoe UI', sans-serif; font-size: .68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .14em; color: #9ca3af;
+      margin-bottom: 16px;
     }
-    .ann-scope-obj { font-size: .88rem; margin-bottom: 20px; color: #3a3a5e; line-height: 1.75; }
-    .ann-scope-cats { margin-bottom: 20px; }
-    .ann-scope-cats h4 {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .66rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .12em;
-      color: #9ca3af; margin: 16px 0 6px;
+    .ann-cat-head {
+      font-family: 'Segoe UI', sans-serif; font-weight: 700;
+      font-size: .88rem; color: #1a1a2e; margin: 16px 0 6px;
     }
-    .ann-scope-cats ul { list-style: disc; padding-left: 20px; }
-    .ann-scope-cats li { font-size: .86rem; margin-bottom: 3px; }
-    .ann-addl { font-size: .86rem; color: #4a4a6a; margin-bottom: 16px; }
+    .ann-cat-list { list-style: disc; padding-left: 22px; margin-bottom: 4px; }
+    .ann-cat-list li { font-size: .87rem; line-height: 1.72; margin-bottom: 3px; }
+    .ann-addl-head {
+      font-family: 'Segoe UI', sans-serif; font-weight: 700;
+      font-size: .88rem; color: #1a1a2e; margin: 20px 0 6px;
+    }
+    .ann-addl-text { font-size: .87rem; line-height: 1.72; margin-bottom: 16px; }
+    .ann-gov-head  {
+      font-family: 'Segoe UI', sans-serif; font-weight: 700;
+      font-size: .88rem; color: #1a1a2e; margin: 20px 0 8px;
+    }
+    .ann-gov-list { list-style: disc; padding-left: 22px; margin-bottom: 10px; }
+    .ann-gov-list li { font-size: .87rem; line-height: 1.72; margin-bottom: 5px; }
+    .ann-gov-note { font-size: .84rem; color: #6b7280; font-style: italic; line-height: 1.7; }
 
-    .gov-section { margin-top: 20px; }
-    .gov-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .66rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .12em;
-      color: #9ca3af; margin-bottom: 8px;
+    /* Annexure B */
+    .ann-b-head {
+      font-family: 'Segoe UI', sans-serif; font-weight: 700;
+      font-size: .88rem; color: #1a1a2e; margin: 20px 0 8px;
     }
-    .gov-list { list-style: disc; padding-left: 20px; font-size: .86rem; }
-    .gov-list li { margin-bottom: 5px; }
-    .gov-note { font-size: .82rem; color: #6b7280; font-style: italic; margin-top: 12px; }
-
-    /* Annexure B — Fee */
-    .fee-terms { font-size: .88rem; line-height: 1.78; margin-bottom: 20px; }
-    .fee-terms p { margin-bottom: 8px; }
-    .bank-table { width: 100%; border-collapse: collapse; font-size: .86rem; margin-top: 20px; }
-    .bank-table caption {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .66rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .12em;
-      color: #9ca3af; text-align: left; padding-bottom: 8px;
-    }
+    .ann-b-terms { list-style: disc; padding-left: 22px; margin-bottom: 16px; }
+    .ann-b-terms li { font-size: .87rem; line-height: 1.72; margin-bottom: 4px; }
+    .bank-table { width: 100%; border-collapse: collapse; font-size: .87rem; margin-top: 10px; }
     .bank-table td { padding: 8px 12px; border: 1px solid #e2e8f0; vertical-align: top; }
-    .bank-table td:first-child {
-      width: 38%; font-weight: 600; color: #6b7280;
-      background: #f9fafb; white-space: nowrap;
-    }
+    .bank-table td:first-child { width: 38%; font-weight: 600; color: #6b7280; background: #f9fafb; white-space: nowrap; }
 
-    /* Annexure C — NDA */
-    .nda-section { margin-bottom: 22px; }
-    .nda-head {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: .7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .12em;
-      color: #1a1a2e; margin-bottom: 8px;
-    }
-    .nda-body { font-size: .86rem; line-height: 1.78; }
-    .nda-body ol { padding-left: 20px; }
-    .nda-body li { margin-bottom: 6px; }
+    /* Annexure C NDA */
+    .nda-preamble { font-size: .87rem; line-height: 1.78; margin-bottom: 20px; }
+    .nda-section  { margin-bottom: 16px; font-size: .87rem; line-height: 1.78; }
+    .nda-num      { font-weight: 700; }
 
-    /* ── Print ── */
+    /* Print */
     @media print {
-      body     { background: #fff; font-size: 9.5pt; }
-      .page    { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; }
+      body  { background: #fff; font-size: 9.5pt; }
+      .page { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; }
       .toolbar { display: none !important; }
       .ann-header { page-break-before: always; }
-      .clause, .nda-section, .case-card { page-break-inside: avoid; }
+      .clause, .nda-section { page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -664,33 +535,21 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 <div class="page">
 
 <?php if ($isProposal): ?>
-<!-- ════════════════════════════════════════════
-     PROPOSAL
-════════════════════════════════════════════ -->
+<!-- ═══════════ PROPOSAL ═══════════ -->
 
-  <!-- Hero -->
   <div class="prop-hero">
     <div class="prop-tag">Proposal for <?= esc($co ?: '[Company]') ?></div>
     <h1 class="prop-h1">Here&rsquo;s how we&rsquo;d work <em>together</em></h1>
     <div class="prop-meta">
-      <span>CoreVoice</span>
-      <span class="arrow">→</span>
-      <span><?= esc($co ?: '[Company]') ?></span>
-      <?php if ($agreeDate): ?>
-        <span class="dot">&middot;</span>
-        <span><?= fmtDate($agreeDate) ?></span>
-      <?php endif; ?>
-      <?php if ($duration): ?>
-        <span class="dot">&middot;</span>
-        <span><?= esc($duration) ?></span>
-      <?php endif; ?>
+      <span>CoreVoice</span><span class="arrow">→</span><span><?= esc($co ?: '[Company]') ?></span>
+      <?php if ($agreeDate): ?><span class="dot">&middot;</span><span><?= fmtDate($agreeDate) ?></span><?php endif; ?>
+      <?php if ($duration):  ?><span class="dot">&middot;</span><span><?= esc($duration) ?></span><?php endif; ?>
     </div>
   </div>
   <hr class="prop-hr" />
 
   <div class="prop-body">
 
-    <!-- Personal note -->
     <?php if ($msgBody): ?>
     <div class="prop-section">
       <div class="note-card"><?= esc($msgBody) ?></div>
@@ -704,25 +563,19 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     </div>
     <?php endif; ?>
 
-    <!-- What we heard -->
     <?php if ($clientSaid || $triggers): ?>
     <div class="prop-section">
       <div class="sec-label">What we heard from you</div>
       <div class="sec-title">What brought you here</div>
-      <?php if ($clientSaid): ?>
-        <div class="heard-quote"><?= escNL($clientSaid) ?></div>
-      <?php endif; ?>
+      <?php if ($clientSaid): ?><div class="heard-quote"><?= escNL($clientSaid) ?></div><?php endif; ?>
       <?php if ($triggers): ?>
         <ul class="trigger-list">
-          <?php foreach ($triggers as $t): ?>
-            <li><?= esc($t) ?></li>
-          <?php endforeach; ?>
+          <?php foreach ($triggers as $t): ?><li><?= esc($t) ?></li><?php endforeach; ?>
         </ul>
       <?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <!-- Our recommendation -->
     <?php if ($engType): ?>
     <div class="prop-section">
       <div class="sec-label">Our recommendation</div>
@@ -730,67 +583,45 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="rec-card">
         <div class="rec-badge"><?= esc(strtoupper($engLabel)) ?></div>
         <div class="rec-name"><?= esc($engLabel) ?></div>
-        <?php if ($engDesc): ?>
-          <div class="rec-desc"><?= esc($engDesc) ?></div>
-        <?php endif; ?>
+        <?php if ($engDesc):      ?><div class="rec-desc"><?= esc($engDesc) ?></div><?php endif; ?>
         <hr class="rec-divider" />
-        <?php if ($engRationale): ?>
-          <div class="rec-rationale"><?= esc($engRationale) ?></div>
-        <?php endif; ?>
+        <?php if ($engRationale): ?><div class="rec-rationale"><?= esc($engRationale) ?></div><?php endif; ?>
       </div>
     </div>
     <?php endif; ?>
 
-    <!-- Scope of work -->
     <?php if ($scopeItems || $objective): ?>
     <div class="prop-section">
       <div class="sec-label">Scope of work</div>
       <div class="sec-title">What we&rsquo;ll do</div>
-      <?php if ($objective): ?>
-        <div class="scope-obj"><?= escNL($objective) ?></div>
-      <?php endif; ?>
+      <?php if ($objective): ?><div class="scope-obj"><?= escNL($objective) ?></div><?php endif; ?>
       <?php if ($scopeItems): ?>
       <div class="scope-categories">
         <?php if ($strategyScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head strategy">Strategy</div>
-          <ul>
-            <?php foreach ($strategyScope as $item): ?>
-              <li><?= esc($item) ?></li>
-            <?php endforeach; ?>
-          </ul>
+          <ul><?php foreach ($strategyScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
         <?php if ($contentScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head content">Content</div>
-          <ul>
-            <?php foreach ($contentScope as $item): ?>
-              <li><?= esc($item) ?></li>
-            <?php endforeach; ?>
-          </ul>
+          <ul><?php foreach ($contentScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
         <?php if ($opsScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head ops">Marketing ops</div>
-          <ul>
-            <?php foreach ($opsScope as $item): ?>
-              <li><?= esc($item) ?></li>
-            <?php endforeach; ?>
-          </ul>
+          <ul><?php foreach ($opsScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
       </div>
       <?php endif; ?>
-      <?php if ($addlScope): ?>
-        <div class="scope-note"><?= esc($addlScope) ?></div>
-      <?php endif; ?>
+      <?php if ($addlScope): ?><div class="scope-note"><?= esc($addlScope) ?></div><?php endif; ?>
       <div class="scope-cycle">Scope is reviewed and adjusted at each governance cycle based on what&rsquo;s working and what the business needs.</div>
     </div>
     <?php endif; ?>
 
-    <!-- Relevant work -->
     <div class="prop-section">
       <div class="sec-label">Relevant work</div>
       <div class="sec-title">Who we&rsquo;ve done this for</div>
@@ -814,22 +645,16 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       </div>
     </div>
 
-    <!-- Investment -->
     <?php if ($feeDisplayStr): ?>
     <div class="prop-section">
       <div class="sec-label">Investment</div>
       <div class="sec-title">Fee &amp; payment</div>
       <div class="invest-big"><?= $feeDisplayStr ?></div>
-      <?php if ($investSub): ?>
-        <div class="invest-sub"><?= $investSub ?></div>
-      <?php endif; ?>
-      <?php if ($payNotes): ?>
-        <div class="invest-note"><?= esc($payNotes) ?></div>
-      <?php endif; ?>
+      <?php if ($investSub): ?><div class="invest-sub"><?= $investSub ?></div><?php endif; ?>
+      <?php if ($payNotes):  ?><div class="invest-note"><?= esc($payNotes) ?></div><?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <!-- Getting started -->
     <div class="prop-section">
       <div class="sec-label">Getting started</div>
       <div class="sec-title">Next steps</div>
@@ -843,377 +668,315 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       </ol>
     </div>
 
-  </div><!-- /prop-body -->
+  </div>
 
-  <!-- Footer -->
   <div class="prop-footer">
-    <div class="prop-footer-logo">
-      <span class="cv">Core</span><span class="voice">Voice</span>
-    </div>
+    <div class="prop-footer-logo"><span class="cv">Core</span><span class="voice">Voice</span></div>
     <div class="prop-footer-contact">corevoice.in &nbsp;&middot;&nbsp; amrut@corevoice.in &nbsp;&middot;&nbsp; Bangalore, India</div>
   </div>
 
 
 <?php else: ?>
-<!-- ════════════════════════════════════════════
-     CONTRACT
-════════════════════════════════════════════ -->
+<!-- ═══════════ CONTRACT ═══════════ -->
 
   <div class="con-body">
 
-    <!-- Logo + title block -->
-    <div class="con-logo-center">
-      <span class="cv">Core</span><span class="voice">Voice</span>
-    </div>
+    <div class="con-logo-center"><span class="cv">Core</span><span class="voice">Voice</span></div>
     <div class="con-title">Marketing Services Agreement</div>
     <div class="con-confidential">Private &amp; Confidential</div>
 
-    <!-- Intro -->
-    <p class="con-intro">
-      This Marketing Services Agreement (&ldquo;<strong>Agreement</strong>&rdquo;) is entered into on
-      <strong><?= fmtDate($agreeDate) ?: '[Date]' ?></strong> (&ldquo;<strong>Agreement Date</strong>&rdquo;).
-    </p>
+    <p class="con-intro">This Marketing Services Agreement (&ldquo;<strong>Agreement</strong>&rdquo;) is entered into on <strong><?= fmtDate($agreeDate) ?: '[Date]' ?></strong> (&ldquo;<strong>Agreement Date</strong>&rdquo;).</p>
 
     <!-- Parties -->
+    <div class="con-section-head">Parties</div>
     <div class="con-party-block">
       <div class="con-party">
-        <strong><?= esc($co ?: '[Client Company]') ?></strong><?php if ($coType): ?>,
-        <?= coTypeLegal($coType) ?><?php endif; ?><?php if ($cin): ?>
-        (CIN: <?= esc($cin) ?>)<?php endif; ?>, having its registered office at
-        <?= esc($address ?: '[Address]') ?>, represented by
-        <strong><?= esc($sigName ?: '[Signatory Name]') ?></strong>
-        (designation: <?= esc($sigTitle ?: '[Designation]') ?>),
-        hereinafter referred to as the party of the First Part (&ldquo;<strong>Client</strong>&rdquo;)
+        <strong><?= esc($co ?: '[Client Company]') ?></strong><?php if ($coType): ?>, <?= coTypeLegal($coType) ?><?php endif; ?><?php if ($cin): ?> (CIN: <?= esc($cin) ?>)<?php endif; ?>, having its registered office at <?= esc($address ?: '[Address]') ?>, represented by <?= esc($sigName ?: '[Signatory Name]') ?> (designation: <?= esc($sigTitle ?: '[Designation]') ?>), which expression shall, unless excluded by or repugnant to the context or meaning thereof, be deemed to mean and include its successors-in-interest, designates and permitted assigns as the party of the First Part (&ldquo;<strong>Client</strong>&rdquo;)
       </div>
       <div class="con-and">AND</div>
       <div class="con-party">
-        <strong>CoreVoice (CV)</strong>, a division of <strong>Corebook Consulting Pvt Ltd</strong>,
-        whose registered office is at WeWork Vaishnavi Signature, No. 78/9, Outer Ring Road,
-        Bellandur Village, Varthur, Hobli Bangalore Karnataka 560103,
-        hereinafter referred to as the (&ldquo;<strong>Consultant</strong>&rdquo;)
+        <strong>CoreVoice (CV)</strong>, a division of Corebook Consulting Pvt Ltd whose registered office is at WeWork Vaishnavi Signature, No. 78/9, Outer Ring Road, Bellandur Village, Varthur, Hobli Bangalore Karnataka 560103 (&ldquo;<strong>Consultant</strong>&rdquo;) which expression where the context so admits shall include their successors and assigns of the Other Part.
       </div>
     </div>
 
     <!-- Effective -->
     <div class="con-effective">
-      This agreement is <strong>EFFECTIVE</strong> from Agreement Date
-      <?php if ($duration): ?>for a period of <strong><?= esc($duration) ?></strong><?php endif; ?>.
+      This agreement is <strong>EFFECTIVE</strong> from Agreement Date<?php if ($duration): ?> for a period of <strong><?= esc($duration) ?></strong><?php endif; ?>.
     </div>
 
     <!-- Whereas -->
-    <div class="con-whereas">
-      <div class="con-whereas-head">Whereas</div>
-      <ol>
-        <li>Client is engaged in the business of <?= esc($bizDesc ?: '[business description]') ?>.</li>
-        <li>Consultancy is engaged in the business of providing brand and marketing services &mdash; strategy, content and marketing ops.</li>
-      </ol>
+    <div class="con-section-head">Whereas</div>
+    <div style="font-size:.87rem;line-height:1.78;margin-bottom:24px;">
+      <p style="margin-bottom:6px;">1.&nbsp;&nbsp;The Client is engaged in the business of <?= esc($bizDesc ?: '[business description]') ?>.</p>
+      <p>2.&nbsp;&nbsp;The Consultancy is engaged in the business of providing brand and marketing services &mdash; strategy, content and marketing ops.</p>
     </div>
 
     <!-- Points of Agreement -->
-    <div class="con-poa-head">Points of Agreement</div>
+    <div class="con-section-head">Points of agreement</div>
+    <p class="con-poa-intro">The Client is keen to hire the services of the Consultant. The points of the agreement for the engagement are as follows:</p>
 
+    <!-- Clause 1 -->
     <div class="clause">
-      <div class="clause-head">1. &nbsp; Scope of Work</div>
-      <p>Client engages Consultant to provide marketing services as detailed in <strong>Annexure A</strong> (Scope of Work), which forms an integral part of this Agreement. Any changes to the scope shall be agreed in writing by authorised representatives of both Parties prior to implementation. Work outside the agreed scope shall be quoted and agreed separately in writing.</p>
+      <p class="cl-head"><span class="cl-num">1.</span>&nbsp;&nbsp;The Scope of Work is defined in Annexure A.</p>
+      <p class="cl-sub"><span class="cl-num">1.1.</span>&nbsp;&nbsp;The Consultant hereby represents and warrants that it has the necessary expertise to deliver the Scope of Work described hereinabove.</p>
+      <p class="cl-sub"><span class="cl-num">1.2.</span>&nbsp;&nbsp;The Consultant also represents that it shall hire the required resources to complete the defined scope of work.</p>
     </div>
 
+    <!-- Clause 2 -->
     <div class="clause">
-      <div class="clause-head">2. &nbsp; Fee &amp; Terms of Payment</div>
-      <p>Client shall pay Consultant the fees as specified in <strong>Annexure B</strong> (Fee &amp; Terms of Payment).
-      <?php if ($feeType === 'retainer'): ?>
-        All invoices are to be raised on the first day of each month.
-        All invoices are to be paid within <?= esc($payDays) ?> of the invoice date.
-      <?php elseif ($feeType === 'fixed'): ?>
-        All invoices are to be paid within <?= esc($fixPayDays) ?> of the invoice date.
-      <?php endif; ?>
-      Consultant reserves the right to slow down or pause work when payment is delayed. All fees are exclusive of applicable taxes (GST or equivalent), which shall be payable by the Client in addition to the fees.</p>
+      <p class="cl-head"><span class="cl-num">2.</span>&nbsp;&nbsp;The Fee and Terms of Payment are defined in Annexure B.</p>
     </div>
 
+    <!-- Clause 3 -->
     <div class="clause">
-      <div class="clause-head">3. &nbsp; Representations &amp; Warranties</div>
-      <p>Each Party represents and warrants to the other that:</p>
-      <ol type="a">
-        <li>It has the full right, power, and authority to enter into this Agreement and perform its obligations hereunder.</li>
-        <li>Entry into and performance of this Agreement does not violate any applicable law or existing contractual obligation.</li>
-        <li>Client warrants that all information, materials, and approvals provided to Consultant are accurate, complete, and do not infringe any third-party intellectual property rights.</li>
-      </ol>
+      <p class="cl-head"><span class="cl-num">3.</span>&nbsp;&nbsp;<strong>Representation and Warranties:</strong> The Consultant hereby represents and warrants to the Client that</p>
+      <p class="cl-sub"><span class="cl-num">3.1.</span>&nbsp;&nbsp;it has the full power and authority to enter into and perform this Agreement and to carry out the transactions contemplated by this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">3.2.</span>&nbsp;&nbsp;the execution and performance of this Agreement will not violate any applicable statute, law, rule or regulation to which the warranting party is subject, or conflict with, result in a breach of, or constitute a default under any agreement to which it is a party; and</p>
+      <p class="cl-sub"><span class="cl-num">3.3.</span>&nbsp;&nbsp;it has obtained all necessary approvals to enter into this Agreement and to perform its obligations hereunder.</p>
     </div>
 
+    <!-- Clause 4 -->
     <div class="clause">
-      <div class="clause-head">4. &nbsp; Non-Disclosure</div>
-      <p>Both Parties agree to maintain the confidentiality of all information shared in the course of this engagement as detailed in <strong>Annexure C</strong> (Mutual Non-Disclosure Agreement), which forms part of this Agreement. The obligations under this clause and Annexure C survive termination for a period of three (3) years.</p>
+      <p class="cl-head"><span class="cl-num">4.</span>&nbsp;&nbsp;<strong>Non-Disclosure:</strong> The Consultant and the Client agree to adhere to the Non-Disclosure Agreement (NDA) signed between the parties as Annexure C.</p>
     </div>
 
+    <!-- Clause 5 -->
     <div class="clause">
-      <div class="clause-head">5. &nbsp; Permission to Share Work</div>
-      <p>Client grants Consultant the right to reference the engagement and share outputs of the work — including creative deliverables, campaign results, and case study summaries — in Consultant&rsquo;s portfolio, proposals, website, and marketing materials, unless Client provides written objection within 30 days of any such reference being shared. Such reference shall not disclose confidential commercial terms without prior written consent.</p>
+      <p class="cl-head"><span class="cl-num">5.</span>&nbsp;&nbsp;<strong>Permission to share:</strong> The Client grants permission to the Consultant to share information about this engagement publicly or to relevant parties. Such sharing shall be limited to: (a) naming the Client as a client of the Consultant; (b) describing the nature of the engagement in general terms (e.g. &ldquo;brand and marketing services&rdquo;); and (c) referencing publicly available outcomes such as a launched website or published content. The Consultant shall not disclose fees, internal strategy, product roadmaps, financial information, or any other information that would constitute Confidential Information under Annexure C.</p>
     </div>
 
+    <!-- Clause 6 -->
     <div class="clause">
-      <div class="clause-head">6. &nbsp; Termination</div>
-      <p><strong>With cause:</strong> Either Party may terminate this Agreement immediately upon written notice if the other Party materially breaches this Agreement and fails to cure such breach within 15 (fifteen) days of receiving written notice of the breach.</p>
-      <p><strong>Without cause:</strong> Either Party may terminate this Agreement without cause by providing 30 (thirty) days&rsquo; prior written notice to the other Party. Client shall pay for all work completed and expenses incurred through the termination date.</p>
-      <p><strong>Non-payment:</strong> Consultant reserves the right to terminate this Agreement if Client fails to make payment within 30 (thirty) days of the due date, without prejudice to any other remedies available to Consultant.</p>
+      <p class="cl-head"><span class="cl-num">6.</span>&nbsp;&nbsp;<strong>Termination</strong></p>
+      <p class="cl-sub"><span class="cl-num">6.1.</span>&nbsp;&nbsp;<strong>With cause:</strong> The following conditions qualify as cause for termination. If any of these conditions apply, then the affected party may terminate the agreement with 10 days&rsquo; written notice if the concern is not addressed immediately.</p>
+      <p class="cl-sub2"><span class="cl-num">6.1.1.</span>&nbsp;&nbsp;Wilful negligence by Consultant leading to business loss of Client.</p>
+      <p class="cl-sub2"><span class="cl-num">6.1.2.</span>&nbsp;&nbsp;Breach of NDA by Consultant or Client.</p>
+      <p class="cl-sub2"><span class="cl-num">6.1.3.</span>&nbsp;&nbsp;Change of senior management or change of control at the Client (defined as a change in majority ownership or acquisition by a third party).</p>
+      <p class="cl-sub2"><span class="cl-num">6.1.4.</span>&nbsp;&nbsp;A material change in the Client&rsquo;s core business line.</p>
+      <p class="cl-sub2"><span class="cl-num">6.1.5.</span>&nbsp;&nbsp;A hostile work environment is created by either the Consultant&rsquo;s or the Client&rsquo;s employees.</p>
+      <p class="cl-sub"><span class="cl-num">6.2.</span>&nbsp;&nbsp;Either party may, by serving 30 (thirty) days advance notice in writing, terminate this Agreement without cause.</p>
+      <p class="cl-sub"><span class="cl-num">6.3.</span>&nbsp;&nbsp;The Consultant will terminate the agreement on non-payment of fees and withhold delivery of services.</p>
+      <p class="cl-sub"><span class="cl-num">6.4.</span>&nbsp;&nbsp;Upon termination for any reason, the Client shall pay all fees due and outstanding up to the effective date of termination. Any work product completed and delivered prior to termination shall remain the property of the Client.</p>
     </div>
 
+    <!-- Clause 7 -->
     <div class="clause">
-      <div class="clause-head">7. &nbsp; Renewal</div>
-      <p>This Agreement shall automatically renew for successive periods equal to the original term unless either Party provides written notice of non-renewal at least 30 (thirty) days prior to the end of the then-current term. Renewal fees and scope shall be discussed and agreed in writing between the Parties before the renewal period commences.</p>
+      <p class="cl-head"><span class="cl-num">7.</span>&nbsp;&nbsp;<strong>Renewal/Extension:</strong> The contract may be extended with changes to the scope of work and payment terms as per mutual agreement.</p>
     </div>
 
+    <!-- Clause 8 -->
     <div class="clause">
-      <div class="clause-head">8. &nbsp; Intellectual Property</div>
-      <p>8.1 &nbsp; All deliverables created exclusively for Client under this Agreement shall, upon receipt of full and final payment therefor, vest in Client as sole owner.</p>
-      <p>8.2 &nbsp; Consultant retains ownership of all pre-existing intellectual property, including tools, methodologies, frameworks, templates, processes, and generic creative assets (&ldquo;Consultant IP&rdquo;). Nothing in this Agreement shall be deemed to transfer any rights in Consultant IP to Client.</p>
-      <p>8.3 &nbsp; Client grants Consultant a limited, royalty-free licence to use Client&rsquo;s trademarks, logos, and brand materials solely to the extent required to perform the services under this Agreement.</p>
-      <p>8.4 &nbsp; Where any deliverable contains Consultant IP, Consultant grants Client a perpetual, non-exclusive, royalty-free licence to use such Consultant IP as embedded in the deliverable for Client&rsquo;s internal business purposes.</p>
+      <p class="cl-head"><span class="cl-num">8.</span>&nbsp;&nbsp;<strong>Intellectual Property and Ownership:</strong></p>
+      <p class="cl-sub"><span class="cl-num">8.1.</span>&nbsp;&nbsp;The Parties agree that Client shall have complete and sole ownership over any work product or Services performed by the Consultant under this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">8.2.</span>&nbsp;&nbsp;The Consultant hereby assigns and agrees to assign to Client, without royalty or any other consideration except as expressly set forth herein, all worldwide right, title and interest that the Consultant may have or acquire in and to Client, its successors, assignees, or nominees, the Receiving Party&rsquo;s right, title and interest, if any, in any patents, trade secrets, trademarks, copyrights, or other intellectual property rights or proprietary information embodied in or relating to Consultant&rsquo;s work under this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">8.3.</span>&nbsp;&nbsp;At Client&rsquo;s request, the Consultant hereby agrees to cooperate with Client and do all such actions and execute any documents necessary to give effect to the provisions of this section.</p>
+      <p class="cl-sub"><span class="cl-num">8.4.</span>&nbsp;&nbsp;Notwithstanding the above, the Consultant retains ownership of its pre-existing methodologies, frameworks, tools, and general know-how that are not specific to the Client&rsquo;s business. The Consultant may reuse general approaches and learnings in engagements with other clients, provided no Confidential Information of the Client is disclosed.</p>
     </div>
 
+    <!-- Clause 9 -->
     <div class="clause">
-      <div class="clause-head">9. &nbsp; Limitation of Liability</div>
-      <p>9.1 &nbsp; To the fullest extent permitted by applicable law, neither Party shall be liable to the other for any indirect, incidental, consequential, special, or punitive damages arising out of or related to this Agreement, even if advised of the possibility of such damages.</p>
-      <p>9.2 &nbsp; Consultant&rsquo;s total aggregate liability to Client under this Agreement, whether in contract, tort, or otherwise, shall not exceed the total fees actually paid by Client to Consultant in the three (3) calendar months immediately preceding the event giving rise to the claim.</p>
-      <p>9.3 &nbsp; The limitations in this clause shall not apply in cases of fraud, wilful misconduct, or death or personal injury caused by negligence.</p>
+      <p class="cl-head"><span class="cl-num">9.</span>&nbsp;&nbsp;<strong>Limitation of Liability:</strong></p>
+      <p class="cl-sub"><span class="cl-num">9.1.</span>&nbsp;&nbsp;To the maximum extent permitted by applicable law, the Consultant&rsquo;s total aggregate liability to the Client under or in connection with this Agreement shall not exceed the total fees paid by the Client to the Consultant in the three (3) months immediately preceding the event giving rise to the claim.</p>
+      <p class="cl-sub"><span class="cl-num">9.2.</span>&nbsp;&nbsp;In no event shall either party be liable to the other for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of revenue, loss of profits, loss of business, or loss of data, even if such party has been advised of the possibility of such damages.</p>
+      <p class="cl-sub"><span class="cl-num">9.3.</span>&nbsp;&nbsp;Nothing in this clause shall limit either party&rsquo;s liability for fraud, wilful misconduct, or death or personal injury caused by negligence.</p>
     </div>
 
+    <!-- Clause 10 -->
     <div class="clause">
-      <div class="clause-head">10. &nbsp; Non-Solicitation</div>
-      <p>10.1 &nbsp; During the term of this Agreement and for a period of twelve (12) months following its termination or expiry, Client shall not, directly or indirectly, solicit, recruit, or engage any employee or contractor of Consultant who was involved in the delivery of services under this Agreement.</p>
-      <p>10.2 &nbsp; In the event of a breach of this clause, Client agrees to pay Consultant a fee equivalent to twelve (12) months&rsquo; gross compensation of the relevant individual as liquidated damages, the Parties acknowledging such sum to be a genuine pre-estimate of loss.</p>
+      <p class="cl-head"><span class="cl-num">10.</span>&nbsp;&nbsp;<strong>Non-Solicitation:</strong></p>
+      <p class="cl-sub"><span class="cl-num">10.1.</span>&nbsp;&nbsp;During the term of this Agreement and for a period of twelve (12) months following its termination or expiry, the Client shall not, directly or indirectly, solicit, recruit, or hire any employee, contractor, or consultant of the Consultant who was involved in the delivery of services under this Agreement, without the prior written consent of the Consultant.</p>
+      <p class="cl-sub"><span class="cl-num">10.2.</span>&nbsp;&nbsp;In the event of a breach of clause 10.1, the Client agrees to pay the Consultant a fee equivalent to six (6) months of the relevant individual&rsquo;s last applicable monthly billing rate as liquidated damages, which the Parties acknowledge is a genuine pre-estimate of loss.</p>
     </div>
 
+    <!-- Clause 11 -->
     <div class="clause">
-      <div class="clause-head">11. &nbsp; Data Protection</div>
-      <p>11.1 &nbsp; Both Parties agree to comply with all applicable data protection laws, including the Digital Personal Data Protection Act, 2023 (&ldquo;DPDP Act&rdquo;) and any rules or regulations made thereunder.</p>
-      <p>11.2 &nbsp; Each Party shall implement appropriate technical and organisational measures to protect personal data processed in connection with this Agreement against unauthorised access, loss, alteration, or destruction.</p>
-      <p>11.3 &nbsp; In the event of a personal data breach, the Party experiencing the breach shall notify the other Party without undue delay, and in any case within 72 (seventy-two) hours of becoming aware of the breach, to the extent such notification is required under applicable law.</p>
+      <p class="cl-head"><span class="cl-num">11.</span>&nbsp;&nbsp;<strong>Data Protection:</strong></p>
+      <p class="cl-sub"><span class="cl-num">11.1.</span>&nbsp;&nbsp;Each party shall comply with all applicable data protection and privacy laws, including the Digital Personal Data Protection Act, 2023 (India) and any regulations made thereunder, in connection with the performance of this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">11.2.</span>&nbsp;&nbsp;The Consultant shall process personal data shared by the Client only to the extent necessary to perform the services under this Agreement, and shall not use such data for any other purpose.</p>
+      <p class="cl-sub"><span class="cl-num">11.3.</span>&nbsp;&nbsp;Upon termination of this Agreement, or upon the Client&rsquo;s written request, the Consultant shall promptly delete or return all personal data provided by the Client, unless retention is required by applicable law.</p>
     </div>
 
+    <!-- Clause 12 -->
     <div class="clause">
-      <div class="clause-head">12. &nbsp; Force Majeure</div>
-      <p>Neither Party shall be liable for any failure or delay in performance under this Agreement to the extent such failure or delay is caused by circumstances beyond the reasonable control of that Party (&ldquo;Force Majeure Event&rdquo;), including but not limited to acts of God, natural disasters, pandemics, government actions, or civil unrest. The affected Party shall promptly notify the other Party and use reasonable efforts to resume performance. If the Force Majeure Event continues for more than 60 (sixty) days, either Party may terminate this Agreement by written notice without further liability.</p>
+      <p class="cl-head"><span class="cl-num">12.</span>&nbsp;&nbsp;<strong>Force Majeure:</strong> Neither party shall be liable for any delay or failure to perform its obligations under this Agreement to the extent that such delay or failure is caused by circumstances beyond that party&rsquo;s reasonable control, including but not limited to acts of God, natural disasters, pandemic, epidemic, war, civil unrest, government action, or failure of third-party infrastructure. The affected party shall notify the other party promptly and take all reasonable steps to minimise the impact of the force majeure event. If the force majeure event continues for more than thirty (30) days, either party may terminate this Agreement with immediate effect by written notice.</p>
     </div>
 
+    <!-- Clause 13 -->
     <div class="clause">
-      <div class="clause-head">13. &nbsp; Governing Law &amp; Dispute Resolution</div>
-      <p>13.1 &nbsp; This Agreement shall be governed by and construed in accordance with the laws of India.</p>
-      <p>13.2 &nbsp; In the event of any dispute, difference, or controversy arising out of or relating to this Agreement, the Parties shall first attempt to resolve the matter through good-faith negotiations for a period of 30 (thirty) days from the date of written notice of the dispute.</p>
-      <p>13.3 &nbsp; If such dispute cannot be resolved through negotiation, it shall be submitted to binding arbitration under the Arbitration and Conciliation Act, 1996 (as amended). The arbitration shall be conducted by a sole arbitrator mutually appointed by the Parties, and failing agreement, appointed in accordance with the Act.</p>
-      <p>13.4 &nbsp; The seat and venue of arbitration shall be Bangalore, Karnataka, and the language of arbitration shall be English. The award of the arbitrator shall be final and binding on both Parties.</p>
+      <p class="cl-head"><span class="cl-num">13.</span>&nbsp;&nbsp;<strong>Governing Law and Dispute Resolution:</strong></p>
+      <p class="cl-sub"><span class="cl-num">13.1.</span>&nbsp;&nbsp;This Agreement shall be governed by and construed in accordance with the laws of India.</p>
+      <p class="cl-sub"><span class="cl-num">13.2.</span>&nbsp;&nbsp;In the event of any dispute, controversy, or claim arising out of or in connection with this Agreement, the Parties shall first attempt to resolve the matter through good-faith negotiation. Either party may initiate this process by giving written notice to the other party.</p>
+      <p class="cl-sub"><span class="cl-num">13.3.</span>&nbsp;&nbsp;If the dispute is not resolved within thirty (30) days of such written notice (or such longer period as the Parties may agree), it shall be referred to and finally resolved by arbitration in accordance with the Arbitration and Conciliation Act, 1996. The arbitration shall be conducted by a sole arbitrator mutually appointed by the Parties. The seat and venue of arbitration shall be Bangalore, India. The language of arbitration shall be English.</p>
+      <p class="cl-sub"><span class="cl-num">13.4.</span>&nbsp;&nbsp;Notwithstanding the above, either party may seek urgent injunctive or other equitable relief from a court of competent jurisdiction in Bangalore, India, where necessary to protect its rights pending the outcome of arbitration.</p>
     </div>
 
+    <!-- Clause 14 -->
     <div class="clause">
-      <div class="clause-head">14. &nbsp; Miscellaneous</div>
-      <p>14.1 &nbsp; <strong>Entire Agreement.</strong> This Agreement, together with all Annexures, constitutes the entire agreement between the Parties with respect to its subject matter and supersedes all prior negotiations, representations, warranties, and understandings.</p>
-      <p>14.2 &nbsp; <strong>Amendments.</strong> No amendment or modification of this Agreement shall be valid unless made in writing and signed by authorised representatives of both Parties.</p>
-      <p>14.3 &nbsp; <strong>Severability.</strong> If any provision of this Agreement is found to be illegal, invalid, or unenforceable, the remaining provisions shall continue in full force and effect.</p>
-      <p>14.4 &nbsp; <strong>Waiver.</strong> Failure by either Party to enforce any provision of this Agreement shall not constitute a waiver of that Party&rsquo;s right to enforce it subsequently or to enforce any other provision.</p>
-      <p>14.5 &nbsp; <strong>Notices.</strong> All notices under this Agreement shall be in writing and delivered by email (with delivery confirmation) or courier to the address specified by each Party. Notices sent by email shall be deemed received on the date of transmission, provided no automated delivery failure notification is received within 24 hours.</p>
+      <p class="cl-head"><span class="cl-num">14.</span>&nbsp;&nbsp;<strong>Miscellaneous:</strong></p>
+      <p class="cl-sub"><span class="cl-num">14.1.</span>&nbsp;&nbsp;<strong>Entire Agreement:</strong> This Agreement, and any annexures, duplicates, or copies, constitutes the entire agreement between the Parties concerning the subject matter of this Agreement and supersedes all prior negotiations, agreements, representations, and understandings of any kind, whether written or oral, between the Parties, preceding the date of this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">14.2.</span>&nbsp;&nbsp;<strong>Amendments and Assignment:</strong> This Agreement may be amended only by written agreement duly executed by an authorised representative of each party (email is acceptable). Either party shall not assign this Agreement without the express, written consent of the other party.</p>
+      <p class="cl-sub"><span class="cl-num">14.3.</span>&nbsp;&nbsp;<strong>Severability:</strong> If any provision or provisions of this Agreement shall be held unenforceable for any reason, then such provision shall be modified to reflect the parties&rsquo; intention. All remaining provisions of this Agreement shall remain in full force and effect for the duration of this Agreement.</p>
+      <p class="cl-sub"><span class="cl-num">14.4.</span>&nbsp;&nbsp;<strong>No Waiver:</strong> A failure or delay in exercising any right, power or privilege in respect of this Agreement will not be presumed to operate as a waiver, and a single or partial exercise of any right, power or privilege will not be presumed to preclude any subsequent or further exercise of that right, power or privilege or the exercise of any other right, power or privilege.</p>
+      <p class="cl-sub"><span class="cl-num">14.5.</span>&nbsp;&nbsp;<strong>Survival:</strong> Clauses 8 (Intellectual Property), 9 (Limitation of Liability), 10 (Non-Solicitation), 11 (Data Protection), and 13 (Governing Law and Dispute Resolution) shall survive the termination or expiry of this Agreement.</p>
     </div>
 
     <!-- Signatures -->
     <p class="sig-intro">The agreement is electronically executed. Signatories:</p>
     <div class="sig-grid">
-      <div>
-        <div class="sig-party-label">CoreVoice / Corebook Consulting Pvt Ltd</div>
-        <?php if ($senderName): ?>
-          <div class="sig-name"><?= esc($senderName) ?></div>
-        <?php endif; ?>
-        <?php if ($senderTitle): ?>
-          <div class="sig-detail"><?= esc($senderTitle) ?></div>
-        <?php endif; ?>
-        <?php if ($senderEmail): ?>
-          <div class="sig-detail"><?= esc($senderEmail) ?></div>
-        <?php endif; ?>
-        <div class="sig-line-box"><strong>Signature &amp; date</strong></div>
+      <div class="sig-block">
+        <?php if ($senderName):  ?><div class="sig-name"><?= esc($senderName) ?></div><?php endif; ?>
+        <?php if ($senderTitle): ?><div class="sig-detail"><?= esc($senderTitle) ?></div><?php endif; ?>
+        <div class="sig-detail">Corebook Consulting Pvt. Ltd.</div>
+        <?php if ($senderEmail): ?><div class="sig-detail"><?= esc($senderEmail) ?></div><?php endif; ?>
       </div>
-      <div>
-        <div class="sig-party-label">Client</div>
-        <?php if ($sigName): ?>
-          <div class="sig-name"><?= esc($sigName) ?></div>
+      <div class="sig-block">
+        <?php if ($sigName):  ?><div class="sig-name"><?= esc($sigName) ?></div><?php endif; ?>
+        <?php
+          $clientSigLine = array_filter([$sigTitle, $co]);
+          if ($clientSigLine): ?>
+          <div class="sig-detail"><?= esc(implode(', ', $clientSigLine)) ?></div>
         <?php endif; ?>
-        <?php if ($sigTitle): ?>
-          <div class="sig-detail"><?= esc($sigTitle) ?></div>
-        <?php endif; ?>
-        <?php if ($sigEmail): ?>
-          <div class="sig-detail"><?= esc($sigEmail) ?></div>
-        <?php endif; ?>
-        <div class="sig-line-box"><strong>Signature &amp; date</strong></div>
+        <?php if ($sigEmail): ?><div class="sig-detail"><?= esc($sigEmail) ?></div><?php endif; ?>
       </div>
     </div>
 
-    <!-- Client details -->
-    <table class="client-table">
-      <tbody>
-        <tr><td>Client company</td><td><?= esc($co ?: '—') ?></td></tr>
-        <?php if ($coType): ?><tr><td>Type</td><td><?= esc($coType) ?></td></tr><?php endif; ?>
-        <?php if ($cin):    ?><tr><td>CIN</td><td><?= esc($cin) ?></td></tr><?php endif; ?>
-        <?php if ($gst):    ?><tr><td>GST</td><td><?= esc($gst) ?></td></tr><?php endif; ?>
-        <?php if ($address): ?><tr><td>Registered office</td><td><?= esc($address) ?></td></tr><?php endif; ?>
-        <?php if ($sigName): ?><tr><td>Signatory</td><td><?= esc($sigName) ?></td></tr><?php endif; ?>
-        <?php if ($sigTitle): ?><tr><td>Designation</td><td><?= esc($sigTitle) ?></td></tr><?php endif; ?>
-        <?php if ($sigEmail): ?><tr><td>Email</td><td><?= esc($sigEmail) ?></td></tr><?php endif; ?>
-        <?php if ($agreeDate): ?><tr><td>Agreement date</td><td><?= fmtDate($agreeDate) ?></td></tr><?php endif; ?>
-      </tbody>
-    </table>
-
-    <!-- ──────────────── ANNEXURE A ── -->
+    <!-- ══════════ ANNEXURE A ══════════ -->
     <div class="ann-header">
       <div class="ann-tag">Annexure A</div>
       <div class="ann-title">Scope of Work</div>
     </div>
 
-    <?php if ($engType): ?>
-      <div class="ann-eng-type"><?= esc(strtoupper($engLabel)) ?></div>
+    <?php if ($engLabel): ?>
+      <div class="ann-kv"><strong>Engagement type:</strong> <?= esc($engLabel) ?></div>
     <?php endif; ?>
 
     <?php if ($objective): ?>
-      <div class="ann-scope-obj"><strong>Objective:</strong> <?= esc($objective) ?></div>
+      <div class="ann-kv" style="margin-top:14px;"><strong>Objective:</strong></div>
+      <div class="ann-obj"><?= esc($objective) ?></div>
     <?php endif; ?>
 
     <?php if ($scopeItems): ?>
-    <div class="ann-scope-cats">
-      <?php if ($strategyScope): ?>
-        <h4>Strategy</h4>
-        <ul>
-          <?php foreach ($strategyScope as $item): ?>
-            <li><?= esc($item) ?></li>
-          <?php endforeach; ?>
-        </ul>
-      <?php endif; ?>
-      <?php if ($contentScope): ?>
-        <h4>Content</h4>
-        <ul>
-          <?php foreach ($contentScope as $item): ?>
-            <li><?= esc($item) ?></li>
-          <?php endforeach; ?>
-        </ul>
-      <?php endif; ?>
-      <?php if ($opsScope): ?>
-        <h4>Marketing Ops</h4>
-        <ul>
-          <?php foreach ($opsScope as $item): ?>
-            <li><?= esc($item) ?></li>
-          <?php endforeach; ?>
-        </ul>
-      <?php endif; ?>
-    </div>
+    <div class="ann-services-head">Activities / Services:</div>
+
+    <?php if ($strategyScope): ?>
+      <div class="ann-cat-head">Strategy</div>
+      <ul class="ann-cat-list">
+        <?php foreach ($strategyScope as $item): ?>
+          <li><?= scopeContractLabel($item) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+
+    <?php if ($contentScope): ?>
+      <div class="ann-cat-head">Content</div>
+      <ul class="ann-cat-list">
+        <?php foreach ($contentScope as $item): ?>
+          <li><?= scopeContractLabel($item) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+
+    <?php if ($opsScope): ?>
+      <div class="ann-cat-head">Marketing ops</div>
+      <ul class="ann-cat-list">
+        <?php foreach ($opsScope as $item): ?>
+          <li><?= scopeContractLabel($item) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($addlScope): ?>
-      <div class="ann-addl"><strong>Additional notes:</strong> <?= esc($addlScope) ?></div>
+      <div class="ann-addl-head">Additional notes</div>
+      <div class="ann-addl-text"><?= esc($addlScope) ?></div>
     <?php endif; ?>
 
-    <div class="gov-section">
-      <div class="gov-head">Governance</div>
-      <ul class="gov-list">
-        <li>Weekly &ldquo;Client Promises&rdquo; meeting — async or live, to ensure delivery stays on track and commitments from both sides are honoured.</li>
-        <li>Monthly meeting — to review performance, update priorities, and align on the coming month&rsquo;s plan.</li>
-        <li>Quarterly meeting — to assess the engagement, revisit strategy, and adjust scope if needed.</li>
-      </ul>
-      <div class="gov-note">All deliverables are subject to the revision policy outlined in the main Agreement. Specific output formats and volumes are agreed at the start of each governance cycle.</div>
-    </div>
+    <div class="ann-gov-head">Governance:</div>
+    <ul class="ann-gov-list">
+      <li>Weekly &ldquo;Client Promises&rdquo; meeting + email for: reporting done/not-done on tasks, and setting tasks for the upcoming week</li>
+      <li>Monthly meetings: review the previous period and set objectives for the upcoming period</li>
+      <li>Quarterly meetings: impact review and agenda setting for the upcoming quarter</li>
+    </ul>
+    <div class="ann-gov-note">Note: The exact count of deliverables under each activity will be decided in governance calls based on live requirements. All items listed above are subject to change as per requirement changes noted in governance calls.</div>
 
-    <!-- ──────────────── ANNEXURE B ── -->
+    <!-- ══════════ ANNEXURE B ══════════ -->
     <div class="ann-header">
       <div class="ann-tag">Annexure B</div>
       <div class="ann-title">Fee &amp; Terms of Payment</div>
     </div>
 
-    <div class="fee-terms">
+    <div class="ann-b-head">1. Payment terms</div>
+    <ul class="ann-b-terms">
       <?php if ($feeType === 'retainer'): ?>
-        <p>Monthly fee (excl. GST): <strong><?= fmtMoney($monthlyFee, $currCode) ?></strong></p>
-        <?php if ($retDur): ?><p>Duration: <strong><?= esc($retDur) ?></strong></p><?php endif; ?>
-        <p>All invoices to be raised on the first day of each month.</p>
-        <p>All invoices to be paid within <strong><?= esc($payDays) ?></strong> of the invoice date.</p>
+        <?php if ($monthlyFee): ?><li>Monthly fee: <?= fmtMoney($monthlyFee, $currCode) ?> + <?= $currCode === 'INR' ? 'GST' : 'tax' ?> per month</li><?php endif; ?>
+        <?php if ($retDur):     ?><li>Period: For <?= esc($retDur) ?></li><?php endif; ?>
+        <li>All invoices to be raised on the first day of each month</li>
+        <li>All invoices to be paid within <?= esc($payDays) ?> of the invoice being raised</li>
       <?php elseif ($feeType === 'fixed'): ?>
-        <p>Total fixed fee (excl. GST): <strong><?= fmtMoney($totalFee, $currCode) ?></strong></p>
-        <?php if ($fixedAdv): ?><p>Advance payable: <strong><?= fmtMoney($fixedAdv, $currCode) ?></strong></p><?php endif; ?>
-        <p>All invoices to be paid within <strong><?= esc($fixPayDays) ?></strong> of the invoice date.</p>
+        <?php if ($totalFee):   ?><li>Fixed fee: <?= fmtMoney($totalFee, $currCode) ?> + <?= $currCode === 'INR' ? 'GST' : 'tax' ?></li><?php endif; ?>
+        <?php if ($fixedAdv):   ?><li>Advance payable: <?= fmtMoney($fixedAdv, $currCode) ?></li><?php endif; ?>
+        <li>All invoices to be paid within <?= esc($fixPayDays) ?> of the invoice being raised</li>
       <?php elseif ($feeType === 'milestone'): ?>
-        <p>Payment is milestone-based as follows:</p>
-        <p style="white-space:pre-wrap;"><?= esc($milestones) ?></p>
+        <?php if ($milestones): ?><li style="white-space:pre-wrap;"><?= esc($milestones) ?></li><?php endif; ?>
       <?php endif; ?>
-      <p>Consultancy has the right to slow down work when payment is delayed beyond the agreed terms.</p>
-      <?php if ($opeFull): ?>
-        <p>Out of pocket expenses will be <?= esc($opeFull) ?>.</p>
-      <?php endif; ?>
-      <?php if ($gst): ?><p>Client GST: <?= esc($gst) ?></p><?php endif; ?>
-      <?php if ($payNotes): ?><p><?= esc($payNotes) ?></p><?php endif; ?>
-    </div>
+      <li>Consultancy has the right to slow down work when payment is delayed</li>
+      <?php if ($opeAnnex): ?><li><?= esc($opeAnnex) ?></li><?php endif; ?>
+      <?php if ($payNotes):  ?><li><?= esc($payNotes) ?></li><?php endif; ?>
+    </ul>
 
+    <div class="ann-b-head">2. Company and bank details</div>
     <table class="bank-table">
-      <caption>Payment details — CoreBook Consulting Pvt Ltd</caption>
       <tbody>
-        <tr><td>Beneficiary name</td><td>CoreBook Consulting Pvt Ltd</td></tr>
-        <tr><td>Address</td><td>Park Vista B Block, F No. 503, Amblipura, Sarjapur Road, Bangalore, Karnataka 560037</td></tr>
+        <tr><td>Name</td><td>CoreBook Consulting Pvt Ltd</td></tr>
+        <tr><td>Registered address</td><td>Park Vista B Block, F No. 503, Amblipura, Sarjapur Road, Bangalore, Karnataka 560037</td></tr>
+        <tr><td>Incorporation date</td><td>04 Jan 2023</td></tr>
         <tr><td>CIN</td><td>U74999KA2023PTC169895</td></tr>
         <tr><td>PAN</td><td>AAKCC8142N</td></tr>
         <tr><td>GST</td><td>29AAKCC8142N1Z0</td></tr>
-        <tr><td>Bank account number</td><td>4090019050053</td></tr>
-        <tr><td>IFSC code</td><td>RATN0000091</td></tr>
-        <tr><td>Date of incorporation</td><td>04 Jan 2023</td></tr>
+        <tr><td>Bank account no.</td><td>4090019050053</td></tr>
+        <tr><td>Bank IFSC</td><td>RATN0000091</td></tr>
       </tbody>
     </table>
 
-    <!-- ──────────────── ANNEXURE C ── -->
+    <!-- ══════════ ANNEXURE C ══════════ -->
     <div class="ann-header">
       <div class="ann-tag">Annexure C</div>
       <div class="ann-title">Mutual Non-Disclosure Agreement</div>
     </div>
 
-    <p style="font-size:.86rem;margin-bottom:20px;color:#4a4a6a;">
-      This Mutual Non-Disclosure Agreement forms part of and is incorporated into the Marketing Services Agreement between
-      <strong>Corebook Consulting Pvt Ltd (CoreVoice)</strong> and <strong><?= esc($co ?: '[Client]') ?></strong>
-      dated <?= fmtDate($agreeDate) ?: '[Date]' ?>.
-    </p>
+    <p class="nda-preamble">This Mutual Non-Disclosure Agreement (the &ldquo;Agreement&rdquo;) is entered into on Agreement Date at Bangalore, between the Client &amp; the Consultancy &mdash; hereinafter referred to individually as &ldquo;Party&rdquo; and collectively as &ldquo;Parties&rdquo;.</p>
+    <p class="nda-preamble">The Party disclosing Confidential Information to the other shall be referred to as &ldquo;Discloser&rdquo;, while the Party receiving such information shall be referred to as the &ldquo;Recipient&rdquo;, as the context may require.</p>
 
     <div class="nda-section">
-      <div class="nda-head">1. &nbsp; Definition of Confidential Information</div>
-      <div class="nda-body">
-        <p>&ldquo;Confidential Information&rdquo; means any and all non-public information or data disclosed by one Party (the &ldquo;Disclosing Party&rdquo;) to the other Party (the &ldquo;Receiving Party&rdquo;) under or in connection with this Agreement, whether disclosed in writing, orally, electronically, or by any other means, and whether or not designated as &ldquo;confidential&rdquo; at the time of disclosure. This includes, without limitation: business plans, financial data, pricing models, customer and client information, product or service roadmaps, marketing strategies, creative briefs, campaign performance data, technical specifications, proprietary methodologies, and trade secrets.</p>
-      </div>
+      <span class="nda-num">1.&nbsp;&nbsp;Background.</span> The Parties intend to establish a proposed business relationship between them. In the course of such a relationship, it is anticipated that the Discloser may disclose or deliver to the Recipient certain Confidential Information as defined in Section 2 hereof, for the limited purpose of such proposed business relationship. The Parties have entered into this Agreement in order to assure the confidentiality of such confidential information in accordance with the terms of this Agreement.
     </div>
 
     <div class="nda-section">
-      <div class="nda-head">2. &nbsp; Obligations</div>
-      <div class="nda-body">
-        <p>The Receiving Party agrees to:</p>
-        <ol type="a">
-          <li>Hold all Confidential Information in strict confidence and not disclose it to any third party without the prior written consent of the Disclosing Party;</li>
-          <li>Use the Confidential Information solely for the purpose of performing its obligations or exercising its rights under this Agreement;</li>
-          <li>Limit access to the Confidential Information to those employees, contractors, and advisors who have a genuine need to know for the purposes of this Agreement, and who are bound by confidentiality obligations no less protective than those set out herein;</li>
-          <li>Take at least the same degree of care to protect the Disclosing Party&rsquo;s Confidential Information as it uses to protect its own confidential information of a similar nature, and in any event no less than a reasonable degree of care.</li>
-        </ol>
-      </div>
+      <span class="nda-num">2.&nbsp;&nbsp;Definition of Confidential Information.</span> &ldquo;Confidential Information&rdquo; as used in this Agreement shall mean any and all technical and non-technical information belonging to the Discloser including but not limited to patent, copyright, trade secret, and proprietary information, techniques, sketches, drawings, models, inventions, know-how, processes, apparatus, equipment, algorithms, software, software programs, software source documents, designs, drawings, sketches and formulae related to the current, future, and proposed products and services of each of the Parties, and includes, without limitation, their respective information concerning research, experimental work, development, design details and specifications, engineering, financial information, procurement requirements, purchasing, manufacturing, business forecasts, sales and merchandising, marketing plans and information, Client/customer/vendor related information (whether commercial or otherwise) and documentation. Such information disclosed by the Discloser shall be considered Confidential Information by the Recipient, whether communicated orally, in writing or otherwise, and which is designated as confidential or which by nature would reasonably be considered confidential.
     </div>
 
     <div class="nda-section">
-      <div class="nda-head">3. &nbsp; Exclusions</div>
-      <div class="nda-body">
-        <p>The obligations in this Annexure shall not apply to information that:</p>
-        <ol type="a">
-          <li>Is or becomes publicly available through no act or omission of the Receiving Party;</li>
-          <li>Was already known to the Receiving Party at the time of disclosure, without any obligation of confidentiality;</li>
-          <li>Is independently developed by the Receiving Party without reference to or use of the Confidential Information;</li>
-          <li>Is received from a third party who is not under any obligation of confidentiality with respect to such information; or</li>
-          <li>Is required to be disclosed by applicable law, regulation, or court order, provided that the Receiving Party gives the Disclosing Party prompt prior written notice (where legally permitted) and cooperates with the Disclosing Party in seeking a protective order or other appropriate relief.</li>
-        </ol>
-      </div>
+      <span class="nda-num">3.&nbsp;&nbsp;Nondisclosure and Non Use Obligation.</span> Recipient agrees that it shall not make use of, disseminate, or in any way disclose any Confidential Information of the Discloser to any person, firm, or business, except to the extent necessary for negotiations, discussions, and consultations with personnel or authorised representatives of the Recipient, and any purpose the other Party may hereafter authorise in writing. Furthermore, the existence of any business negotiations, discussions, consultations, test results, reports or agreements in progress between the Parties shall not be released to any form of public media without the written approval of the Discloser. Recipient agrees that it shall treat all Confidential Information of the Discloser with the same degree of care as it accords to its own Confidential Information.
     </div>
 
     <div class="nda-section">
-      <div class="nda-head">4. &nbsp; Term &amp; Return of Information</div>
-      <div class="nda-body">
-        <p>This Annexure shall come into effect on the Agreement Date and shall remain in force for a period of <strong>three (3) years</strong> from the date of expiry or termination of the Agreement, or such longer period as may be required by applicable law. Upon the written request of the Disclosing Party, or upon expiry or termination of the Agreement, the Receiving Party shall promptly return or permanently destroy all Confidential Information (including all copies and extracts thereof) and certify in writing that it has done so.</p>
-      </div>
+      <span class="nda-num">4.&nbsp;&nbsp;Exclusions.</span> Recipient&rsquo;s obligations under Section 3 shall terminate when the Recipient can document that: (i) the information was in the public domain; (ii) it was rightfully in Recipient&rsquo;s possession free of obligation of confidence; (iii) it was developed by employees or agents of Recipient independently and without reference to any information communicated to Recipient by Discloser; (iv) the communication was in response to a valid order by a court or other governmental body, was otherwise required by law, or was necessary to establish the rights of either Party under this Agreement.
     </div>
 
     <div class="nda-section">
-      <div class="nda-head">5. &nbsp; Remedies</div>
-      <div class="nda-body">
-        <p>The Receiving Party acknowledges that any breach or threatened breach of its obligations under this Annexure may cause irreparable harm to the Disclosing Party for which monetary damages would be an inadequate remedy. Accordingly, in addition to any other rights and remedies available under applicable law, the Disclosing Party shall be entitled to seek equitable relief, including injunction and specific performance, without the requirement to post a bond or other security and without the need to prove actual damages.</p>
-      </div>
+      <span class="nda-num">5.&nbsp;&nbsp;Ownership of Confidential Information.</span> All Confidential Information and any Derivatives thereof, whether created by Discloser or Recipient, shall remain the property of Discloser and no license or other right to Confidential Information is granted or implied hereby. However, all intellectual property including Derivatives thereof, in and to any Deliverables delivered by the Consultancy to the Client shall be deemed to be assigned to the Client by the Consultancy.
+    </div>
+
+    <div class="nda-section">
+      <span class="nda-num">6.&nbsp;&nbsp;Return or Destruction of Materials.</span> Upon termination or expiry of the Agreement, or upon written request by the Discloser, the Recipient shall promptly return or, at the Discloser&rsquo;s election, destroy all Confidential Information and any copies thereof in the Recipient&rsquo;s possession or control. The Recipient shall, upon request, certify in writing that such return or destruction has been completed. Notwithstanding the foregoing, the Recipient may retain copies of Confidential Information to the extent required by applicable law or regulation, provided that such retained information remains subject to the obligations of this Agreement.
+    </div>
+
+    <div class="nda-section">
+      <span class="nda-num">7.&nbsp;&nbsp;No Warranty.</span> All Confidential Information is provided &ldquo;AS IS&rdquo; and without any warranty, express, implied, or otherwise, regarding its accuracy or performance or completeness of the Confidential Information or any warranty that the use of the Confidential Information will not infringe or violate any patent or other proprietary rights of a third party.
+    </div>
+
+    <div class="nda-section">
+      <span class="nda-num">8.&nbsp;&nbsp;Term and Survival.</span> The obligations of confidentiality and non-use under this Agreement shall remain in force during the term of the Agreement and for a period of one (1) year following its termination or expiry, regardless of the reason for termination. The obligations of this Agreement shall survive termination or expiry of the main Agreement.
     </div>
 
   </div><!-- /con-body -->
