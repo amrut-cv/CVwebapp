@@ -8,8 +8,6 @@ define('DB_USER', 'cvapp');
 define('DB_PASS', 'CHANGE_ME');
 define('DB_NAME', 'CVwebapp');
 
-// SMTP (Google Workspace App Password)
-define('SMTP_HOST', 'ssl://smtp.gmail.com');
-define('SMTP_PORT', 465);
-define('SMTP_USER', 'amrut@corevoice.in'); // sending address
-define('SMTP_PASS', 'CHANGE_ME');          // 16-char Google App Password
+// SendGrid API (https://app.sendgrid.com → API Keys)
+define('SENDGRID_API_KEY', 'CHANGE_ME');
+define('SENDGRID_FROM',    'amrut@corevoice.in');
