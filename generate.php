@@ -1,4 +1,5 @@
 <?php
+require __DIR__ . '/session_guard.php';
 // generate.php — CoreVoice document renderer (Proposal & Contract)
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

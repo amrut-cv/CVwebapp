@@ -1,0 +1,6 @@
+Options -Indexes
+DirectoryIndex index.php index.html
+
+RewriteEngine On
+# Redirect direct requests for index.html through the PHP session check
+RewriteRule ^index\.html$ index.php [R=302,L]
