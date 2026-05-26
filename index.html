@@ -273,7 +273,7 @@
   <span class="sep">·</span>
   <span class="sub">Contract builder</span>
   <div class="header-actions">
-    <button class="btn-header" onclick="openDraftsPanel()">My drafts</button>
+    <button class="btn-header" onclick="openDraftsPanel()">Files</button>
     <button class="btn-header accent" onclick="saveDraft()">Save</button>
   </div>
 </header>
@@ -282,7 +282,7 @@
 <div class="drafts-overlay hidden" id="draftsOverlay" onclick="if(event.target===this)closeDraftsPanel()">
   <div class="drafts-drawer">
     <div class="drafts-drawer-head">
-      <span>Saved drafts</span>
+      <span>Files</span>
       <button class="drafts-close" onclick="closeDraftsPanel()">✕</button>
     </div>
     <div class="drafts-body" id="draftsList"></div>
@@ -1041,18 +1041,18 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     try {
       const rows = await fetch('load_drafts.php').then(r => r.json());
       if (!rows.length) {
-        list.innerHTML = '<div class="drafts-empty">No saved drafts yet.<br>Hit Save to save your current entries.</div>';
+        list.innerHTML = '<div class="drafts-empty">No files saved yet.<br>Hit Save to save your current entries.</div>';
         return;
       }
       list.innerHTML = rows.map(r => `
         <div class="draft-item" onclick="loadDraft(${r.id}, ${JSON.stringify(r.data).replace(/"/g,'&quot;')})">
           <div class="draft-item-info">
             <div class="draft-item-name">${r.name}</div>
-            <div class="draft-item-date">${new Date(r.updated_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
+            <div class="draft-item-date">${r.email.split('@')[0]} &middot; ${new Date(r.updated_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
           </div>
           <button class="draft-delete" title="Delete" onclick="event.stopPropagation();deleteDraft(${r.id},this)">✕</button>
         </div>`).join('');
-    } catch { list.innerHTML = '<div class="drafts-empty">Failed to load drafts.</div>'; }
+    } catch { list.innerHTML = '<div class="drafts-empty">Failed to load files.</div>'; }
   }
 
   function closeDraftsPanel() {
@@ -1076,7 +1076,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     btn.closest('.draft-item').remove();
     if (!document.querySelector('.draft-item')) {
       document.getElementById('draftsList').innerHTML =
-        '<div class="drafts-empty">No saved drafts yet.</div>';
+        '<div class="drafts-empty">No files saved yet.</div>';
     }
     if (currentDraftId === id) currentDraftId = null;
   }

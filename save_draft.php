@@ -21,8 +21,8 @@ $data  = json_encode($input['data'] ?? []);
 try {
     $pdo = getDB();
     if ($id) {
-        $stmt = $pdo->prepare("UPDATE drafts SET name=?, data=?, updated_at=NOW() WHERE id=? AND email=?");
-        $stmt->execute([$name, $data, $id, $email]);
+        $stmt = $pdo->prepare("UPDATE drafts SET name=?, data=?, updated_at=NOW() WHERE id=?");
+        $stmt->execute([$name, $data, $id]);
         echo json_encode(['success' => true, 'id' => $id]);
     } else {
         $stmt = $pdo->prepare("INSERT INTO drafts (email, name, data) VALUES (?, ?, ?)");

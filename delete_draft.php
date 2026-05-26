@@ -17,7 +17,7 @@ if (!$id) {
 
 try {
     $pdo = getDB();
-    $pdo->prepare("DELETE FROM drafts WHERE id=? AND email=?")->execute([$id, $_SESSION['auth_email']]);
+    $pdo->prepare("DELETE FROM drafts WHERE id=?")->execute([$id]);
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     error_log('CVwebapp delete_draft: ' . $e->getMessage());

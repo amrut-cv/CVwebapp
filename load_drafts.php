@@ -6,8 +6,8 @@ header('Content-Type: application/json');
 
 try {
     $pdo  = getDB();
-    $stmt = $pdo->prepare("SELECT id, name, updated_at, data FROM drafts WHERE email=? ORDER BY updated_at DESC");
-    $stmt->execute([$_SESSION['auth_email']]);
+    $stmt = $pdo->prepare("SELECT id, name, email, updated_at, data FROM drafts ORDER BY updated_at DESC");
+    $stmt->execute([]);
     $rows = $stmt->fetchAll();
     foreach ($rows as &$r) {
         $r['data'] = json_decode($r['data'], true);
