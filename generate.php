@@ -537,37 +537,15 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .nda-section  { margin-bottom: 16px; font-size: .87rem; line-height: 1.78; }
     .nda-num      { font-weight: 700; }
 
-    /* ─── Print header / footer (hidden on screen) ─── */
-    .print-header, .print-footer { display: none; }
     .ann-sig-sep { border-top: 1px solid #e2e8f0; margin: 36px 0 20px; }
 
-    @page { size: A4; margin: 2.5cm 1.5cm; }
+    @page { size: A4; margin: 1.5cm; }
 
     @media print {
       body  { background: #fff; font-size: 9.5pt; }
       .page { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; }
       .toolbar { display: none !important; }
 
-      /* Repeating page header: logo top-right, sitting 1cm from top of page */
-      .print-header {
-        display: flex; position: fixed;
-        top: -1.5cm; left: 0; right: 0; height: 1.1cm;
-        align-items: center; justify-content: flex-end;
-        border-bottom: 1px solid #e2e8f0; background: #fff;
-      }
-      /* Repeating page footer: address bottom-centre, sitting 1cm from bottom of page */
-      .print-footer {
-        display: flex; position: fixed;
-        bottom: -1.5cm; left: 0; right: 0; height: 1cm;
-        align-items: center; justify-content: center;
-        border-top: 1px solid #e2e8f0; background: #fff;
-      }
-      .ph-logo        { font-family: 'Segoe UI', sans-serif; font-size: .78rem; font-weight: 700; }
-      .ph-logo .cv    { color: #1a1a2e; }
-      .ph-logo .voice { color: #C9972A; }
-      .pf-text        { font-family: 'Segoe UI', sans-serif; font-size: .68rem; color: #6b7280; text-align: center; }
-
-      /* Header/footer are in the margin area — no extra content padding needed */
       .con-body    { padding-left: 0; padding-right: 0; }
       .prop-hero   { padding-left: 0; padding-right: 0; }
       .prop-body   { padding-left: 0; padding-right: 0; }
@@ -575,8 +553,6 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 
       /* Annexures always start on a new page */
       .ann-header { page-break-before: always; }
-
-      /* Clause and NDA paragraphs may break across pages freely */
     }
   </style>
 </head>
@@ -588,13 +564,6 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 </div>
 
 <div class="page">
-
-<div class="print-header">
-  <span class="ph-logo"><span class="cv">Core</span><span class="voice">Voice</span></span>
-</div>
-<div class="print-footer">
-  <span class="pf-text">Corebook Consulting Pvt. Ltd &nbsp;&middot;&nbsp; C1, The Bangalore Local, Koramangala, Bangalore &nbsp;&middot;&nbsp; corevoice.in</span>
-</div>
 
 <?php if ($isProposal): ?>
 <!-- ═══════════ PROPOSAL ═══════════ -->
