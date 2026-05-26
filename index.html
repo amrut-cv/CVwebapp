@@ -721,10 +721,10 @@
 
     <div class="section-head">Currency</div>
     <div class="radio-group" id="currencyGroup">
-      <label class="radio-pill" onclick="selectPill(this, 'currencyGroup')">
+      <label class="radio-pill active" onclick="selectPill(this, 'currencyGroup')">
         <input type="radio" name="currency" value="INR" checked /> ₹ INR
       </label>
-      <label class="radio-pill active" onclick="selectPill(this, 'currencyGroup')">
+      <label class="radio-pill" onclick="selectPill(this, 'currencyGroup')">
         <input type="radio" name="currency" value="USD" /> $ USD
       </label>
     </div>
@@ -942,21 +942,86 @@ Looking forward to your thoughts!"></textarea>
     document.getElementById('bizDescription').value = 'Nexora Health is a B2B digital health startup enabling enterprise wellness programs through AI-powered mental health tools and preventive care analytics.';
   }
 
-  /* ── Generate ───────────────────────────────── */
+  /* ── Generate — POST to generate.php ───────── */
   function generateDocument() {
     if (!selectedOutput) {
       alert('Please select a document type — Proposal or Contract.');
       return;
     }
-    const company = document.getElementById('companyName').value || '[Company]';
-    alert(`Generating ${selectedOutput} for ${company}…\n\nIn a live integration, this would call your document generation API and return a downloadable PDF or editable draft.`);
-  }
 
-  // Initialise currency pill
-  document.addEventListener('DOMContentLoaded', () => {
-    const inrPill = document.querySelector('#currencyGroup .radio-pill');
-    if (inrPill) inrPill.classList.add('active');
-  });
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'generate.php';
+    form.target = '_blank';
+
+    function add(name, value) {
+      const input = document.createElement('input');
+      input.type  = 'hidden';
+      input.name  = name;
+      input.value = value || '';
+      form.appendChild(input);
+    }
+
+    function radio(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : '';
+    }
+
+    // Step 1 — client details
+    add('companyName',    document.getElementById('companyName').value);
+    add('companyType',    document.getElementById('companyType').value);
+    add('cin',            document.getElementById('cin').value);
+    add('gst',            document.getElementById('gst').value);
+    add('address',        document.getElementById('address').value);
+    add('signatoryName',  document.getElementById('signatoryName').value);
+    add('designation',    document.getElementById('designation').value);
+    add('signatoryEmail', document.getElementById('signatoryEmail').value);
+    add('agreementDate',  document.getElementById('agreementDate').value);
+    add('bizDescription', document.getElementById('bizDescription').value);
+
+    // Step 2 — business brief
+    add('clientSaid', document.getElementById('clientSaid').value);
+    document.querySelectorAll('.trigger:checked').forEach(cb => {
+      add('triggers[]', cb.parentElement.textContent.trim());
+    });
+
+    // Step 3 — engagement type
+    add('engagementType', selectedEng || '');
+    add('duration',       document.getElementById('duration').value);
+    add('effectiveDate',  document.getElementById('effectiveDate').value);
+
+    // Step 4 — scope of work
+    add('objective',   document.getElementById('objective').value);
+    add('customScope', document.getElementById('customScope').value);
+    document.querySelectorAll('.scope:checked').forEach(cb => {
+      add('scope[]', cb.parentElement.textContent.trim());
+    });
+    add('cadence', radio('cadence'));
+
+    // Step 5 — fee & payment
+    add('currency',          radio('currency') || 'INR');
+    add('feeType',           radio('feeType'));
+    add('monthlyFee',        document.getElementById('monthlyFee').value);
+    add('retainerDuration',  document.getElementById('retainerDuration').value);
+    add('paymentTerms',      document.getElementById('paymentTerms').value);
+    add('advanceAmount',     document.getElementById('advanceAmount').value);
+    add('totalFee',          document.getElementById('totalFee').value);
+    add('fixedAdvance',      document.getElementById('fixedAdvance').value);
+    add('fixedPaymentTerms', document.getElementById('fixedPaymentTerms').value);
+    add('milestoneSchedule', document.getElementById('milestoneSchedule').value);
+    add('expenses',          radio('expenses'));
+
+    // Step 6 — output
+    add('outputType',  selectedOutput);
+    add('msgBody',     document.getElementById('msgBody').value);
+    add('senderName',  document.getElementById('senderName').value);
+    add('senderTitle', document.getElementById('senderTitle').value);
+    add('senderEmail', document.getElementById('senderEmail').value);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  }
 </script>
 </body>
 </html>
