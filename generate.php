@@ -329,7 +329,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .prop-hr { border: none; border-top: 1.5px solid #e8e8f0; margin: 0; }
 
     .prop-body { padding: 0 56px 56px; }
-    .prop-section { padding-top: 48px; }
+    .prop-section { padding-top: 48px; padding-bottom: 32px; }
     .prop-section + .prop-section { border-top: 1px solid #f0f0f5; }
 
     .sec-label {
@@ -388,7 +388,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .scope-cat li { font-size: .82rem; color: #3a3a5e; padding: 3px 0; border-bottom: 1px solid #f4f4f8; }
     .scope-cat li:last-child { border-bottom: none; }
     .scope-note  { font-style: italic; font-size: .84rem; color: #6b7280; margin-bottom: 8px; }
-    .scope-cycle { font-size: .84rem; color: #6b7280; }
+    .scope-cycle { font-size: .84rem; color: #6b7280; margin-bottom: 20px; }
     .cases { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
     .case-card { border: 1px solid #e8e8f0; border-radius: 6px; padding: 18px 18px 16px; }
     .case-name {
@@ -548,17 +548,17 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       .page { box-shadow: none; margin: 0; max-width: 100%; border-radius: 0; }
       .toolbar { display: none !important; }
 
-      /* Repeating page header: logo top-right */
+      /* Repeating page header: logo top-right, sitting 1cm from top of page */
       .print-header {
         display: flex; position: fixed;
-        top: 0; left: 0; right: 0; height: 1.1cm;
+        top: -1.5cm; left: 0; right: 0; height: 1.1cm;
         align-items: center; justify-content: flex-end;
         border-bottom: 1px solid #e2e8f0; background: #fff;
       }
-      /* Repeating page footer: address bottom-centre */
+      /* Repeating page footer: address bottom-centre, sitting 1cm from bottom of page */
       .print-footer {
         display: flex; position: fixed;
-        bottom: 0; left: 0; right: 0; height: 1cm;
+        bottom: -1.5cm; left: 0; right: 0; height: 1cm;
         align-items: center; justify-content: center;
         border-top: 1px solid #e2e8f0; background: #fff;
       }
@@ -567,9 +567,9 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       .ph-logo .voice { color: #C9972A; }
       .pf-text        { font-family: 'Segoe UI', sans-serif; font-size: .68rem; color: #6b7280; text-align: center; }
 
-      /* Push content clear of fixed header/footer */
-      .con-body    { padding-top: 1.4cm; padding-bottom: 1.3cm; padding-left: 0; padding-right: 0; }
-      .prop-hero   { padding-top: 1.4cm; padding-left: 0; padding-right: 0; }
+      /* Header/footer are in the margin area — no extra content padding needed */
+      .con-body    { padding-left: 0; padding-right: 0; }
+      .prop-hero   { padding-left: 0; padding-right: 0; }
       .prop-body   { padding-left: 0; padding-right: 0; }
       .prop-footer { padding-left: 0; padding-right: 0; }
 
@@ -593,7 +593,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
   <span class="ph-logo"><span class="cv">Core</span><span class="voice">Voice</span></span>
 </div>
 <div class="print-footer">
-  <span class="pf-text">Corebook Consulting Pvt. Ltd &nbsp;&middot;&nbsp; WeWork Vaishnavi Signature, Outer Ring Road, Bellandur, Bangalore 560103 &nbsp;&middot;&nbsp; corevoice.in</span>
+  <span class="pf-text">Corebook Consulting Pvt. Ltd &nbsp;&middot;&nbsp; C1, The Bangalore Local, Koramangala, Bangalore &nbsp;&middot;&nbsp; corevoice.in</span>
 </div>
 
 <?php if ($isProposal): ?>
