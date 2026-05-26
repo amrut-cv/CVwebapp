@@ -35,7 +35,7 @@ function db(): PDO {
     return $pdo;
 }
 
-// ── Send OTP email ───────────────────────────────────────────
+// ── Send OTP email via SMTP over SSL ────────────────────────
 function sendOtpEmail(string $to, string $otp): void {
     $subject = 'Your CoreVoice login code: ' . $otp;
     $body    = '<!DOCTYPE html><html><body style="margin:0;padding:32px;font-family:\'Segoe UI\',sans-serif;background:#f7f8fc">'
@@ -49,13 +49,51 @@ function sendOtpEmail(string $to, string $otp): void {
         . '</div>'
         . '<p style="margin:0;color:#9ca3af;font-size:.8rem;line-height:1.6">Expires in 10 minutes.<br>If you didn\'t request this, you can ignore it.</p>'
         . '</div></body></html>';
-    $headers = implode("\r\n", [
-        'From: CoreVoice <noreply@corevoice.in>',
-        'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        'X-Mailer: CoreVoice-Auth',
-    ]);
-    mail($to, $subject, $body, $headers);
+
+    $boundary = md5(uniqid());
+    $msg  = 'MIME-Version: 1.0' . "\r\n";
+    $msg .= 'Content-Type: text/html; charset=UTF-8' . "\r\n";
+    $msg .= 'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=' . "\r\n";
+    $msg .= 'From: CoreVoice <' . SMTP_USER . '>' . "\r\n";
+    $msg .= 'To: ' . $to . "\r\n";
+    $msg .= "\r\n" . $body;
+
+    $fp = @fsockopen(SMTP_HOST, SMTP_PORT, $errno, $errstr, 10);
+    if (!$fp) {
+        error_log("CVwebapp SMTP connect failed: $errstr ($errno)");
+        return;
+    }
+
+    $read = function() use ($fp): string { return fgets($fp, 512); };
+    $send = function(string $cmd) use ($fp): void { fwrite($fp, $cmd . "\r\n"); };
+
+    $read(); // 220 greeting
+    $send('EHLO ' . gethostname());
+    while (($line = $read()) !== false && substr($line, 3, 1) === '-'); // read multi-line EHLO
+
+    $send('AUTH LOGIN');
+    $read(); // 334
+    $send(base64_encode(SMTP_USER));
+    $read(); // 334
+    $send(base64_encode(SMTP_PASS));
+    $resp = $read(); // 235 or error
+
+    if (substr(trim($resp), 0, 3) !== '235') {
+        error_log('CVwebapp SMTP auth failed: ' . trim($resp));
+        fclose($fp);
+        return;
+    }
+
+    $send('MAIL FROM: <' . SMTP_USER . '>');
+    $read();
+    $send('RCPT TO: <' . $to . '>');
+    $read();
+    $send('DATA');
+    $read(); // 354
+    $send($msg . "\r\n.");
+    $read(); // 250
+    $send('QUIT');
+    fclose($fp);
 }
 
 // ── Already signed in → go to app ───────────────────────────
