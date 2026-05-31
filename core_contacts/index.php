@@ -285,9 +285,10 @@ function deselectAll() {
 function confirmDelete() {
   const n = document.querySelectorAll('.card-check:checked').length;
   if (!n) return;
-  const msg = <?= $show_junk ? 'true' : 'false' ?>
-    ? `Permanently delete ${n} contact${n>1?\'s\':\'\'} from junk? This cannot be undone.`
-    : `Move ${n} contact${n>1?\'s\':\'\'} to junk? They won\'t be imported again.`;
+  const isJunk = <?= $show_junk ? 'true' : 'false' ?>;
+  const msg = isJunk
+    ? `Permanently delete ${n} contact${n>1?'s':''} from junk? This cannot be undone.`
+    : `Move ${n} contact${n>1?'s':''} to junk? They won't be imported again.`;
   if (confirm(msg)) {
     document.getElementById('bulk-form').submit();
   }
