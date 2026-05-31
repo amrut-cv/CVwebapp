@@ -351,24 +351,14 @@ $nav_active = 'contacts_dupes';
             </div>
           </div>
           <div class="pair-actions">
-            <!-- Merge keeping A -->
+            <!-- Single merge button — auto-picks richer record as winner -->
             <form method="POST" style="display:inline">
               <input type="hidden" name="action" value="merge"/>
               <input type="hidden" name="link_id" value="<?= h($pair['link_id']) ?>"/>
-              <input type="hidden" name="winner_id" value="<?= h($pair['cluster_a']) ?>"/>
-              <input type="hidden" name="loser_id"  value="<?= h($pair['cluster_b']) ?>"/>
+              <input type="hidden" name="winner_id" value="<?= h($winner === 'a' ? $pair['cluster_a'] : $pair['cluster_b']) ?>"/>
+              <input type="hidden" name="loser_id"  value="<?= h($winner === 'a' ? $pair['cluster_b'] : $pair['cluster_a']) ?>"/>
               <button type="submit" class="btn btn-merge" style="font-size:.78rem;padding:6px 12px">
-                ← Keep <strong><?= h(explode(' ',$pair['name_a'])[0]) ?></strong>
-              </button>
-            </form>
-            <!-- Merge keeping B -->
-            <form method="POST" style="display:inline">
-              <input type="hidden" name="action" value="merge"/>
-              <input type="hidden" name="link_id" value="<?= h($pair['link_id']) ?>"/>
-              <input type="hidden" name="winner_id" value="<?= h($pair['cluster_b']) ?>"/>
-              <input type="hidden" name="loser_id"  value="<?= h($pair['cluster_a']) ?>"/>
-              <button type="submit" class="btn btn-merge" style="font-size:.78rem;padding:6px 12px">
-                Keep <strong><?= h(explode(' ',$pair['name_b'])[0]) ?></strong> →
+                ⇢ Merge
               </button>
             </form>
             <div class="spacer"></div>
