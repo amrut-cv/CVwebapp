@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoreVoice — Contract Builder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #1a1a2e;
+      --accent:      #e94560;
+      --accent-light:#fde8ec;
+      --bg:          #f7f8fc;
+      --white:       #ffffff;
+      --border:      #e2e5ef;
+      --text:        #1c1c2e;
+      --muted:       #6b7280;
+      --step-done:   #10b981;
+      --radius:      10px;
+      --shadow:      0 2px 16px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--brand);
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo       { font-size: 1.3rem; font-weight: 700; letter-spacing: .5px; }
+    header .logo span  { color: var(--accent); }
+    header .sep        { opacity: .3; }
+    header .sub        { font-size: .82rem; opacity: .55; }
+    header .header-actions { margin-left: auto; display: flex; gap: 8px; }
+    .btn-header {
+      background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 6px; padding: 6px 14px; font-size: .78rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: background .15s;
+    }
+    .btn-header:hover { background: rgba(255,255,255,.22); }
+    .btn-header.accent { background: var(--accent); border-color: var(--accent); }
+    .btn-header.accent:hover { opacity: .88; }
+
+    /* Drafts panel */
+    .drafts-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.35);
+      z-index: 1000; display: flex; justify-content: flex-end;
+    }
+    .drafts-overlay.hidden { display: none; }
+    .drafts-drawer {
+      width: 380px; max-width: 100%; background: #fff;
+      height: 100%; display: flex; flex-direction: column;
+      box-shadow: -4px 0 24px rgba(0,0,0,.12);
+    }
+    .drafts-drawer-head {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--brand); color: #fff;
+    }
+    .drafts-drawer-head span { font-weight: 700; font-size: .95rem; }
+    .drafts-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; opacity: .7; }
+    .drafts-close:hover { opacity: 1; }
+    .drafts-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .draft-item {
+      border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+      margin-bottom: 10px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .draft-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .draft-item-info { flex: 1; min-width: 0; }
+    .draft-item-name { font-weight: 600; font-size: .88rem; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .draft-item-date { font-size: .75rem; color: var(--muted); }
+    .draft-delete {
+      background: none; border: none; color: #d1d5db; font-size: 1rem;
+      cursor: pointer; padding: 4px; border-radius: 4px; flex-shrink: 0;
+    }
+    .draft-delete:hover { color: #ef4444; background: #fef2f2; }
+    .drafts-empty { text-align: center; padding: 48px 24px; color: var(--muted); font-size: .88rem; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: #1a1a2e; color: #fff; padding: 10px 20px;
+      border-radius: 8px; font-size: .83rem; font-weight: 600;
+      z-index: 2000; opacity: 0; transition: opacity .2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── Layout ── */
+    .wrapper { max-width: 860px; margin: 40px auto 80px; padding: 0 16px; }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      position: relative;
+    }
+    .stepper::before {
+      content: '';
+      position: absolute;
+      top: 18px; left: 0; right: 0;
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .step-item {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 6px; flex: 1; position: relative; z-index: 1;
+      cursor: pointer;
+    }
+    .step-item:hover .step-circle { border-color: var(--accent); color: var(--accent); }
+    .step-item.active:hover .step-circle,
+    .step-item.done:hover   .step-circle { opacity: .85; }
+    .step-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--white); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 600; color: var(--muted);
+      transition: all .25s;
+    }
+    .step-item.active .step-circle { background: var(--accent); border-color: var(--accent); color: white; }
+    .step-item.done   .step-circle { background: var(--step-done); border-color: var(--step-done); color: white; }
+    .step-label { font-size: .72rem; color: var(--muted); text-align: center; max-width: 80px; line-height: 1.3; }
+    .step-item.active .step-label { color: var(--accent); font-weight: 600; }
+    .step-item.done   .step-label { color: var(--step-done); }
+
+    /* ── Card ── */
+    .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 36px 40px; }
+    .card-title    { font-size: 1.35rem; font-weight: 700; color: var(--brand); margin-bottom: 6px; }
+    .card-subtitle { font-size: .9rem; color: var(--muted); margin-bottom: 28px; }
+
+    /* ── Form elements ── */
+    .field-group        { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .field-group.single { grid-template-columns: 1fr; }
+
+    .field            { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+    .field label      { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .field label .req { color: var(--accent); margin-left: 2px; }
+    .field input, .field select, .field textarea {
+      border: 1.5px solid var(--border); border-radius: 7px;
+      padding: 10px 13px; font-size: .9rem; color: var(--text);
+      outline: none; transition: border .2s; background: white; font-family: inherit;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { resize: vertical; min-height: 90px; }
+    .field .hint    { font-size: .75rem; color: var(--muted); }
+
+    /* ── Section head ── */
+    .section-head {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted);
+      margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Checkbox grid ── */
+    .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 4px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 9px;
+      padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+      transition: border .2s, background .2s;
+      font-size: .85rem; line-height: 1.35;
+    }
+    .check-item:hover { border-color: var(--accent); background: var(--accent-light); }
+    .check-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+
+    /* ── Engagement cards ── */
+    .eng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
+    .eng-card {
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 16px; cursor: pointer; transition: all .2s; position: relative;
+    }
+    .eng-card:hover    { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+    .eng-card.selected { border-color: var(--accent); background: var(--accent-light); }
+    .eng-card.suggested { border-color: #7c3aed; background: #f5f3ff; }
+    .eng-card .eng-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .eng-card .badge {
+      display: inline-block; font-size: .67rem; font-weight: 600;
+      padding: 2px 7px; border-radius: 20px;
+      background: #e0e7ff; color: #3730a3;
+    }
+    .eng-card .badge.suggested-badge { background: #ede9fe; color: #7c3aed; }
+    .eng-card .eng-title { font-weight: 700; font-size: .9rem; margin-bottom: 6px; }
+    .eng-card .eng-desc  { font-size: .78rem; color: var(--muted); line-height: 1.4; }
+    .eng-card .eng-triggers { font-size: .72rem; color: var(--muted); margin-top: 8px; font-style: italic; }
+    .eng-card.selected::after {
+      content: '✓'; position: absolute; top: 10px; right: 12px;
+      color: var(--accent); font-weight: 700;
+    }
+
+    /* ── Output cards ── */
+    .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+    .output-card {
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 22px; cursor: pointer; transition: all .2s;
+    }
+    .output-card:hover    { border-color: var(--accent); }
+    .output-card.selected { border-color: var(--accent); background: var(--accent-light); }
+    .output-card .out-tag  { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }
+    .output-card .out-title{ font-weight: 700; font-size: 1rem; margin-bottom: 6px; }
+    .output-card .out-desc { font-size: .8rem; color: var(--muted); line-height: 1.45; margin-bottom: 14px; }
+    .output-card .out-btn  {
+      display: inline-block; padding: 9px 18px;
+      background: var(--accent); color: white;
+      border-radius: 7px; font-size: .82rem; font-weight: 600;
+      border: none; cursor: pointer; font-family: inherit;
+    }
+    .output-card.selected .out-btn { background: var(--brand); }
+
+    /* ── Radio pills ── */
+    .radio-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .radio-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 16px; border: 1.5px solid var(--border);
+      border-radius: 30px; cursor: pointer;
+      font-size: .85rem; font-weight: 500; transition: all .2s;
+    }
+    .radio-pill:hover  { border-color: var(--accent); }
+    .radio-pill input  { accent-color: var(--accent); }
+    .radio-pill.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+    /* ── Message box ── */
+    .msg-box { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; background: #fafafa; margin-bottom: 20px; }
+    .msg-box textarea { width: 100%; border: none; background: transparent; font-size: .9rem; color: var(--text); resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.65; }
+    .msg-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .msg-meta input { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: .82rem; flex: 1; min-width: 140px; outline: none; }
+    .msg-meta input:focus { border-color: var(--accent); }
+
+    /* ── Nav row ── */
+    .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+    .btn         { padding: 11px 26px; border-radius: 8px; font-size: .9rem; font-weight: 600; cursor: pointer; border: none; transition: all .2s; font-family: inherit; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #c73652; }
+    .btn-secondary { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost { background: none; border: none; color: var(--accent); font-size: .83rem; cursor: pointer; padding: 6px 0; text-decoration: underline; font-family: inherit; }
+
+    /* ── Utility ── */
+    .hidden { display: none !important; }
+    .mt-4   { margin-top: 16px; }
+    .text-muted { color: var(--muted); font-size: .83rem; }
+
+    /* ── Footer ── */
+    .page-footer { text-align: center; margin-top: 48px; font-size: .75rem; color: var(--muted); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .card { padding: 24px 18px; }
+      .field-group { grid-template-columns: 1fr; }
+      .output-grid { grid-template-columns: 1fr; }
+      .stepper { gap: 4px; }
+      .step-label { font-size: .65rem; max-width: 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Core<span>Voice</span></div>
+  <span class="sep">·</span>
+  <span class="sub">Contract builder</span>
+  <div class="header-actions">
+    <button class="btn-header" onclick="openDraftsPanel()">Files</button>
+    <button class="btn-header accent" onclick="saveDraft()">Save</button>
+  </div>
+</header>
+
+<!-- Drafts panel -->
+<div class="drafts-overlay hidden" id="draftsOverlay" onclick="if(event.target===this)closeDraftsPanel()">
+  <div class="drafts-drawer">
+    <div class="drafts-drawer-head">
+      <span>Files</span>
+      <button class="drafts-close" onclick="closeDraftsPanel()">✕</button>
+    </div>
+    <div class="drafts-body" id="draftsList"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div class="wrapper">
+
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="step-item active" data-step="1" onclick="goTo(1)"><div class="step-circle">1</div><div class="step-label">Client details</div></div>
+    <div class="step-item"        data-step="2" onclick="goTo(2)"><div class="step-circle">2</div><div class="step-label">Business brief</div></div>
+    <div class="step-item"        data-step="3" onclick="goTo(3)"><div class="step-circle">3</div><div class="step-label">Engagement type</div></div>
+    <div class="step-item"        data-step="4" onclick="goTo(4)"><div class="step-circle">4</div><div class="step-label">Scope of work</div></div>
+    <div class="step-item"        data-step="5" onclick="goTo(5)"><div class="step-circle">5</div><div class="step-label">Fee &amp; payment</div></div>
+    <div class="step-item"        data-step="6" onclick="goTo(6)"><div class="step-circle">6</div><div class="step-label">Generate</div></div>
+  </div>
+
+  <!-- ═══════════ STEP 1 — Client Details ═══════════ -->
+  <div class="card" id="step1">
+    <div class="card-title">Who are we working with?</div>
+    <div class="card-subtitle">Basic company and signatory details for the agreement.</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Company legal name <span class="req">*</span></label>
+        <input type="text" id="companyName" placeholder="e.g. Acme Technologies Pvt Ltd" />
+      </div>
+      <div class="field">
+        <label>Company type</label>
+        <select id="companyType">
+          <option value="">Select type</option>
+          <option>Private Limited</option>
+          <option>LLP</option>
+          <option>Inc (Delaware)</option>
+          <option>Ltd (UK)</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>CIN / Registration no.</label>
+        <input type="text" id="cin" placeholder="e.g. U72900MH2018PTC123456" />
+      </div>
+      <div class="field">
+        <label>GST number</label>
+        <input type="text" id="gst" placeholder="e.g. 27AADCB2230M1ZT" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Registered address <span class="req">*</span></label>
+      <textarea id="address" placeholder="Full registered address of the company"></textarea>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Signatory name <span class="req">*</span></label>
+        <input type="text" id="signatoryName" placeholder="Full name" />
+      </div>
+      <div class="field">
+        <label>Designation <span class="req">*</span></label>
+        <input type="text" id="designation" placeholder="e.g. CEO, Director" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Signatory email</label>
+        <input type="email" id="signatoryEmail" placeholder="signatory@company.com" />
+      </div>
+      <div class="field">
+        <label>Agreement date <span class="req">*</span></label>
+        <input type="date" id="agreementDate" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Client's business — one line <span class="req">*</span></label>
+      <input type="text" id="bizDescription" placeholder="e.g. builds AI-powered compliance tools for mid-market financial firms" />
+      <span class="hint">Goes into the WHEREAS clause. Start with a verb.</span>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-ghost" onclick="fillSampleData()">⚡ Fill with sample data</button>
+      <button class="btn btn-primary" onclick="goTo(2)">Next: Business brief →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 2 — Business Brief ═══════════ -->
+  <div class="card hidden" id="step2">
+    <div class="card-title">What did the client say?</div>
+    <div class="card-subtitle">Capture the conversation. This shapes the engagement recommendation and appears in the proposal.</div>
+
+    <div class="field">
+      <label>What did the client say? <span class="req">*</span></label>
+      <textarea id="clientSaid" placeholder="A few lines is fine. This will appear in the proposal under 'What we heard from you.'" style="min-height:120px;"></textarea>
+    </div>
+
+    <div class="section-head">Team &amp; capacity</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="No marketing function in place" /> No marketing function in place</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Founding team doing marketing themselves" /> Founding team doing marketing themselves</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Post-fundraise, ready to scale output" /> Post-fundraise, ready to scale output</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="One goal, not ongoing work" /> One goal, not ongoing work</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Budget and deadline already defined" /> Budget and deadline already defined</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Specific metric needs to move" /> Specific metric needs to move</label>
+    </div>
+
+    <div class="section-head">Content &amp; visibility</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="Need to reduce friction in sales" /> Need to reduce friction in sales</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Long product cycle, need visibility" /> Long product cycle, need visibility</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Want to own category narrative" /> Want to own category narrative</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Product is hard to explain" /> Product is hard to explain</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="No video assets currently exist" /> No video assets currently exist</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Sales team lacks supporting material" /> Sales team lacks supporting material</label>
+    </div>
+
+    <div class="section-head">Brand &amp; GTM</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="First time going to market" /> First time going to market</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="New product line launching soon" /> New product line launching soon</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Post-pivot, need fresh positioning" /> Post-pivot, need fresh positioning</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Sales needs a renewed vibe" /> Sales needs a renewed vibe</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Entering new market or segment" /> Entering new market or segment</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Preparing for fundraise or event" /> Preparing for fundraise or event</label>
+    </div>
+
+    <div class="section-head">Fundraising</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="Round opening in 1–3 months" /> Round opening in 1–3 months</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Pitch materials outdated or inconsistent" /> Pitch materials outdated or inconsistent</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="New investors seeing you first time" /> New investors seeing you first time</label>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goTo(3)">Next: Engagement type →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 3 — Engagement Type ═══════════ -->
+  <div class="card hidden" id="step3">
+    <div class="card-title">Select the type of engagement.</div>
+    <div class="card-subtitle">Services will be pre-selected based on your choice.</div>
+
+    <div class="eng-grid">
+
+      <div class="eng-card" data-eng="full-retainer" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Ongoing</span></div>
+        <div class="eng-title">Full-stack retainer</div>
+        <div class="eng-desc">Strategy, content, and marketing ops — all three running together on an ongoing basis. We operate as an external marketing team, shared across functions.</div>
+        <div class="eng-triggers">No marketing function in place · Founding team doing marketing themselves · Post-fundraise, ready to scale output</div>
+      </div>
+
+      <div class="eng-card" data-eng="outcome-retainer" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Time-boxed</span></div>
+        <div class="eng-title">Outcome-focused retainer</div>
+        <div class="eng-desc">A time-boxed engagement built around a specific goal. We define the target and the window together, then design and run whatever's needed to get there.</div>
+        <div class="eng-triggers">Specific metric needs to move · Budget and deadline already defined · One goal, not ongoing work</div>
+      </div>
+
+      <div class="eng-card" data-eng="content-retainer" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Ongoing</span><span class="badge">Project · 1 quarter</span></div>
+        <div class="eng-title">Content retainer</div>
+        <div class="eng-desc">Ongoing production of content assets — video, written, founder-led, or AI-optimised. Built to accumulate and compound over time.</div>
+        <div class="eng-triggers">Need to reduce friction in sales · Long product cycle, need visibility · Want to own category narrative</div>
+      </div>
+
+      <div class="eng-card" data-eng="new-gtm" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Project</span><span class="badge">1 quarter</span></div>
+        <div class="eng-title">New product GTM</div>
+        <div class="eng-desc">Positioning, identity, website, and a full sales kit — deck, video, technical brochure. Optional press outreach. For companies launching for the first time or after a pivot.</div>
+        <div class="eng-triggers">First time going to market · New product line launching soon · Post-pivot, need fresh positioning</div>
+      </div>
+
+      <div class="eng-card" data-eng="gtm-relaunch" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Project</span><span class="badge">1 quarter</span></div>
+        <div class="eng-title">GTM relaunch</div>
+        <div class="eng-desc">Visual refresh of existing brand artefacts, updated website, updated sales kit — deck, video, technical brochure. Optional booth redesign and press outreach.</div>
+        <div class="eng-triggers">Sales needs a renewed vibe · Entering new market or segment · Preparing for fundraise or event</div>
+      </div>
+
+      <div class="eng-card" data-eng="fundraising" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Project</span><span class="badge">1 quarter</span></div>
+        <div class="eng-title">Fundraising comms</div>
+        <div class="eng-desc">Narrative clean-up, pitch deck, and website tightening for startups heading into a funding round.</div>
+        <div class="eng-triggers">Round opening in 1–3 months · Pitch materials outdated or inconsistent · New investors seeing you first time</div>
+      </div>
+
+      <div class="eng-card" data-eng="sales-video" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Project</span></div>
+        <div class="eng-title">Sales video series</div>
+        <div class="eng-desc">3–5 videos — product explainers, testimonials, or use-case demos — built specifically for sales enablement.</div>
+        <div class="eng-triggers">Product is hard to explain · No video assets currently exist · Sales team lacks supporting material</div>
+      </div>
+
+      <div class="eng-card" data-eng="custom" onclick="selectEng(this)">
+        <div class="eng-badges"><span class="badge">Custom</span><span class="badge">Flexible</span></div>
+        <div class="eng-title">Custom scope</div>
+        <div class="eng-desc">Define your own scope from scratch.</div>
+      </div>
+
+    </div>
+
+    <div class="field-group mt-4">
+      <div class="field">
+        <label>Duration <span class="req">*</span></label>
+        <select id="duration">
+          <option value="">Select duration</option>
+          <option>1 month</option>
+          <option>2 months</option>
+          <option>3 months</option>
+          <option>6 months</option>
+          <option>12 months</option>
+          <option>Ongoing</option>
+          <option>Custom</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Effective from</label>
+        <input type="date" id="effectiveDate" />
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goTo(4)">Next: Scope of work →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 4 — Scope of Work ═══════════ -->
+  <div class="card hidden" id="step4">
+    <div class="card-title">Scope of work</div>
+    <div class="card-subtitle">Set the objective and select services for Annexure A.</div>
+
+    <div class="field">
+      <label>Marketing objective <span class="req">*</span></label>
+      <textarea id="objective" placeholder="What does the client want to achieve?"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Custom scope note <span class="text-muted">(optional)</span></label>
+      <input type="text" id="customScope" placeholder="Use this if the scope doesn't fit neatly into the checkboxes below" />
+    </div>
+
+    <div class="section-head">Strategy</div>
+    <div class="check-grid" id="strategyChecks">
+      <label class="check-item"><input type="checkbox" class="scope" value="Positioning &amp; communication" /> Positioning &amp; communication</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Marketing strategy" /> Marketing strategy</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="CMO office — goals &amp; reporting" /> CMO office — goals &amp; reporting</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="GTM &amp; launch strategy" /> GTM &amp; launch strategy</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Customer &amp; competitive research" /> Customer &amp; competitive research</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Budget &amp; resource planning" /> Budget &amp; resource planning</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Growth experiment framework" /> Growth experiment framework</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Investor narrative framework" /> Investor narrative framework</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Content &amp; editorial strategy" /> Content &amp; editorial strategy</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Founder personal brand strategy" /> Founder personal brand strategy</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="SEO, AEO &amp; AI visibility strategy" /> SEO, AEO &amp; AI visibility strategy</label>
+    </div>
+
+    <div class="section-head">Content</div>
+    <div class="check-grid" id="contentChecks">
+      <label class="check-item"><input type="checkbox" class="scope" value="Website design" /> Website design</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Logo &amp; visual system" /> Logo &amp; visual system</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Brand guide" /> Brand guide</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Social posts — text, image, carousels" /> Social posts — text, image, carousels</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Reels, shorts &amp; social video" /> Reels, shorts &amp; social video</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Long-form video" /> Long-form video</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="SEO blogs &amp; newsletters" /> SEO blogs &amp; newsletters</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Ad creatives — static &amp; video" /> Ad creatives — static &amp; video</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Sales decks &amp; presentations" /> Sales decks &amp; presentations</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Testimonial &amp; case study videos" /> Testimonial &amp; case study videos</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Product explainers &amp; guides" /> Product explainers &amp; guides</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Event &amp; booth collateral" /> Event &amp; booth collateral</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Pitch deck" /> Pitch deck</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="One-pager &amp; exec summary" /> One-pager &amp; exec summary</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Thought leadership articles" /> Thought leadership articles</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="AI knowledge hub build" /> AI knowledge hub build</label>
+    </div>
+
+    <div class="section-head">Marketing ops</div>
+    <div class="check-grid" id="opsChecks">
+      <label class="check-item"><input type="checkbox" class="scope" value="Social media management" /> Social media management</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Paid ads — Google, Meta, LinkedIn" /> Paid ads — Google, Meta, LinkedIn</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="SEO + AEO execution" /> SEO + AEO execution</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="ABM — account research &amp; outreach" /> ABM — account research &amp; outreach</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Campaign &amp; event execution" /> Campaign &amp; event execution</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Event planning &amp; marketing" /> Event planning &amp; marketing</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Community &amp; audience building" /> Community &amp; audience building</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Stakeholder communications" /> Stakeholder communications</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Marketing automation &amp; CRM" /> Marketing automation &amp; CRM</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Performance tracking &amp; dashboards" /> Performance tracking &amp; dashboards</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="Reporting &amp; dashboard setup" /> Reporting &amp; dashboard setup</label>
+      <label class="check-item"><input type="checkbox" class="scope" value="AEO site architecture &amp; schema" /> AEO site architecture &amp; schema</label>
+    </div>
+
+    <div class="section-head">Governance cadence</div>
+    <div class="radio-group" id="cadenceGroup">
+      <label class="radio-pill" onclick="selectPill(this, 'cadenceGroup')"><input type="radio" name="cadence" value="weekly" /> Weekly</label>
+      <label class="radio-pill" onclick="selectPill(this, 'cadenceGroup')"><input type="radio" name="cadence" value="monthly" /> Monthly review</label>
+      <label class="radio-pill" onclick="selectPill(this, 'cadenceGroup')"><input type="radio" name="cadence" value="quarterly" /> Quarterly review</label>
+    </div>
+
+    <div class="field">
+      <label>Additional scope notes <span class="text-muted">(optional)</span></label>
+      <input type="text" id="additionalScope" placeholder="Any exclusions, assumptions, or nuances" />
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(3)">← Back</button>
+      <button class="btn btn-primary" onclick="goTo(5)">Next: Fee &amp; payment →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 5 — Fee & Payment ═══════════ -->
+  <div class="card hidden" id="step5">
+    <div class="card-title">Fee &amp; payment</div>
+    <div class="card-subtitle">This will populate Annexure B.</div>
+
+    <div class="section-head">Currency</div>
+    <div class="radio-group" id="currencyGroup">
+      <label class="radio-pill active" onclick="selectPill(this, 'currencyGroup')"><input type="radio" name="currency" value="INR" checked /> ₹ INR</label>
+      <label class="radio-pill"        onclick="selectPill(this, 'currencyGroup')"><input type="radio" name="currency" value="USD" /> $ USD</label>
+    </div>
+
+    <div class="section-head">Fee structure</div>
+    <div class="radio-group" id="feeGroup">
+      <label class="radio-pill" onclick="selectPill(this, 'feeGroup'); showFeeFields('retainer')"><input type="radio" name="feeType" value="retainer" /> Monthly retainer</label>
+      <label class="radio-pill" onclick="selectPill(this, 'feeGroup'); showFeeFields('fixed')"><input type="radio" name="feeType" value="fixed" /> Fixed project fee</label>
+      <label class="radio-pill" onclick="selectPill(this, 'feeGroup'); showFeeFields('milestone')"><input type="radio" name="feeType" value="milestone" /> Milestone-based</label>
+    </div>
+
+    <!-- Monthly retainer -->
+    <div id="retainerFields" class="hidden">
+      <div class="field-group">
+        <div class="field">
+          <label>Monthly fee <span class="req">*</span></label>
+          <input type="number" id="monthlyFee" placeholder="excl. GST" />
+        </div>
+        <div class="field">
+          <label>Duration</label>
+          <select id="retainerDuration">
+            <option value="">Select</option>
+            <option>3 months</option>
+            <option>6 months</option>
+            <option>12 months</option>
+            <option>Ongoing</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Payment terms</label>
+        <div class="radio-group" id="retainerTermsGroup">
+          <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Net 15" /> Net 15</label>
+          <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Net 30" /> Net 30</label>
+          <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Advance" /> Advance</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fixed project fee -->
+    <div id="fixedFields" class="hidden">
+      <div class="field-group">
+        <div class="field">
+          <label>Total fixed fee <span class="req">*</span></label>
+          <input type="number" id="totalFee" placeholder="excl. GST" />
+        </div>
+        <div class="field">
+          <label>Advance amount</label>
+          <input type="number" id="fixedAdvance" placeholder="e.g. 250000" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Payment terms</label>
+        <div class="radio-group" id="fixedTermsGroup">
+          <label class="radio-pill" onclick="selectPill(this,'fixedTermsGroup')"><input type="radio" name="fixedTerms" value="Net 15" /> Net 15</label>
+          <label class="radio-pill" onclick="selectPill(this,'fixedTermsGroup')"><input type="radio" name="fixedTerms" value="Net 30" /> Net 30</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milestone-based -->
+    <div id="milestoneFields" class="hidden">
+      <div class="field">
+        <label>Milestone payment schedule <span class="req">*</span></label>
+        <textarea id="milestoneSchedule" placeholder="e.g.&#10;Milestone 1 — Kickoff &amp; strategy: ₹1,00,000&#10;Milestone 2 — Mid-delivery review: ₹1,50,000&#10;Milestone 3 — Final delivery: ₹1,00,000"></textarea>
+      </div>
+    </div>
+
+    <div class="section-head">Out-of-pocket expenses</div>
+    <div class="radio-group" id="expenseGroup">
+      <label class="radio-pill" onclick="selectPill(this, 'expenseGroup')"><input type="radio" name="expenses" value="preapproved" /> Pre-approved and submitted for reimbursement</label>
+      <label class="radio-pill" onclick="selectPill(this, 'expenseGroup')"><input type="radio" name="expenses" value="casebycasetools" /> AI/SaaS tools not reimbursed; media/travel pre-approved case-by-case</label>
+      <label class="radio-pill" onclick="selectPill(this, 'expenseGroup')"><input type="radio" name="expenses" value="none" /> No OPE reimbursement</label>
+    </div>
+
+    <div class="field">
+      <label>Additional payment notes <span class="text-muted">(optional)</span></label>
+      <input type="text" id="paymentNotes" placeholder="Any additional payment conditions or notes" />
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(4)">← Back</button>
+      <button class="btn btn-primary" onclick="goTo(6)">Next: Generate →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STEP 6 — Generate Document ═══════════ -->
+  <div class="card hidden" id="step6">
+    <div class="card-title">Generate document</div>
+    <div class="card-subtitle">Choose what you'd like to produce. Both use the same inputs you've just filled in.</div>
+
+    <div class="section-head">Message from CV team</div>
+    <p class="text-muted" style="margin-bottom:12px;">Editable — appears at the top of the proposal.</p>
+    <div class="msg-box">
+      <textarea id="msgBody">Hi [first name],
+
+Thanks for the conversation — it's clear you're building something that matters, and we'd love to be part of it.
+
+What we do best is take the marketing off your plate in a way that actually feels like an extension of your team, not an agency relationship.
+
+This proposal outlines what we'd recommend, what's in scope, and what it costs. It's a starting point — if anything needs adjusting, just say so.</textarea>
+      <div class="msg-meta">
+        <input type="text" id="senderName" placeholder="Sender name" />
+        <input type="text" id="senderTitle" placeholder="Sender title" />
+        <input type="email" id="senderEmail" placeholder="Sender email" />
+      </div>
+    </div>
+
+    <div class="output-grid">
+      <div class="output-card" onclick="selectOutput(this, 'proposal')">
+        <div class="out-tag">Send before signing</div>
+        <div class="out-title">Proposal</div>
+        <div class="out-desc">Warm, conversational. Personal note, recommended engagement, scope, fee, and next steps. No legal language.</div>
+        <button class="out-btn" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'proposal'); generateDocument()">Generate proposal →</button>
+      </div>
+      <div class="output-card" onclick="selectOutput(this, 'contract')">
+        <div class="out-tag">Ready to sign</div>
+        <div class="out-title">Contract</div>
+        <div class="out-desc">Full legal agreement with all clauses, Annexure A scope, Annexure B fee terms, and Annexure C NDA.</div>
+        <button class="out-btn" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'contract'); generateDocument()">Generate contract →</button>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(5)">← Back to fee</button>
+      <div></div>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<footer class="page-footer">CoreVoice &middot; Corebook Consulting Pvt Ltd</footer>
+
+<script>
+  let currentStep = 1;
+  let selectedEng    = null;
+  let selectedOutput = null;
+
+  /* ── Trigger → engagement mapping ───────── */
+  const TRIGGER_MAP = {
+    'No marketing function in place':           'full-retainer',
+    'Founding team doing marketing themselves':  'full-retainer',
+    'Post-fundraise, ready to scale output':     'full-retainer',
+    'Specific metric needs to move':             'outcome-retainer',
+    'Budget and deadline already defined':       'outcome-retainer',
+    'One goal, not ongoing work':                'outcome-retainer',
+    'Need to reduce friction in sales':          'content-retainer',
+    'Long product cycle, need visibility':       'content-retainer',
+    'Want to own category narrative':            'content-retainer',
+    'Product is hard to explain':                'sales-video',
+    'No video assets currently exist':           'sales-video',
+    'Sales team lacks supporting material':      'sales-video',
+    'First time going to market':                'new-gtm',
+    'New product line launching soon':           'new-gtm',
+    'Post-pivot, need fresh positioning':        'new-gtm',
+    'Sales needs a renewed vibe':                'gtm-relaunch',
+    'Entering new market or segment':            'gtm-relaunch',
+    'Preparing for fundraise or event':          'gtm-relaunch',
+    'Round opening in 1–3 months':          'fundraising',
+    'Pitch materials outdated or inconsistent':  'fundraising',
+    'New investors seeing you first time':       'fundraising',
+  };
+
+  /* ── Scope presets per engagement type ───── */
+  const SCOPE_PRESETS = {
+    'full-retainer': [
+      'Positioning & communication', 'Marketing strategy', 'CMO office — goals & reporting', 'Content & editorial strategy',
+      'Social posts — text, image, carousels', 'SEO blogs & newsletters',
+      'Social media management', 'Performance tracking & dashboards', 'Reporting & dashboard setup'
+    ],
+    'outcome-retainer': [
+      'Marketing strategy', 'CMO office — goals & reporting', 'Growth experiment framework',
+      'Performance tracking & dashboards', 'Reporting & dashboard setup'
+    ],
+    'content-retainer': [
+      'Content & editorial strategy',
+      'Social posts — text, image, carousels', 'Reels, shorts & social video', 'SEO blogs & newsletters',
+      'Social media management'
+    ],
+    'new-gtm': [
+      'Positioning & communication', 'GTM & launch strategy',
+      'Website design', 'Logo & visual system', 'Brand guide', 'Sales decks & presentations', 'Product explainers & guides'
+    ],
+    'gtm-relaunch': [
+      'Positioning & communication', 'GTM & launch strategy',
+      'Website design', 'Brand guide', 'Sales decks & presentations'
+    ],
+    'fundraising': [
+      'Investor narrative framework',
+      'Pitch deck', 'One-pager & exec summary'
+    ],
+    'sales-video': [
+      'Reels, shorts & social video', 'Long-form video', 'Testimonial & case study videos', 'Product explainers & guides'
+    ],
+    'custom': []
+  };
+
+  /* ── Navigation ──────────────────────────── */
+  function goTo(step) {
+    document.getElementById('step' + currentStep).classList.add('hidden');
+    document.getElementById('step' + step).classList.remove('hidden');
+
+    document.querySelectorAll('.step-item').forEach(item => {
+      const s = parseInt(item.dataset.step);
+      item.classList.remove('active', 'done');
+      if (s < step) item.classList.add('done');
+      if (s === step) item.classList.add('active');
+    });
+
+    if (step === 3) highlightSuggested();
+
+    currentStep = step;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ── Highlight suggested engagement types ── */
+  function highlightSuggested() {
+    const counts = {};
+    document.querySelectorAll('.trigger:checked').forEach(cb => {
+      const eng = TRIGGER_MAP[cb.value];
+      if (eng) counts[eng] = (counts[eng] || 0) + 1;
+    });
+
+    const maxCount = Math.max(0, ...Object.values(counts));
+
+    document.querySelectorAll('.eng-card').forEach(card => {
+      card.classList.remove('suggested');
+      // Remove any existing suggested badge
+      const existing = card.querySelector('.suggested-badge');
+      if (existing) existing.remove();
+
+      if (!card.classList.contains('selected') && maxCount > 0 && counts[card.dataset.eng] === maxCount) {
+        card.classList.add('suggested');
+        const badge = document.createElement('span');
+        badge.className = 'badge suggested-badge';
+        badge.textContent = '✦ Suggested';
+        card.querySelector('.eng-badges').prepend(badge);
+      }
+    });
+  }
+
+  /* ── Select engagement card ──────────────── */
+  function selectEng(card) {
+    document.querySelectorAll('.eng-card').forEach(c => {
+      c.classList.remove('selected');
+      const sb = c.querySelector('.suggested-badge');
+      if (sb && !c.classList.contains('suggested')) sb.remove();
+    });
+    card.classList.add('selected');
+    selectedEng = card.dataset.eng;
+
+    // Pre-select scope checkboxes
+    const preset = SCOPE_PRESETS[selectedEng] || [];
+    document.querySelectorAll('.scope').forEach(cb => {
+      cb.checked = preset.includes(cb.value);
+    });
+  }
+
+  /* ── Select output card ──────────────────── */
+  function selectOutput(card, type) {
+    document.querySelectorAll('.output-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedOutput = type;
+  }
+
+  /* ── Radio pill styling ──────────────────── */
+  function selectPill(pill, groupId) {
+    document.getElementById(groupId).querySelectorAll('.radio-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+  }
+
+  /* ── Fee structure toggle ────────────────── */
+  function showFeeFields(type) {
+    ['retainerFields', 'fixedFields', 'milestoneFields'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+    document.getElementById(type + 'Fields').classList.remove('hidden');
+  }
+
+  /* ── Sample data ─────────────────────────── */
+  function setPill(radioName, value) {
+    const radio = document.querySelector(`input[name="${radioName}"][value="${value}"]`);
+    if (!radio) return;
+    radio.checked = true;
+    const pill  = radio.closest('.radio-pill');
+    const group = pill.parentElement;
+    group.querySelectorAll('.radio-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+  }
+
+  function fillSampleData() {
+    // ── Step 1 ──
+    document.getElementById('companyName').value    = 'Nexora Health Technologies Pvt Ltd';
+    document.getElementById('companyType').value    = 'Private Limited';
+    document.getElementById('cin').value            = 'U85110KA2021PTC234567';
+    document.getElementById('gst').value            = '29AACCN1234M1Z5';
+    document.getElementById('address').value        = '42, HSR Layout Sector 6, Bengaluru, Karnataka 560102';
+    document.getElementById('signatoryName').value  = 'Priya Venkataraman';
+    document.getElementById('designation').value    = 'Co-Founder & CEO';
+    document.getElementById('signatoryEmail').value = 'priya@nexorahealth.in';
+    document.getElementById('agreementDate').value  = '2026-06-01';
+    document.getElementById('bizDescription').value = 'builds AI-powered wellness programs for enterprise HR teams';
+
+    // ── Step 2 ──
+    document.getElementById('clientSaid').value =
+      "We've been growing steadily but our marketing is entirely word-of-mouth. " +
+      "The founding team is spending too much time on content and we need someone to take it off our plate. " +
+      "We have a real product and real customers — we just need the world to know about it.";
+    ['No marketing function in place',
+     'Founding team doing marketing themselves',
+     'Post-fundraise, ready to scale output',
+     'Long product cycle, need visibility',
+     'Want to own category narrative'
+    ].forEach(val => {
+      const cb = document.querySelector(`.trigger[value="${val}"]`);
+      if (cb) cb.checked = true;
+    });
+
+    // ── Step 3 ──
+    const engCard = document.querySelector('[data-eng="full-retainer"]');
+    if (engCard) selectEng(engCard);
+    document.getElementById('duration').value      = '6 months';
+    document.getElementById('effectiveDate').value = '2026-06-15';
+
+    // ── Step 4 ──
+    document.getElementById('objective').value =
+      "Build Nexora's marketing function from scratch — establish clear positioning, " +
+      "drive awareness among enterprise HR buyers, and create a consistent content engine " +
+      "that generates inbound leads over the next two quarters.";
+    document.getElementById('additionalScope').value =
+      'Paid media execution deferred to month 3 pending creative readiness.';
+    setPill('cadence', 'monthly');
+
+    // ── Step 5 ──
+    setPill('currency', 'INR');
+    setPill('feeType', 'retainer');
+    showFeeFields('retainer');
+    document.getElementById('monthlyFee').value       = '225000';
+    document.getElementById('retainerDuration').value = '6 months';
+    setPill('retainerTerms', 'Net 15');
+    setPill('expenses', 'preapproved');
+    document.getElementById('paymentNotes').value =
+      'First invoice raised on 1 June 2026 upon contract signing.';
+
+    // ── Step 6 ──
+    document.getElementById('msgBody').value =
+      "Hi Priya,\n\nThanks for the conversation — it’s clear you’re building something that matters, " +
+      "and we’d love to be part of it.\n\nWhat we do best is take the marketing off your plate in a way " +
+      "that actually feels like an extension of your team, not an agency relationship.\n\nThis proposal outlines " +
+      "what we’d recommend, what’s in scope, and what it costs. It’s a starting point — " +
+      "if anything needs adjusting, just say so.";
+    document.getElementById('senderName').value  = 'Amrut Shastri';
+    document.getElementById('senderTitle').value = 'Founder, CoreVoice';
+    document.getElementById('senderEmail').value = 'amrut@corevoice.in';
+  }
+
+  /* ── Generate — POST to generate.php ──────── */
+  /* ── Draft save / load ───────────────────────── */
+  let currentDraftId = null;
+
+  function collectFormData() {
+    const d = {};
+    ['companyName','companyType','cin','gst','address','signatoryName','designation',
+     'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
+     'effectiveDate','objective','customScope','additionalScope','monthlyFee',
+     'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
+     'msgBody','senderName','senderTitle','senderEmail'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) d[id] = el.value;
+    });
+    d.triggers      = Array.from(document.querySelectorAll('.trigger:checked')).map(e => e.value);
+    d.scope         = Array.from(document.querySelectorAll('.scope:checked')).map(e => e.value);
+    d.engagementType = selectedEng || '';
+    ['currency','feeType','cadence','retainerTerms','fixedTerms','expenses'].forEach(name => {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      d[name] = el ? el.value : '';
+    });
+    return d;
+  }
+
+  function restoreFormData(d) {
+    ['companyName','companyType','cin','gst','address','signatoryName','designation',
+     'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
+     'effectiveDate','objective','customScope','additionalScope','monthlyFee',
+     'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
+     'msgBody','senderName','senderTitle','senderEmail'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && d[id] !== undefined) el.value = d[id];
+    });
+    document.querySelectorAll('.trigger').forEach(el => {
+      el.checked = (d.triggers || []).includes(el.value);
+    });
+    document.querySelectorAll('.scope').forEach(el => {
+      el.checked = (d.scope || []).includes(el.value);
+    });
+    if (d.engagementType) {
+      const card = document.querySelector(`[data-eng="${d.engagementType}"]`);
+      if (card) selectEng(card);
+    }
+    if (d.currency)      setPill('currency', d.currency);
+    if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
+    if (d.cadence)       setPill('cadence', d.cadence);
+    if (d.retainerTerms) setPill('retainerTerms', d.retainerTerms);
+    if (d.fixedTerms)    setPill('fixedTerms', d.fixedTerms);
+    if (d.expenses)      setPill('expenses', d.expenses);
+    goTo(1);
+  }
+
+  async function saveDraft() {
+    const data = collectFormData();
+    const name = data.companyName?.trim() || ('Draft — ' + new Date().toLocaleDateString('en-IN'));
+    try {
+      const res  = await fetch('/CVwebapp/save_draft.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: currentDraftId, name, data }),
+      });
+      const json = await res.json();
+      if (json.id) { currentDraftId = json.id; showToast('Draft saved'); }
+      else showToast('Save failed');
+    } catch { showToast('Save failed'); }
+  }
+
+  async function openDraftsPanel() {
+    document.getElementById('draftsOverlay').classList.remove('hidden');
+    const list = document.getElementById('draftsList');
+    list.innerHTML = '<div class="drafts-empty">Loading…</div>';
+    try {
+      const rows = await fetch('/CVwebapp/load_drafts.php').then(r => r.json());
+      if (!rows.length) {
+        list.innerHTML = '<div class="drafts-empty">No files saved yet.<br>Hit Save to save your current entries.</div>';
+        return;
+      }
+      list.innerHTML = rows.map(r => `
+        <div class="draft-item" onclick="loadDraft(${r.id}, ${JSON.stringify(r.data).replace(/"/g,'&quot;')})">
+          <div class="draft-item-info">
+            <div class="draft-item-name">${r.name}</div>
+            <div class="draft-item-date">${r.email.split('@')[0]} &middot; ${new Date(r.updated_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
+          </div>
+          <button class="draft-delete" title="Delete" onclick="event.stopPropagation();deleteDraft(${r.id},this)">✕</button>
+        </div>`).join('');
+    } catch { list.innerHTML = '<div class="drafts-empty">Failed to load files.</div>'; }
+  }
+
+  function closeDraftsPanel() {
+    document.getElementById('draftsOverlay').classList.add('hidden');
+  }
+
+  function loadDraft(id, data) {
+    currentDraftId = id;
+    restoreFormData(data);
+    closeDraftsPanel();
+    showToast('Draft loaded');
+  }
+
+  async function deleteDraft(id, btn) {
+    if (!confirm('Delete this draft?')) return;
+    await fetch('/CVwebapp/delete_draft.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id }),
+    });
+    btn.closest('.draft-item').remove();
+    if (!document.querySelector('.draft-item')) {
+      document.getElementById('draftsList').innerHTML =
+        '<div class="drafts-empty">No files saved yet.</div>';
+    }
+    if (currentDraftId === id) currentDraftId = null;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function generateDocument() {
+    if (!selectedOutput) {
+      alert('Please select a document type — Proposal or Contract.');
+      return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/CVwebapp/contracts/generate.php';
+    form.target = '_blank';
+
+    function add(name, value) {
+      const input = document.createElement('input');
+      input.type  = 'hidden';
+      input.name  = name;
+      input.value = value || '';
+      form.appendChild(input);
+    }
+
+    function radio(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : '';
+    }
+
+    // Step 1
+    add('companyName',    document.getElementById('companyName').value);
+    add('companyType',    document.getElementById('companyType').value);
+    add('cin',            document.getElementById('cin').value);
+    add('gst',            document.getElementById('gst').value);
+    add('address',        document.getElementById('address').value);
+    add('signatoryName',  document.getElementById('signatoryName').value);
+    add('designation',    document.getElementById('designation').value);
+    add('signatoryEmail', document.getElementById('signatoryEmail').value);
+    add('agreementDate',  document.getElementById('agreementDate').value);
+    add('bizDescription', document.getElementById('bizDescription').value);
+
+    // Step 2
+    add('clientSaid', document.getElementById('clientSaid').value);
+    document.querySelectorAll('.trigger:checked').forEach(cb => add('triggers[]', cb.value));
+
+    // Step 3
+    add('engagementType', selectedEng || '');
+    add('duration',       document.getElementById('duration').value);
+    add('effectiveDate',  document.getElementById('effectiveDate').value);
+
+    // Step 4
+    add('objective',      document.getElementById('objective').value);
+    add('customScope',    document.getElementById('customScope').value);
+    add('additionalScope',document.getElementById('additionalScope').value);
+    document.querySelectorAll('.scope:checked').forEach(cb => add('scope[]', cb.value));
+    add('cadence', radio('cadence'));
+
+    // Step 5
+    add('currency',          radio('currency') || 'INR');
+    add('feeType',           radio('feeType'));
+    add('monthlyFee',        document.getElementById('monthlyFee').value);
+    add('retainerDuration',  document.getElementById('retainerDuration').value);
+    add('paymentTerms',      radio('retainerTerms'));
+    add('totalFee',          document.getElementById('totalFee').value);
+    add('fixedAdvance',      document.getElementById('fixedAdvance').value);
+    add('fixedPaymentTerms', radio('fixedTerms'));
+    add('milestoneSchedule', document.getElementById('milestoneSchedule').value);
+    add('expenses',          radio('expenses'));
+    add('paymentNotes',      document.getElementById('paymentNotes').value);
+
+    // Step 6
+    add('outputType',  selectedOutput);
+    add('msgBody',     document.getElementById('msgBody').value);
+    add('senderName',  document.getElementById('senderName').value);
+    add('senderTitle', document.getElementById('senderTitle').value);
+    add('senderEmail', document.getElementById('senderEmail').value);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  }
+</script>
+</body>
+</html>
