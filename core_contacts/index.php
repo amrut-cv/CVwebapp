@@ -105,10 +105,11 @@ $nav_active = 'contacts_personal';
     .empty{text-align:center;padding:64px 20px;color:#9ca3af}
     .empty h2{font-size:1.1rem;margin-bottom:8px;color:#6b7280}
     .count{font-size:.82rem;color:#9ca3af;margin-left:auto}
-    .contact-card{position:relative}
-    .junk-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;padding:4px;border-radius:5px;color:#d1d5db;transition:color .15s,background .15s;z-index:2;line-height:0}
+    .card-wrap{position:relative}
+    .contact-card{display:block;padding-right:36px}
+    .junk-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;padding:4px;border-radius:5px;color:#d1d5db;transition:color .15s,background .15s;line-height:0}
     .junk-btn:hover{color:#ef4444;background:#fee2e2}
-    .contact-card.fading{opacity:0;transition:opacity .25s}
+    .card-wrap.fading{opacity:0;transition:opacity .25s}
   </style>
 </head>
 <body>
@@ -162,15 +163,8 @@ $nav_active = 'contacts_personal';
     <?php else: ?>
       <div class="contact-grid">
         <?php foreach ($rows as $row): ?>
+          <div class="card-wrap">
           <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card" data-id="<?= h($row['contact_id']) ?>">
-            <button class="junk-btn" title="<?= $show_junk ? 'Delete permanently' : 'Move to junk' ?>"
-                    onclick="junkCard(event, this, <?= h($row['contact_id']) ?>, <?= $show_junk ? 'true' : 'false' ?>)">
-              <?php if ($show_junk): ?>
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              <?php else: ?>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9.5 11l.5 6"/><path d="M14.5 11l-.5 6"/></svg>
-              <?php endif ?>
-            </button>
             <div class="card-name"><?= h($row['full_name'] ?: '(no name)') ?></div>
             <div class="card-role">
               <?= h(implode(' · ', array_filter([$row['current_role'], $row['current_company']]))) ?>
@@ -192,6 +186,11 @@ $nav_active = 'contacts_personal';
               </div>
             <?php endif ?>
           </a>
+            <button class="junk-btn" title="<?= $show_junk ? 'Delete permanently' : 'Move to junk' ?>"
+                    onclick="junkCard(this, <?= (int)$row['contact_id'] ?>, <?= $show_junk ? 'true' : 'false' ?>)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9.5 11l.5 6"/><path d="M14.5 11l-.5 6"/></svg>
+            </button>
+          </div>
         <?php endforeach ?>
       </div>
     <?php endif ?>
@@ -204,10 +203,8 @@ document.addEventListener('click', e => {
   if (wrap && dd && !wrap.contains(e.target)) dd.style.display = 'none';
 });
 
-function junkCard(e, btn, contactId, isDelete) {
-  e.preventDefault();
-  e.stopPropagation();
-  const card = btn.closest('.contact-card');
+function junkCard(btn, contactId, isDelete) {
+  const wrap = btn.closest('.card-wrap');
   const action = isDelete ? 'delete_one' : 'junk_one';
   const fd = new FormData();
   fd.append('action', action);
@@ -216,8 +213,8 @@ function junkCard(e, btn, contactId, isDelete) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        card.classList.add('fading');
-        setTimeout(() => card.remove(), 260);
+        wrap.classList.add('fading');
+        setTimeout(() => wrap.remove(), 260);
       }
     });
 }
