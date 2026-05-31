@@ -77,7 +77,7 @@ $nav_active = 'home';
     <h1>Welcome, <span>CVlian</span></h1>
     <p>This is the CV backend — built to help us show up sharper, move faster, and be better every day.</p>
 
-    <a href="/CVwebapp/contracts/" class="feature-card">
+    <a href="/CVwebapp/contract_builder/" class="feature-card">
       <div class="card-text">
         <h2>Contract Builder</h2>
         <p>Generate proposals and contracts for clients.</p>
