@@ -379,12 +379,9 @@ function doAction(btn, action, linkId, winnerId, loserId) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        card.style.transition = 'opacity .3s, max-height .4s';
-        card.style.overflow = 'hidden';
+        card.style.transition = 'opacity .25s';
         card.style.opacity = '0';
-        card.style.maxHeight = card.offsetHeight + 'px';
-        setTimeout(() => { card.style.maxHeight = '0'; card.style.marginBottom = '0'; }, 50);
-        setTimeout(() => card.remove(), 450);
+        setTimeout(() => card.remove(), 260);
 
         // Update pending count in stat box
         const num = document.querySelector('.stat-num');
