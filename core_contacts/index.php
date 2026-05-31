@@ -6,6 +6,39 @@ $member = cc_member($_SESSION['auth_email']);
 if (!$member) { header('Location: /CVwebapp/index.php'); exit; }
 
 $db = getDB();
+
+// ── Bulk delete ───────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if ($ids) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        // Only delete contacts owned by this member
+        $del = $db->prepare("SELECT c.contact_id, c.cluster_id FROM contacts c
+            WHERE c.contact_id IN ($placeholders) AND c.owner_member_id = ?");
+        $del->execute([...$ids, $member['member_id']]);
+        $to_delete = $del->fetchAll();
+
+        foreach ($to_delete as $row) {
+            // Delete duplicate_links refs first
+            $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")
+              ->execute([$row['contact_id'], $row['contact_id']]);
+            // Delete the contact
+            $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$row['contact_id']]);
+            // Delete the cluster if no other contacts reference it
+            $still_used = $db->prepare("SELECT COUNT(*) FROM contacts WHERE cluster_id=?");
+            $still_used->execute([$row['cluster_id']]);
+            if ($still_used->fetchColumn() == 0) {
+                foreach (['cluster_emails','cluster_phones','contact_tags','education','experience'] as $t) {
+                    $db->prepare("DELETE FROM $t WHERE cluster_id=?")->execute([$row['cluster_id']]);
+                }
+                $db->prepare("DELETE FROM person_clusters WHERE cluster_id=?")->execute([$row['cluster_id']]);
+            }
+        }
+    }
+    header('Location: index.php' . ($search ? '?q='.urlencode($search) : ''));
+    exit;
+}
+
 $search = trim($_GET['q'] ?? '');
 $space  = 'personal';
 
@@ -83,6 +116,16 @@ $nav_active = 'contacts_personal';
     .empty{text-align:center;padding:64px 20px;color:#9ca3af}
     .empty h2{font-size:1.1rem;margin-bottom:8px;color:#6b7280}
     .count{font-size:.82rem;color:#9ca3af;margin-left:auto}
+    .contact-card{position:relative}
+    .card-check{position:absolute;top:10px;right:10px;width:18px;height:18px;cursor:pointer;accent-color:#1a1a2e;display:none;z-index:2}
+    .select-mode .card-check{display:block}
+    .select-mode .contact-card{padding-right:36px}
+    .select-mode .contact-card.selected{border-color:#1a1a2e;background:#f8f9ff}
+    .bulk-bar{position:fixed;bottom:0;left:220px;right:0;background:#1a1a2e;color:#fff;padding:14px 40px;display:flex;align-items:center;gap:16px;z-index:200;transform:translateY(100%);transition:transform .2s}
+    .bulk-bar.visible{transform:translateY(0)}
+    .bulk-bar .count{color:rgba(255,255,255,.7);font-size:.875rem;margin-left:0}
+    .btn-select-mode{background:#f3f4f6;color:#374151;border:none}.btn-select-mode:hover{background:#e5e7eb}
+    .btn-select-mode.active{background:#1a1a2e;color:#fff}
   </style>
 </head>
 <body>
@@ -104,6 +147,7 @@ $nav_active = 'contacts_personal';
             <a href="import_whatsapp.php" style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">WhatsApp group chat</a>
           </div>
         </div>
+        <button id="select-btn" onclick="toggleSelectMode()" class="btn btn-select-mode">Select</button>
         <a href="add.php" class="btn btn-primary">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add contact
@@ -133,9 +177,12 @@ $nav_active = 'contacts_personal';
         <p><?= $search ? '' : ($space === 'personal' ? 'Add your first contact to get started.' : 'Share contacts from your personal space to see them here.') ?></p>
       </div>
     <?php else: ?>
-      <div class="contact-grid">
+      <form method="POST" id="bulk-form">
+        <input type="hidden" name="action" value="bulk_delete"/>
+      <div class="contact-grid" id="contact-grid">
         <?php foreach ($rows as $row): ?>
-          <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card">
+          <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card" data-id="<?= h($row['contact_id']) ?>">
+            <input type="checkbox" class="card-check" name="ids[]" value="<?= h($row['contact_id']) ?>" onclick="handleCheck(event, this)"/>
             <div class="card-name"><?= h($row['full_name'] ?: '(no name)') ?></div>
             <div class="card-role">
               <?= h(implode(' · ', array_filter([$row['current_role'], $row['current_company']]))) ?>
@@ -159,9 +206,19 @@ $nav_active = 'contacts_personal';
           </a>
         <?php endforeach ?>
       </div>
+      </form>
     <?php endif ?>
   </div>
 </div>
+<div class="bulk-bar" id="bulk-bar">
+  <span class="count" id="bulk-count">0 selected</span>
+  <button type="button" onclick="selectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Select all</button>
+  <button type="button" onclick="deselectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Deselect all</button>
+  <div style="flex:1"></div>
+  <button type="button" onclick="confirmDelete()" style="background:#ef4444;color:#fff;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:.875rem;font-weight:700">Delete selected</button>
+  <button type="button" onclick="toggleSelectMode()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:.875rem">Cancel</button>
+</div>
+
 <script>
 document.addEventListener('click', e => {
   const wrap = document.getElementById('import-menu-wrap');
@@ -172,6 +229,51 @@ document.addEventListener('click', e => {
     dd.classList.remove('open');
   }
 });
+
+let selectMode = false;
+
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  document.getElementById('contact-grid').classList.toggle('select-mode', selectMode);
+  document.getElementById('select-btn').classList.toggle('active', selectMode);
+  if (!selectMode) { deselectAll(); document.getElementById('bulk-bar').classList.remove('visible'); }
+}
+
+function handleCheck(e, cb) {
+  e.preventDefault();
+  e.stopPropagation();
+  cb.checked = !cb.checked;
+  cb.closest('.contact-card').classList.toggle('selected', cb.checked);
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const checked = document.querySelectorAll('.card-check:checked').length;
+  document.getElementById('bulk-count').textContent = checked + ' selected';
+  document.getElementById('bulk-bar').classList.toggle('visible', checked > 0);
+}
+
+function selectAll() {
+  document.querySelectorAll('.card-check').forEach(cb => {
+    cb.checked = true; cb.closest('.contact-card').classList.add('selected');
+  });
+  updateBulkBar();
+}
+
+function deselectAll() {
+  document.querySelectorAll('.card-check').forEach(cb => {
+    cb.checked = false; cb.closest('.contact-card').classList.remove('selected');
+  });
+  updateBulkBar();
+}
+
+function confirmDelete() {
+  const n = document.querySelectorAll('.card-check:checked').length;
+  if (!n) return;
+  if (confirm(`Delete ${n} contact${n>1?'s':''}? This cannot be undone.`)) {
+    document.getElementById('bulk-form').submit();
+  }
+}
 </script>
 </body>
 </html>
