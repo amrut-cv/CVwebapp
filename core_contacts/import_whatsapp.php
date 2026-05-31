@@ -22,9 +22,7 @@ function parse_whatsapp_txt(string $content): array {
     preg_match_all($pattern, $content, $matches);
     foreach ($matches[1] as $name) {
         $name = trim($name);
-        // Skip system messages and phone numbers
         if (!$name) continue;
-        if (preg_match('/^\+?\d[\d\s\-]+$/', $name)) continue; // raw phone number
         if (str_starts_with($name, '~')) $name = ltrim(substr($name, 1));
         $name = trim($name);
         if (strlen($name) < 2) continue;
@@ -59,16 +57,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'save') 
     foreach ($rows as $i => $row) {
         if (empty($_POST["import_{$i}"])) { $skipped++; continue; }
 
-        $full_name    = trim($_POST["name_{$i}"] ?? $row['sender']);
+        $full_name    = trim($_POST["name_{$i}"] ?? '') ?: $row['sender'];
         $rel_origin   = trim($_POST["rel_origin_{$i}"] ?? '');
         $rel_type     = $_POST["rel_type_{$i}"] ?? '';
         $rel_strength = $_POST["rel_strength_{$i}"] ?? '';
 
         $cluster_id = uuid();
         $contact_id = uuid();
+        $is_phone   = (bool)($row['is_phone'] ?? false);
+
+        // If sender is a phone number and name wasn't changed, use placeholder name
+        $display_name = $full_name;
+        if ($is_phone && preg_match('/^\+?[\d\s\-\(\)]{7,}$/', $display_name)) {
+            $display_name = $row['sender']; // keep phone as name until edited
+        }
 
         $db->prepare("INSERT INTO person_clusters (cluster_id,full_name,last_updated_by) VALUES (?,?,?)")
-          ->execute([$cluster_id, $full_name, $member['member_id']]);
+          ->execute([$cluster_id, $display_name, $member['member_id']]);
 
         $db->prepare("INSERT INTO contacts
             (contact_id,owner_member_id,cluster_id,space,origin_source,
@@ -76,6 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'save') 
             VALUES (?,?,?,'personal','whatsapp',?,?,?)")
           ->execute([$contact_id,$member['member_id'],$cluster_id,
                      $rel_origin?:null,$rel_type?:null,$rel_strength?:null]);
+
+        // Save phone number if sender was a phone
+        if ($is_phone) {
+            $phone_num = preg_replace('/[^\d\+]/', '', $row['sender']);
+            if (strlen($phone_num) >= 7) {
+                $db->prepare("INSERT INTO cluster_phones (phone_id,cluster_id,phone,label,is_primary) VALUES (?,?,?,'whatsapp',1)")
+                  ->execute([uuid(), $cluster_id, $phone_num]);
+            }
+        }
 
         $saved++;
     }
@@ -98,12 +112,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'upload'
         if (empty($senders)) {
             $errors[] = 'No messages found. Make sure you uploaded a WhatsApp chat export (.txt).';
         } else {
-            // Load existing contact names for fuzzy matching
-            $existing = $db->prepare("SELECT p.full_name, c.contact_id FROM person_clusters p
+            // Load existing contact names + phones for fuzzy matching
+            $existing = $db->prepare("SELECT p.full_name, c.contact_id, c.cluster_id FROM person_clusters p
                 JOIN contacts c ON c.cluster_id = p.cluster_id
                 WHERE c.owner_member_id = ?");
             $existing->execute([$member['member_id']]);
             $existing_contacts = $existing->fetchAll();
+
+            // Build phone→name lookup (strip non-digits for matching)
+            $phone_lookup = []; // digits_only => full_name
+            $phones_q = $db->prepare("SELECT cp.phone, cp.cluster_id, p.full_name
+                FROM cluster_phones cp
+                JOIN contacts c ON c.cluster_id = cp.cluster_id
+                JOIN person_clusters p ON p.cluster_id = cp.cluster_id
+                WHERE c.owner_member_id = ?");
+            $phones_q->execute([$member['member_id']]);
+            foreach ($phones_q->fetchAll() as $pr) {
+                $digits = preg_replace('/\D/', '', $pr['phone']);
+                // Store last 10 digits for flexible matching
+                $phone_lookup[substr($digits, -10)] = $pr['full_name'];
+            }
 
             $my_name = $member['name']; // skip self
 
@@ -111,20 +139,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'upload'
                 // Skip self
                 if (stripos($sender, $my_name) !== false || strtolower($sender) === 'amrut') continue;
 
-                // Fuzzy match against existing contacts
+                $is_phone = (bool) preg_match('/^\+?[\d\s\-\(\)]{7,}$/', $sender);
                 $best_match = null;
                 $best_score = 0;
-                foreach ($existing_contacts as $ec) {
-                    $score = name_similarity($sender, $ec['full_name']);
-                    if ($score > $best_score) {
-                        $best_score = $score;
-                        $best_match = $ec;
+
+                if ($is_phone) {
+                    // Match by phone number
+                    $digits = preg_replace('/\D/', '', $sender);
+                    $tail   = substr($digits, -10);
+                    if (isset($phone_lookup[$tail])) {
+                        $best_match = ['full_name' => $phone_lookup[$tail]];
+                        $best_score = 1.0;
+                    }
+                } else {
+                    // Fuzzy name match
+                    foreach ($existing_contacts as $ec) {
+                        $score = name_similarity($sender, $ec['full_name']);
+                        if ($score > $best_score) {
+                            $best_score = $score;
+                            $best_match = $ec;
+                        }
                     }
                 }
 
                 $preview[] = [
                     'sender'     => $sender,
                     'msg_count'  => $msg_count,
+                    'is_phone'   => $is_phone,
                     'matched'    => $best_score >= 0.6 ? $best_match['full_name'] : null,
                     'match_score'=> $best_score,
                     'already_in' => $best_score >= 0.6,
@@ -297,7 +338,7 @@ $nav_active = 'contacts_personal';
             <thead>
               <tr>
                 <th style="width:36px"></th>
-                <th>Name in WhatsApp</th>
+                <th>Name / Phone in WhatsApp</th>
                 <th style="width:80px">Messages</th>
                 <th style="width:180px">Match in your contacts</th>
                 <th style="width:160px">How you know them</th>
@@ -315,7 +356,12 @@ $nav_active = 'contacts_personal';
                            onchange="toggleRow(<?= $i ?>, this.checked)"/>
                   </td>
                   <td>
-                    <input type="text" name="name_<?= $i ?>" value="<?= h($row['sender']) ?>"/>
+                    <?php if ($row['is_phone'] ?? false): ?>
+                      <div style="font-size:.72rem;color:#9ca3af;margin-bottom:3px">📱 Not saved in WhatsApp — enter name:</div>
+                    <?php endif ?>
+                    <input type="text" name="name_<?= $i ?>"
+                           value="<?= h(($row['is_phone'] ?? false) ? '' : $row['sender']) ?>"
+                           placeholder="<?= ($row['is_phone'] ?? false) ? h($row['sender']) : '' ?>"/>
                   </td>
                   <td class="msg-count" style="text-align:center"><?= $row['msg_count'] ?></td>
                   <td>
