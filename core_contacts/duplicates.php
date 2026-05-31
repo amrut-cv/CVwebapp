@@ -10,6 +10,66 @@ $mid = $member['member_id'];
 
 function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES|ENT_HTML5, 'UTF-8'); }
 
+// ── AJAX actions (merge / dismiss) ───────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    header('Content-Type: application/json');
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'dismiss') {
+        $link_id = $_POST['link_id'] ?? '';
+        $db->prepare("UPDATE duplicate_links SET status='dismissed' WHERE link_id=?")->execute([$link_id]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    if ($action === 'merge') {
+        $link_id   = $_POST['link_id']   ?? '';
+        $winner_id = $_POST['winner_id'] ?? '';
+        $loser_id  = $_POST['loser_id']  ?? '';
+
+        if ($winner_id && $loser_id && $winner_id !== $loser_id) {
+            $check = $db->prepare("SELECT COUNT(*) FROM contacts WHERE cluster_id IN (?,?) AND owner_member_id=?");
+            $check->execute([$winner_id, $loser_id, $mid]);
+            if ($check->fetchColumn() >= 2) {
+                $db->prepare("UPDATE IGNORE cluster_emails SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+                $db->prepare("DELETE FROM cluster_emails WHERE cluster_id=?")->execute([$loser_id]);
+                $db->prepare("UPDATE IGNORE cluster_phones SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+                $db->prepare("DELETE FROM cluster_phones WHERE cluster_id=?")->execute([$loser_id]);
+                $db->prepare("UPDATE IGNORE contact_tags SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+                $db->prepare("DELETE FROM contact_tags WHERE cluster_id=?")->execute([$loser_id]);
+                $db->prepare("UPDATE education SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+                $db->prepare("UPDATE experience SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+                $db->prepare("UPDATE person_clusters w JOIN person_clusters l ON l.cluster_id=?
+                    SET w.linkedin_url=COALESCE(w.linkedin_url,l.linkedin_url),
+                        w.current_role=COALESCE(w.current_role,l.current_role),
+                        w.current_company=COALESCE(w.current_company,l.current_company),
+                        w.city=COALESCE(w.city,l.city),
+                        w.notes=CASE WHEN w.notes IS NULL THEN l.notes WHEN l.notes IS NULL THEN w.notes
+                                     ELSE CONCAT(w.notes,'\n---\n',l.notes) END
+                    WHERE w.cluster_id=?")->execute([$loser_id,$winner_id]);
+
+                $loser_contact = $db->prepare("SELECT contact_id FROM contacts WHERE cluster_id=? AND owner_member_id=? LIMIT 1");
+                $loser_contact->execute([$loser_id,$mid]);
+                $loser_contact_id = $loser_contact->fetchColumn();
+
+                $db->prepare("UPDATE contacts SET cluster_id=? WHERE cluster_id=?")->execute([$winner_id,$loser_id]);
+
+                if ($loser_contact_id) {
+                    $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")->execute([$loser_contact_id,$loser_contact_id]);
+                    $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$loser_contact_id]);
+                }
+
+                $db->prepare("DELETE FROM person_clusters WHERE cluster_id=?")->execute([$loser_id]);
+                $db->prepare("UPDATE duplicate_links SET status='confirmed', merged_cluster_id=? WHERE link_id=?")->execute([$winner_id,$link_id]);
+            }
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+    echo json_encode(['ok' => false]);
+    exit;
+}
+
 // ── SCAN ─────────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'scan') {
     // Clear existing pending pairs for this member
@@ -121,95 +181,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'scan'
     exit;
 }
 
-// ── DISMISS ──────────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dismiss') {
-    $link_id = $_POST['link_id'] ?? '';
-    $db->prepare("UPDATE duplicate_links SET status='dismissed' WHERE link_id=?")->execute([$link_id]);
-    header('Location: duplicates.php');
-    exit;
-}
-
-// ── MERGE ────────────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'merge') {
-    $link_id   = $_POST['link_id']   ?? '';
-    $winner_id = $_POST['winner_id'] ?? ''; // cluster_id to keep
-    $loser_id  = $_POST['loser_id']  ?? ''; // cluster_id to absorb
-
-    if ($winner_id && $loser_id && $winner_id !== $loser_id) {
-        // Verify both clusters belong to this member
-        $check = $db->prepare("SELECT COUNT(*) FROM contacts
-            WHERE cluster_id IN (?,?) AND owner_member_id = ?");
-        $check->execute([$winner_id, $loser_id, $mid]);
-        if ($check->fetchColumn() >= 2) {
-
-            // Move emails (skip duplicates)
-            $db->prepare("UPDATE IGNORE cluster_emails SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-            $db->prepare("DELETE FROM cluster_emails WHERE cluster_id=?")->execute([$loser_id]);
-
-            // Move phones (skip duplicates)
-            $db->prepare("UPDATE IGNORE cluster_phones SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-            $db->prepare("DELETE FROM cluster_phones WHERE cluster_id=?")->execute([$loser_id]);
-
-            // Move tags (skip duplicates)
-            $db->prepare("UPDATE IGNORE contact_tags SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-            $db->prepare("DELETE FROM contact_tags WHERE cluster_id=?")->execute([$loser_id]);
-
-            // Move education + experience
-            $db->prepare("UPDATE education SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-            $db->prepare("UPDATE experience SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-
-            // Merge cluster fields (fill winner's nulls from loser)
-            $db->prepare("UPDATE person_clusters w
-                JOIN person_clusters l ON l.cluster_id=?
-                SET w.linkedin_url    = COALESCE(w.linkedin_url, l.linkedin_url),
-                    w.current_role    = COALESCE(w.current_role, l.current_role),
-                    w.current_company = COALESCE(w.current_company, l.current_company),
-                    w.city            = COALESCE(w.city, l.city),
-                    w.notes           = CASE WHEN w.notes IS NULL THEN l.notes
-                                             WHEN l.notes IS NULL THEN w.notes
-                                             ELSE CONCAT(w.notes, '\n---\n', l.notes) END
-                WHERE w.cluster_id=?")->execute([$loser_id, $winner_id]);
-
-            // Find the loser's contact_id for this member before redirecting
-            $loser_contact = $db->prepare("SELECT contact_id FROM contacts WHERE cluster_id=? AND owner_member_id=? LIMIT 1");
-            $loser_contact->execute([$loser_id, $mid]);
-            $loser_contact_id = $loser_contact->fetchColumn();
-
-            // Redirect all contacts on loser cluster to winner
-            $db->prepare("UPDATE contacts SET cluster_id=? WHERE cluster_id=?")
-              ->execute([$winner_id, $loser_id]);
-
-            // Remove duplicate_links rows referencing the loser contact before deleting it
-            if ($loser_contact_id) {
-                $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")
-                  ->execute([$loser_contact_id, $loser_contact_id]);
-                $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$loser_contact_id]);
-            }
-
-            // Delete loser cluster
-            $db->prepare("DELETE FROM person_clusters WHERE cluster_id=?")->execute([$loser_id]);
-
-            // Mark link as confirmed
-            $db->prepare("UPDATE duplicate_links SET status='confirmed', merged_cluster_id=? WHERE link_id=?")
-              ->execute([$winner_id, $link_id]);
-
-            // Also dismiss other pending links that involved either cluster
-            // (find contact_ids that were on loser cluster — now all on winner)
-            $db->prepare("UPDATE duplicate_links SET status='confirmed', merged_cluster_id=?
-                WHERE link_id != ? AND status='pending'
-                AND (contact_id_a IN (SELECT contact_id FROM contacts WHERE cluster_id=?)
-                  OR contact_id_b IN (SELECT contact_id FROM contacts WHERE cluster_id=?))")
-              ->execute([$winner_id, $link_id, $winner_id, $winner_id]);
-        }
-    }
-    header('Location: duplicates.php?merged=1');
-    exit;
-}
 
 // ── LOAD PENDING PAIRS ───────────────────────────────────────────────────────
 $pending = $db->prepare("
@@ -313,9 +284,6 @@ $nav_active = 'contacts_dupes';
     <?php if (isset($_GET['scanned'])): ?>
       <div class="notice notice-success">Found <strong><?= (int)$_GET['scanned'] ?></strong> potential duplicate pairs. Review them below.</div>
     <?php endif ?>
-    <?php if (isset($_GET['merged'])): ?>
-      <div class="notice notice-success">Contacts merged successfully.</div>
-    <?php endif ?>
 
     <?php if ($total > 0): ?>
       <div class="stats-bar">
@@ -363,25 +331,17 @@ $nav_active = 'contacts_dupes';
             </div>
           </div>
           <div class="pair-actions">
-            <!-- Single merge button — auto-picks richer record as winner -->
-            <form method="POST" style="display:inline">
-              <input type="hidden" name="action" value="merge"/>
-              <input type="hidden" name="link_id" value="<?= h($pair['link_id']) ?>"/>
-              <input type="hidden" name="winner_id" value="<?= h($winner === 'a' ? $pair['cluster_a'] : $pair['cluster_b']) ?>"/>
-              <input type="hidden" name="loser_id"  value="<?= h($winner === 'a' ? $pair['cluster_b'] : $pair['cluster_a']) ?>"/>
-              <button type="submit" class="btn btn-merge" style="font-size:.78rem;padding:6px 12px">
-                ⇢ Merge
-              </button>
-            </form>
+            <button class="btn btn-merge" style="font-size:.78rem;padding:6px 12px"
+              onclick="doAction(this, 'merge', '<?= h($pair['link_id']) ?>', '<?= h($winner==='a'?$pair['cluster_a']:$pair['cluster_b']) ?>', '<?= h($winner==='a'?$pair['cluster_b']:$pair['cluster_a']) ?>')">
+              ⇢ Merge
+            </button>
             <div class="spacer"></div>
             <a href="contact.php?id=<?= h($pair['contact_a']) ?>" target="_blank" class="btn btn-ghost" style="font-size:.75rem;padding:5px 10px">View A</a>
             <a href="contact.php?id=<?= h($pair['contact_b']) ?>" target="_blank" class="btn btn-ghost" style="font-size:.75rem;padding:5px 10px">View B</a>
-            <!-- Dismiss -->
-            <form method="POST" style="display:inline">
-              <input type="hidden" name="action" value="dismiss"/>
-              <input type="hidden" name="link_id" value="<?= h($pair['link_id']) ?>"/>
-              <button type="submit" class="btn btn-danger" style="font-size:.78rem;padding:6px 12px">Not a duplicate</button>
-            </form>
+            <button class="btn btn-danger" style="font-size:.78rem;padding:6px 12px"
+              onclick="doAction(this, 'dismiss', '<?= h($pair['link_id']) ?>')">
+              Not a duplicate
+            </button>
           </div>
         </div>
       <?php endforeach ?>
@@ -405,6 +365,36 @@ function filterPairs(reason, btn) {
   document.querySelectorAll('.pair-card').forEach(card => {
     card.style.display = (reason === 'all' || card.dataset.reason === reason) ? '' : 'none';
   });
+}
+
+function doAction(btn, action, linkId, winnerId, loserId) {
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  const card = btn.closest('.pair-card');
+
+  const body = new URLSearchParams({ ajax: '1', action, link_id: linkId });
+  if (action === 'merge') { body.append('winner_id', winnerId); body.append('loser_id', loserId); }
+
+  fetch('duplicates.php', { method: 'POST', body })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        card.style.transition = 'opacity .3s, max-height .4s';
+        card.style.overflow = 'hidden';
+        card.style.opacity = '0';
+        card.style.maxHeight = card.offsetHeight + 'px';
+        setTimeout(() => { card.style.maxHeight = '0'; card.style.marginBottom = '0'; }, 50);
+        setTimeout(() => card.remove(), 450);
+
+        // Update pending count in stat box
+        const num = document.querySelector('.stat-num');
+        if (num) { const n = parseInt(num.textContent) - 1; num.textContent = n; }
+      } else {
+        btn.disabled = false; btn.style.opacity = '1';
+        alert('Something went wrong, please try again.');
+      }
+    })
+    .catch(() => { btn.disabled = false; btn.style.opacity = '1'; });
 }
 </script>
 </body>
