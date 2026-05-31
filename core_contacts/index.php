@@ -11,32 +11,24 @@ $search    = trim($_GET['q'] ?? '');
 $space     = 'personal';
 $show_junk = isset($_GET['junk']);
 
-// ── Bulk junk ────────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_junk') {
-    $ids = $_POST['ids'] ?? [];
-    if ($ids) {
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $db->prepare("UPDATE contacts SET is_junk=1
-            WHERE contact_id IN ($placeholders) AND owner_member_id = ?")
-          ->execute([...$ids, $member['member_id']]);
-    }
-    header('Location: index.php' . ($search ? '?q='.urlencode($search) : ''));
+// ── AJAX: junk a single contact ───────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'junk_one') {
+    header('Content-Type: application/json');
+    $cid = $_POST['contact_id'] ?? '';
+    $stmt = $db->prepare("UPDATE contacts SET is_junk=1 WHERE contact_id=? AND owner_member_id=?");
+    $ok = $stmt->execute([$cid, $member['member_id']]) && $stmt->rowCount() > 0;
+    echo json_encode(['ok' => $ok]);
     exit;
 }
 
-// ── Bulk delete (from junk view) ─────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
-    $ids = $_POST['ids'] ?? [];
-    if ($ids) {
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        foreach ($ids as $cid) {
-            $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")->execute([$cid, $cid]);
-        }
-        $db->prepare("DELETE FROM contacts
-            WHERE contact_id IN ($placeholders) AND owner_member_id = ? AND is_junk = 1")
-          ->execute([...$ids, $member['member_id']]);
-    }
-    header('Location: index.php?junk=1');
+// ── AJAX: permanently delete from junk ───────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_one') {
+    header('Content-Type: application/json');
+    $cid = $_POST['contact_id'] ?? '';
+    $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")->execute([$cid, $cid]);
+    $stmt = $db->prepare("DELETE FROM contacts WHERE contact_id=? AND owner_member_id=? AND is_junk=1");
+    $ok = $stmt->execute([$cid, $member['member_id']]) && $stmt->rowCount() > 0;
+    echo json_encode(['ok' => $ok]);
     exit;
 }
 $where  = ['c.owner_member_id = ?', $show_junk ? 'c.is_junk = 1' : 'c.is_junk = 0'];
@@ -114,15 +106,9 @@ $nav_active = 'contacts_personal';
     .empty h2{font-size:1.1rem;margin-bottom:8px;color:#6b7280}
     .count{font-size:.82rem;color:#9ca3af;margin-left:auto}
     .contact-card{position:relative}
-    .card-check{position:absolute;top:10px;right:10px;width:18px;height:18px;cursor:pointer;accent-color:#1a1a2e;display:none;z-index:2}
-    .select-mode .card-check{display:block}
-    .select-mode .contact-card{padding-right:36px}
-    .select-mode .contact-card.selected{border-color:#1a1a2e;background:#f8f9ff}
-    .bulk-bar{position:fixed;bottom:0;left:220px;right:0;background:#1a1a2e;color:#fff;padding:14px 40px;display:flex;align-items:center;gap:16px;z-index:200;transform:translateY(100%);transition:transform .2s}
-    .bulk-bar.visible{transform:translateY(0)}
-    .bulk-bar .count{color:rgba(255,255,255,.7);font-size:.875rem;margin-left:0}
-    .btn-select-mode{background:#f3f4f6;color:#374151;border:none}.btn-select-mode:hover{background:#e5e7eb}
-    .btn-select-mode.active{background:#1a1a2e;color:#fff}
+    .junk-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;padding:4px;border-radius:5px;color:#d1d5db;transition:color .15s,background .15s;z-index:2;line-height:0}
+    .junk-btn:hover{color:#ef4444;background:#fee2e2}
+    .contact-card.fading{opacity:0;transition:opacity .25s}
   </style>
 </head>
 <body>
@@ -144,7 +130,6 @@ $nav_active = 'contacts_personal';
             <a href="import_whatsapp.php" style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">WhatsApp group chat</a>
           </div>
         </div>
-        <button id="select-btn" onclick="toggleSelectMode()" class="btn btn-select-mode">Select</button>
         <a href="add.php" class="btn btn-primary">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add contact
@@ -171,16 +156,21 @@ $nav_active = 'contacts_personal';
 
     <?php if (empty($rows)): ?>
       <div class="empty">
-        <h2><?= $search ? 'No contacts match your search' : ($space === 'personal' ? 'No contacts yet' : 'No shared contacts yet') ?></h2>
-        <p><?= $search ? '' : ($space === 'personal' ? 'Add your first contact to get started.' : 'Share contacts from your personal space to see them here.') ?></p>
+        <h2><?= $search ? 'No contacts match your search' : ($show_junk ? 'Junk is empty' : 'No contacts yet') ?></h2>
+        <p><?= $search || $show_junk ? '' : 'Add your first contact to get started.' ?></p>
       </div>
     <?php else: ?>
-      <form method="POST" id="bulk-form">
-        <input type="hidden" name="action" value="<?= $show_junk ? 'bulk_delete' : 'bulk_junk' ?>"/>
-      <div class="contact-grid" id="contact-grid">
+      <div class="contact-grid">
         <?php foreach ($rows as $row): ?>
           <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card" data-id="<?= h($row['contact_id']) ?>">
-            <input type="checkbox" class="card-check" name="ids[]" value="<?= h($row['contact_id']) ?>" onclick="handleCheck(event)"/>
+            <button class="junk-btn" title="<?= $show_junk ? 'Delete permanently' : 'Move to junk' ?>"
+                    onclick="junkCard(event, this, <?= h($row['contact_id']) ?>, <?= $show_junk ? 'true' : 'false' ?>)">
+              <?php if ($show_junk): ?>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              <?php else: ?>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9.5 11l.5 6"/><path d="M14.5 11l-.5 6"/></svg>
+              <?php endif ?>
+            </button>
             <div class="card-name"><?= h($row['full_name'] ?: '(no name)') ?></div>
             <div class="card-role">
               <?= h(implode(' · ', array_filter([$row['current_role'], $row['current_company']]))) ?>
@@ -204,94 +194,32 @@ $nav_active = 'contacts_personal';
           </a>
         <?php endforeach ?>
       </div>
-      </form>
     <?php endif ?>
   </div>
 </div>
-<div class="bulk-bar" id="bulk-bar">
-  <span class="count" id="bulk-count">0 selected</span>
-  <button type="button" onclick="selectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Select all</button>
-  <button type="button" onclick="deselectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Deselect all</button>
-  <div style="flex:1"></div>
-  <button type="button" onclick="confirmDelete()" style="background:#ef4444;color:#fff;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:.875rem;font-weight:700"><?= $show_junk ? 'Delete permanently' : 'Move to Junk' ?></button>
-  <button type="button" onclick="toggleSelectMode()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:.875rem">Cancel</button>
-</div>
-
 <script>
 document.addEventListener('click', e => {
   const wrap = document.getElementById('import-menu-wrap');
   const dd   = document.getElementById('import-dropdown');
   if (wrap && dd && !wrap.contains(e.target)) dd.style.display = 'none';
-  if (dd && wrap && wrap.contains(e.target) && dd.classList.contains('open')) {
-    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
-    dd.classList.remove('open');
-  }
 });
 
-let selectMode = false;
-const grid = document.getElementById('contact-grid');
-
-function toggleSelectMode() {
-  selectMode = !selectMode;
-  if (grid) grid.classList.toggle('select-mode', selectMode);
-  document.getElementById('select-btn').classList.toggle('active', selectMode);
-  if (!selectMode) { deselectAll(); document.getElementById('bulk-bar').classList.remove('visible'); }
-}
-
-// Intercept all card clicks in select mode (handles both card body AND checkbox)
-if (grid) {
-  grid.addEventListener('click', e => {
-    if (!selectMode) return;
-    const card = e.target.closest('.contact-card');
-    if (!card) return;
-    e.preventDefault();   // stop navigation
-    e.stopPropagation();  // stop document handler
-    const cb = card.querySelector('.card-check');
-    // If they clicked the checkbox directly, browser may have already toggled it
-    // Read the new state rather than flipping again
-    const nowChecked = e.target === cb ? cb.checked : !cb.checked;
-    cb.checked = nowChecked;
-    card.classList.toggle('selected', nowChecked);
-    updateBulkBar();
-  });
-}
-
-function handleCheck(e) {
-  // Grid listener handles everything; just stop the event here
+function junkCard(e, btn, contactId, isDelete) {
   e.preventDefault();
   e.stopPropagation();
-}
-
-function updateBulkBar() {
-  const checked = document.querySelectorAll('.card-check:checked').length;
-  document.getElementById('bulk-count').textContent = checked + ' selected';
-  document.getElementById('bulk-bar').classList.toggle('visible', checked > 0);
-}
-
-function selectAll() {
-  document.querySelectorAll('.card-check').forEach(cb => {
-    cb.checked = true; cb.closest('.contact-card').classList.add('selected');
-  });
-  updateBulkBar();
-}
-
-function deselectAll() {
-  document.querySelectorAll('.card-check').forEach(cb => {
-    cb.checked = false; cb.closest('.contact-card').classList.remove('selected');
-  });
-  updateBulkBar();
-}
-
-function confirmDelete() {
-  const n = document.querySelectorAll('.card-check:checked').length;
-  if (!n) return;
-  const isJunk = <?= $show_junk ? 'true' : 'false' ?>;
-  const msg = isJunk
-    ? `Permanently delete ${n} contact${n>1?'s':''} from junk? This cannot be undone.`
-    : `Move ${n} contact${n>1?'s':''} to junk? They won't be imported again.`;
-  if (confirm(msg)) {
-    document.getElementById('bulk-form').submit();
-  }
+  const card = btn.closest('.contact-card');
+  const action = isDelete ? 'delete_one' : 'junk_one';
+  const fd = new FormData();
+  fd.append('action', action);
+  fd.append('contact_id', contactId);
+  fetch('index.php', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        card.classList.add('fading');
+        setTimeout(() => card.remove(), 260);
+      }
+    });
 }
 </script>
 </body>
