@@ -1,0 +1,158 @@
+<?php
+require_once __DIR__ . '/../session_guard.php';
+require_once __DIR__ . '/cc_db.php';
+
+$member = cc_member($_SESSION['auth_email']);
+if (!$member) { header('Location: /CVwebapp/index.php'); exit; }
+
+$db = getDB();
+$search = trim($_GET['q'] ?? '');
+$space  = $_GET['space'] ?? 'personal';
+
+// Build contact list query
+$where  = ['c.owner_member_id = ?'];
+$params = [$member['member_id']];
+
+if ($space === 'shared') {
+    $where  = ["c.space = 'shared'"];
+    $params = [];
+}
+
+if ($search !== '') {
+    $where[]  = '(p.full_name LIKE ? OR p.current_role LIKE ? OR p.current_company LIKE ?)';
+    $like = "%{$search}%";
+    $params[] = $like; $params[] = $like; $params[] = $like;
+}
+
+$where_sql = implode(' AND ', $where);
+
+$contacts = $db->prepare("
+    SELECT c.contact_id, c.space, c.relationship_strength, c.relationship_origin,
+           c.added_at, c.origin_source,
+           p.full_name, p.current_role, p.current_company, p.city, p.cluster_id,
+           glv.value AS relationship_type_label,
+           GROUP_CONCAT(DISTINCT ce.email ORDER BY ce.is_primary DESC SEPARATOR ', ') AS emails,
+           GROUP_CONCAT(DISTINCT ct.tag ORDER BY ct.tag SEPARATOR ',') AS tags
+    FROM contacts c
+    LEFT JOIN person_clusters p ON p.cluster_id = c.cluster_id
+    LEFT JOIN global_list_values glv ON glv.value_id = c.relationship_type
+    LEFT JOIN cluster_emails ce ON ce.cluster_id = c.cluster_id
+    LEFT JOIN contact_tags ct ON ct.cluster_id = c.cluster_id
+    WHERE {$where_sql}
+    GROUP BY c.contact_id
+    ORDER BY p.full_name ASC
+");
+$contacts->execute($params);
+$rows = $contacts->fetchAll();
+
+function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES|ENT_HTML5, 'UTF-8'); }
+
+$nav_active = 'contacts_personal';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CoreContacts — Personal Space</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
+    .page{padding:36px 40px;max-width:1100px}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+    .page-header h1{font-family:Georgia,serif;font-size:1.5rem;font-weight:700}
+    .page-header h1 span{color:#C9972A}
+    .tab-bar{display:flex;gap:4px;background:#e9ebf0;border-radius:8px;padding:4px;margin-bottom:24px;width:fit-content}
+    .tab-bar a{padding:7px 18px;border-radius:6px;font-size:.85rem;font-weight:600;color:#6b7280;text-decoration:none;transition:all .15s}
+    .tab-bar a.active{background:#fff;color:#1a1a2e;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+    .toolbar{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+    .search-box{flex:1;min-width:200px;max-width:360px;position:relative}
+    .search-box input{width:100%;padding:9px 12px 9px 36px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.875rem;outline:none;font-family:inherit;background:#fff}
+    .search-box input:focus{border-color:#C9972A}
+    .search-box svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:.875rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit;transition:background .15s}
+    .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
+    .contact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+    .contact-card{background:#fff;border:1px solid #e2e5ef;border-radius:10px;padding:20px;text-decoration:none;color:inherit;display:block;transition:box-shadow .15s,border-color .15s}
+    .contact-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);border-color:#C9972A}
+    .card-name{font-weight:700;font-size:1rem;margin-bottom:3px}
+    .card-role{font-size:.82rem;color:#6b7280;margin-bottom:10px}
+    .card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .badge{font-size:.72rem;padding:3px 8px;border-radius:12px;font-weight:600}
+    .badge-space-personal{background:#e0f2fe;color:#0369a1}
+    .badge-space-shared{background:#dcfce7;color:#166534}
+    .badge-strength-close{background:#fef3c7;color:#92400e}
+    .badge-strength-acquaintance{background:#f3f4f6;color:#374151}
+    .badge-strength-distant{background:#f3f4f6;color:#9ca3af}
+    .card-tags{display:flex;gap:4px;flex-wrap:wrap}
+    .tag{font-size:.7rem;padding:2px 7px;border-radius:10px;background:#f3f4f6;color:#374151}
+    .empty{text-align:center;padding:64px 20px;color:#9ca3af}
+    .empty h2{font-size:1.1rem;margin-bottom:8px;color:#6b7280}
+    .count{font-size:.82rem;color:#9ca3af;margin-left:auto}
+  </style>
+</head>
+<body>
+<div class="cv-layout">
+  <?php require __DIR__ . '/../nav.php'; ?>
+  <div class="page">
+    <div class="page-header">
+      <h1>Core<span>Contacts</span></h1>
+      <a href="add.php" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add contact
+      </a>
+    </div>
+
+    <div class="tab-bar">
+      <a href="?space=personal" class="<?= $space === 'personal' ? 'active' : '' ?>">My Contacts</a>
+      <a href="?space=shared"   class="<?= $space === 'shared'   ? 'active' : '' ?>">Team View</a>
+    </div>
+
+    <div class="toolbar">
+      <form method="GET" style="display:contents">
+        <input type="hidden" name="space" value="<?= h($space) ?>"/>
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" name="q" value="<?= h($search) ?>" placeholder="Search by name, role, company…" autofocus/>
+        </div>
+      </form>
+      <span class="count"><?= count($rows) ?> contact<?= count($rows) !== 1 ? 's' : '' ?></span>
+    </div>
+
+    <?php if (empty($rows)): ?>
+      <div class="empty">
+        <h2><?= $search ? 'No contacts match your search' : ($space === 'personal' ? 'No contacts yet' : 'No shared contacts yet') ?></h2>
+        <p><?= $search ? '' : ($space === 'personal' ? 'Add your first contact to get started.' : 'Share contacts from your personal space to see them here.') ?></p>
+      </div>
+    <?php else: ?>
+      <div class="contact-grid">
+        <?php foreach ($rows as $row): ?>
+          <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card">
+            <div class="card-name"><?= h($row['full_name'] ?: '(no name)') ?></div>
+            <div class="card-role">
+              <?= h(implode(' · ', array_filter([$row['current_role'], $row['current_company']]))) ?>
+            </div>
+            <div class="card-meta">
+              <span class="badge badge-space-<?= $row['space'] ?>"><?= $row['space'] ?></span>
+              <?php if ($row['relationship_strength']): ?>
+                <span class="badge badge-strength-<?= $row['relationship_strength'] ?>"><?= $row['relationship_strength'] ?></span>
+              <?php endif ?>
+              <?php if ($row['relationship_type_label']): ?>
+                <span class="badge" style="background:#f3f4f6;color:#374151"><?= h($row['relationship_type_label']) ?></span>
+              <?php endif ?>
+            </div>
+            <?php if ($row['tags']): ?>
+              <div class="card-tags">
+                <?php foreach (explode(',', $row['tags']) as $tag): ?>
+                  <span class="tag"><?= h($tag) ?></span>
+                <?php endforeach ?>
+              </div>
+            <?php endif ?>
+          </a>
+        <?php endforeach ?>
+      </div>
+    <?php endif ?>
+  </div>
+</div>
+</body>
+</html>
