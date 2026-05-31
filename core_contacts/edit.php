@@ -199,7 +199,13 @@ $nav_active = 'contacts_personal';
   <?php require __DIR__ . '/../nav.php'; ?>
   <div class="page">
     <a href="contact.php?id=<?= h($contact_id) ?>" class="back">← <?= h($row['full_name']) ?></a>
-    <h1>Edit Contact</h1>
+    <h1><?= isset($_GET['adopted']) ? 'Add your relationship context' : 'Edit Contact' ?></h1>
+
+    <?php if (isset($_GET['adopted'])): ?>
+      <div class="alert alert-info" style="background:#e0f2fe;border:1px solid #bae6fd;color:#0369a1;border-radius:7px;padding:11px 16px;margin-bottom:20px;font-size:.85rem">
+        Contact adopted from Team View. Fill in how you know them and save.
+      </div>
+    <?php endif ?>
 
     <?php if ($errors): ?>
       <div class="error-box"><?= implode('<br>', array_map('h', $errors)) ?></div>

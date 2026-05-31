@@ -7,16 +7,10 @@ if (!$member) { header('Location: /CVwebapp/index.php'); exit; }
 
 $db = getDB();
 $search = trim($_GET['q'] ?? '');
-$space  = $_GET['space'] ?? 'personal';
+$space  = 'personal';
 
-// Build contact list query
 $where  = ['c.owner_member_id = ?'];
 $params = [$member['member_id']];
-
-if ($space === 'shared') {
-    $where  = ["c.space = 'shared'"];
-    $params = [];
-}
 
 if ($search !== '') {
     $where[]  = '(p.full_name LIKE ? OR p.current_role LIKE ? OR p.current_company LIKE ?)';
@@ -104,8 +98,8 @@ $nav_active = 'contacts_personal';
     </div>
 
     <div class="tab-bar">
-      <a href="?space=personal" class="<?= $space === 'personal' ? 'active' : '' ?>">My Contacts</a>
-      <a href="?space=shared"   class="<?= $space === 'shared'   ? 'active' : '' ?>">Team View</a>
+      <a href="index.php" class="active">My Contacts</a>
+      <a href="team.php">Team View</a>
     </div>
 
     <div class="toolbar">
