@@ -180,7 +180,7 @@ $nav_active = 'contacts_personal';
       <div class="contact-grid" id="contact-grid">
         <?php foreach ($rows as $row): ?>
           <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card" data-id="<?= h($row['contact_id']) ?>">
-            <input type="checkbox" class="card-check" name="ids[]" value="<?= h($row['contact_id']) ?>" onclick="handleCheck(event, this)"/>
+            <input type="checkbox" class="card-check" name="ids[]" value="<?= h($row['contact_id']) ?>" onclick="handleCheck(event)"/>
             <div class="card-name"><?= h($row['full_name'] ?: '(no name)') ?></div>
             <div class="card-role">
               <?= h(implode(' · ', array_filter([$row['current_role'], $row['current_company']]))) ?>
@@ -229,28 +229,36 @@ document.addEventListener('click', e => {
 });
 
 let selectMode = false;
+const grid = document.getElementById('contact-grid');
 
 function toggleSelectMode() {
   selectMode = !selectMode;
-  document.getElementById('contact-grid').classList.toggle('select-mode', selectMode);
+  if (grid) grid.classList.toggle('select-mode', selectMode);
   document.getElementById('select-btn').classList.toggle('active', selectMode);
   if (!selectMode) { deselectAll(); document.getElementById('bulk-bar').classList.remove('visible'); }
 }
 
-// Intercept card clicks in select mode
-document.getElementById('contact-grid').addEventListener('click', e => {
-  if (!selectMode) return;
-  const card = e.target.closest('.contact-card');
-  if (!card) return;
-  e.preventDefault();
-  const cb = card.querySelector('.card-check');
-  cb.checked = !cb.checked;
-  card.classList.toggle('selected', cb.checked);
-  updateBulkBar();
-});
+// Intercept all card clicks in select mode (handles both card body AND checkbox)
+if (grid) {
+  grid.addEventListener('click', e => {
+    if (!selectMode) return;
+    const card = e.target.closest('.contact-card');
+    if (!card) return;
+    e.preventDefault();   // stop navigation
+    e.stopPropagation();  // stop document handler
+    const cb = card.querySelector('.card-check');
+    // If they clicked the checkbox directly, browser may have already toggled it
+    // Read the new state rather than flipping again
+    const nowChecked = e.target === cb ? cb.checked : !cb.checked;
+    cb.checked = nowChecked;
+    card.classList.toggle('selected', nowChecked);
+    updateBulkBar();
+  });
+}
 
-function handleCheck(e, cb) {
-  // handled by card click listener above
+function handleCheck(e) {
+  // Grid listener handles everything; just stop the event here
+  e.preventDefault();
   e.stopPropagation();
 }
 
