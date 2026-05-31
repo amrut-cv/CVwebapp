@@ -337,7 +337,7 @@ $nav_active = 'contacts_dupes';
               <div class="side-role"><?= h(implode(' · ', array_filter([$pair['role_a'],$pair['company_a']]))) ?></div>
               <?php if ($pair['email_a']): ?><div class="side-detail"><span>Email:</span> <?= h($pair['email_a']) ?></div><?php endif ?>
               <?php if ($pair['phone_a']): ?><div class="side-detail"><span>Phone:</span> <?= h($pair['phone_a']) ?></div><?php endif ?>
-              <?php if ($pair['li_a']): ?><div class="side-detail"><span>LinkedIn:</span> ✓</div><?php endif ?>
+              <?php if ($pair['li_a']): ?><div class="side-detail"><span>LinkedIn:</span> <a href="<?= h($pair['li_a']) ?>" target="_blank" rel="noopener" style="color:#0369a1">Open ↗</a></div><?php endif ?>
               <span class="side-source"><?= h($pair['src_a']) ?></span>
             </div>
             <div class="vs">vs</div>
@@ -346,7 +346,7 @@ $nav_active = 'contacts_dupes';
               <div class="side-role"><?= h(implode(' · ', array_filter([$pair['role_b'],$pair['company_b']]))) ?></div>
               <?php if ($pair['email_b']): ?><div class="side-detail"><span>Email:</span> <?= h($pair['email_b']) ?></div><?php endif ?>
               <?php if ($pair['phone_b']): ?><div class="side-detail"><span>Phone:</span> <?= h($pair['phone_b']) ?></div><?php endif ?>
-              <?php if ($pair['li_b']): ?><div class="side-detail"><span>LinkedIn:</span> ✓</div><?php endif ?>
+              <?php if ($pair['li_b']): ?><div class="side-detail"><span>LinkedIn:</span> <a href="<?= h($pair['li_b']) ?>" target="_blank" rel="noopener" style="color:#0369a1">Open ↗</a></div><?php endif ?>
               <span class="side-source"><?= h($pair['src_b']) ?></span>
             </div>
           </div>
