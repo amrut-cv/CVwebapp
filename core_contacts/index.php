@@ -92,10 +92,16 @@ $nav_active = 'contacts_personal';
     <div class="page-header">
       <h1>Core<span>Contacts</span></h1>
       <div style="display:flex;gap:10px">
-        <a href="import_linkedin.php" class="btn btn-ghost">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Import
-        </a>
+        <div style="position:relative" id="import-menu-wrap">
+          <button onclick="document.getElementById('import-dropdown').classList.toggle('open')" class="btn btn-ghost" type="button">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import ▾
+          </button>
+          <div id="import-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e5ef;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.1);min-width:180px;z-index:50;overflow:hidden">
+            <a href="import_linkedin.php" style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none;border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">LinkedIn CSV</a>
+            <a href="import_vcf.php"      style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">Phone contacts (.vcf)</a>
+          </div>
+        </div>
         <a href="add.php" class="btn btn-primary">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add contact
@@ -154,5 +160,16 @@ $nav_active = 'contacts_personal';
     <?php endif ?>
   </div>
 </div>
+<script>
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('import-menu-wrap');
+  const dd   = document.getElementById('import-dropdown');
+  if (wrap && dd && !wrap.contains(e.target)) dd.style.display = 'none';
+  if (dd && wrap && wrap.contains(e.target) && dd.classList.contains('open')) {
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+    dd.classList.remove('open');
+  }
+});
+</script>
 </body>
 </html>
