@@ -175,9 +175,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'merge
                                              ELSE CONCAT(w.notes, '\n---\n', l.notes) END
                 WHERE w.cluster_id=?")->execute([$loser_id, $winner_id]);
 
+            // Find the loser's contact_id for this member before redirecting
+            $loser_contact = $db->prepare("SELECT contact_id FROM contacts WHERE cluster_id=? AND owner_member_id=? LIMIT 1");
+            $loser_contact->execute([$loser_id, $mid]);
+            $loser_contact_id = $loser_contact->fetchColumn();
+
             // Redirect all contacts on loser cluster to winner
             $db->prepare("UPDATE contacts SET cluster_id=? WHERE cluster_id=?")
               ->execute([$winner_id, $loser_id]);
+
+            // Delete the duplicate contact row (same member now has two rows on winner cluster)
+            if ($loser_contact_id) {
+                $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$loser_contact_id]);
+            }
 
             // Delete loser cluster
             $db->prepare("DELETE FROM person_clusters WHERE cluster_id=?")->execute([$loser_id]);
