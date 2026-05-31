@@ -7,42 +7,39 @@ if (!$member) { header('Location: /CVwebapp/index.php'); exit; }
 
 $db = getDB();
 
-// ── Bulk delete ───────────────────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
+$search    = trim($_GET['q'] ?? '');
+$space     = 'personal';
+$show_junk = isset($_GET['junk']);
+
+// ── Bulk junk ────────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_junk') {
     $ids = $_POST['ids'] ?? [];
     if ($ids) {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        // Only delete contacts owned by this member
-        $del = $db->prepare("SELECT c.contact_id, c.cluster_id FROM contacts c
-            WHERE c.contact_id IN ($placeholders) AND c.owner_member_id = ?");
-        $del->execute([...$ids, $member['member_id']]);
-        $to_delete = $del->fetchAll();
-
-        foreach ($to_delete as $row) {
-            // Delete duplicate_links refs first
-            $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")
-              ->execute([$row['contact_id'], $row['contact_id']]);
-            // Delete the contact
-            $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$row['contact_id']]);
-            // Delete the cluster if no other contacts reference it
-            $still_used = $db->prepare("SELECT COUNT(*) FROM contacts WHERE cluster_id=?");
-            $still_used->execute([$row['cluster_id']]);
-            if ($still_used->fetchColumn() == 0) {
-                foreach (['cluster_emails','cluster_phones','contact_tags','education','experience'] as $t) {
-                    $db->prepare("DELETE FROM $t WHERE cluster_id=?")->execute([$row['cluster_id']]);
-                }
-                $db->prepare("DELETE FROM person_clusters WHERE cluster_id=?")->execute([$row['cluster_id']]);
-            }
-        }
+        $db->prepare("UPDATE contacts SET is_junk=1
+            WHERE contact_id IN ($placeholders) AND owner_member_id = ?")
+          ->execute([...$ids, $member['member_id']]);
     }
     header('Location: index.php' . ($search ? '?q='.urlencode($search) : ''));
     exit;
 }
 
-$search = trim($_GET['q'] ?? '');
-$space  = 'personal';
-
-$where  = ['c.owner_member_id = ?'];
+// ── Bulk delete (from junk view) ─────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'bulk_delete') {
+    $ids = $_POST['ids'] ?? [];
+    if ($ids) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        foreach ($ids as $cid) {
+            $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")->execute([$cid, $cid]);
+        }
+        $db->prepare("DELETE FROM contacts
+            WHERE contact_id IN ($placeholders) AND owner_member_id = ? AND is_junk = 1")
+          ->execute([...$ids, $member['member_id']]);
+    }
+    header('Location: index.php?junk=1');
+    exit;
+}
+$where  = ['c.owner_member_id = ?', $show_junk ? 'c.is_junk = 1' : 'c.is_junk = 0'];
 $params = [$member['member_id']];
 
 if ($search !== '') {
@@ -156,8 +153,9 @@ $nav_active = 'contacts_personal';
     </div>
 
     <div class="tab-bar">
-      <a href="index.php" class="active">My Contacts</a>
+      <a href="index.php" class="<?= !$show_junk ? 'active' : '' ?>">My Contacts</a>
       <a href="team.php">Team View</a>
+      <a href="index.php?junk=1" class="<?= $show_junk ? 'active' : '' ?>">Junk</a>
     </div>
 
     <div class="toolbar">
@@ -178,7 +176,7 @@ $nav_active = 'contacts_personal';
       </div>
     <?php else: ?>
       <form method="POST" id="bulk-form">
-        <input type="hidden" name="action" value="bulk_delete"/>
+        <input type="hidden" name="action" value="<?= $show_junk ? 'bulk_delete' : 'bulk_junk' ?>"/>
       <div class="contact-grid" id="contact-grid">
         <?php foreach ($rows as $row): ?>
           <a href="contact.php?id=<?= h($row['contact_id']) ?>" class="contact-card" data-id="<?= h($row['contact_id']) ?>">
@@ -215,7 +213,7 @@ $nav_active = 'contacts_personal';
   <button type="button" onclick="selectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Select all</button>
   <button type="button" onclick="deselectAll()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">Deselect all</button>
   <div style="flex:1"></div>
-  <button type="button" onclick="confirmDelete()" style="background:#ef4444;color:#fff;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:.875rem;font-weight:700">Delete selected</button>
+  <button type="button" onclick="confirmDelete()" style="background:#ef4444;color:#fff;border:none;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:.875rem;font-weight:700"><?= $show_junk ? 'Delete permanently' : 'Move to Junk' ?></button>
   <button type="button" onclick="toggleSelectMode()" style="background:rgba(255,255,255,.1);color:#fff;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:.875rem">Cancel</button>
 </div>
 
@@ -239,12 +237,21 @@ function toggleSelectMode() {
   if (!selectMode) { deselectAll(); document.getElementById('bulk-bar').classList.remove('visible'); }
 }
 
-function handleCheck(e, cb) {
+// Intercept card clicks in select mode
+document.getElementById('contact-grid').addEventListener('click', e => {
+  if (!selectMode) return;
+  const card = e.target.closest('.contact-card');
+  if (!card) return;
   e.preventDefault();
-  e.stopPropagation();
+  const cb = card.querySelector('.card-check');
   cb.checked = !cb.checked;
-  cb.closest('.contact-card').classList.toggle('selected', cb.checked);
+  card.classList.toggle('selected', cb.checked);
   updateBulkBar();
+});
+
+function handleCheck(e, cb) {
+  // handled by card click listener above
+  e.stopPropagation();
 }
 
 function updateBulkBar() {
@@ -270,7 +277,10 @@ function deselectAll() {
 function confirmDelete() {
   const n = document.querySelectorAll('.card-check:checked').length;
   if (!n) return;
-  if (confirm(`Delete ${n} contact${n>1?'s':''}? This cannot be undone.`)) {
+  const msg = <?= $show_junk ? 'true' : 'false' ?>
+    ? `Permanently delete ${n} contact${n>1?\'s\':\'\'} from junk? This cannot be undone.`
+    : `Move ${n} contact${n>1?\'s\':\'\'} to junk? They won\'t be imported again.`;
+  if (confirm(msg)) {
     document.getElementById('bulk-form').submit();
   }
 }
