@@ -308,8 +308,7 @@ $nav_active = 'contacts_personal';
       <?php
         $new_contacts     = array_filter($preview, fn($r) => !$r['already_in']);
         $matched_contacts = array_filter($preview, fn($r) =>  $r['already_in']);
-        $rel_type_alumni  = '';
-        foreach ($rel_types as $rt) { if ($rt['value'] === 'alumni') $rel_type_alumni = $rt['value_id']; }
+        $rel_type_alumni  = ''; // no default — user picks per contact
       ?>
 
       <div class="info-box">

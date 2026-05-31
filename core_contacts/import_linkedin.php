@@ -297,8 +297,7 @@ $nav_active = 'contacts_personal';
                     <select name="rel_type_<?= $i ?>">
                       <option value="">— type —</option>
                       <?php foreach ($rel_types as $rt): ?>
-                        <option value="<?= h($rt['value_id']) ?>"
-                          <?= $rt['value'] === 'alumni' ? 'selected' : '' ?>>
+                        <option value="<?= h($rt['value_id']) ?>">
                           <?= h($rt['value']) ?>
                         </option>
                       <?php endforeach ?>
