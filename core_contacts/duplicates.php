@@ -184,8 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'merge
             $db->prepare("UPDATE contacts SET cluster_id=? WHERE cluster_id=?")
               ->execute([$winner_id, $loser_id]);
 
-            // Delete the duplicate contact row (same member now has two rows on winner cluster)
+            // Remove duplicate_links rows referencing the loser contact before deleting it
             if ($loser_contact_id) {
+                $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")
+                  ->execute([$loser_contact_id, $loser_contact_id]);
                 $db->prepare("DELETE FROM contacts WHERE contact_id=?")->execute([$loser_contact_id]);
             }
 
