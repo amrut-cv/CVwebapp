@@ -100,7 +100,8 @@ $nav_active = 'contacts_personal';
           <div id="import-dropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e5ef;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.1);min-width:180px;z-index:50;overflow:hidden">
             <a href="import_google.php"   style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none;border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">Google Contacts CSV</a>
             <a href="import_linkedin.php" style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none;border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">LinkedIn CSV</a>
-            <a href="import_vcf.php"      style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">Phone contacts (.vcf)</a>
+            <a href="import_vcf.php"      style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none;border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">Phone contacts (.vcf)</a>
+            <a href="import_whatsapp.php" style="display:block;padding:11px 16px;font-size:.85rem;color:#1a1a2e;text-decoration:none" onmouseover="this.style.background='#f7f8fc'" onmouseout="this.style.background=''">WhatsApp group chat</a>
           </div>
         </div>
         <a href="add.php" class="btn btn-primary">
