@@ -1,57 +1,53 @@
 <?php
 session_start();
-require __DIR__ . '/ses_config.php';
-
-const ALLOWED = [
-    'amrut@corevoice.in',
-    'subhasmita@corevoice.in',
-    'nikhil@corevoice.in',
-    'piyush@corevoice.in',
-];
 
 if (!empty($_SESSION['auth_email'])) {
     header('Location: index.php');
     exit;
 }
 
+if (empty($_SESSION['otp_email']) || empty($_SESSION['otp_code']) || empty($_SESSION['otp_expires'])) {
+    header('Location: login.php');
+    exit;
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = strtolower(trim($_POST['email'] ?? ''));
+    $entered = trim($_POST['otp'] ?? '');
 
-    if (!in_array($email, ALLOWED, true)) {
-        $error = 'That email is not authorised.';
+    if (time() > $_SESSION['otp_expires']) {
+        session_unset();
+        header('Location: login.php?expired=1');
+        exit;
+    }
+
+    if (!hash_equals($_SESSION['otp_code'], $entered)) {
+        $error = 'Incorrect code. Please try again.';
     } else {
-        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $_SESSION['otp_email']   = $email;
-        $_SESSION['otp_code']    = $otp;
-        $_SESSION['otp_expires'] = time() + 300; // 5 minutes
-
-        $sent = ses_send(
-            $email,
-            'Your CoreVoice sign-in code',
-            "Your one-time sign-in code is: {$otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, ignore this email."
-        );
-
-        if ($sent) {
-            header('Location: verify.php');
-            exit;
-        } else {
-            $error = 'Failed to send OTP. Please try again.';
-        }
+        $email = $_SESSION['otp_email'];
+        session_unset();
+        session_regenerate_id(true);
+        $_SESSION['auth_email'] = $email;
+        $_SESSION['auth_time']  = time();
+        header('Location: index.php');
+        exit;
     }
 }
 
 function h(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
+
+$email = $_SESSION['otp_email'];
+$expires_in = max(0, $_SESSION['otp_expires'] - time());
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoreVoice — Sign in</title>
+  <title>CoreVoice — Enter code</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -87,12 +83,12 @@ function h(string $s): string {
       color: #374151; margin-bottom: 6px;
       text-transform: uppercase; letter-spacing: .07em;
     }
-    input[type=email] {
+    input[type=text] {
       width: 100%; padding: 12px 14px;
       border: 1.5px solid #d1d5db; border-radius: 7px;
-      font-size: .95rem; color: #1a1a2e; outline: none;
+      font-size: 1.4rem; color: #1a1a2e; outline: none;
       transition: border-color .15s; margin-bottom: 20px;
-      font-family: inherit;
+      font-family: inherit; letter-spacing: .25em; text-align: center;
     }
     input:focus { border-color: #C9972A; }
     button[type=submit] {
@@ -103,26 +99,42 @@ function h(string $s): string {
       cursor: pointer; transition: background .15s; font-family: inherit;
     }
     button[type=submit]:hover { background: #2d2d4e; }
+    .back { margin-top: 18px; text-align: center; font-size: .82rem; color: #6b7280; }
+    .back a { color: #C9972A; text-decoration: none; }
+    .timer { font-size: .78rem; color: #9ca3af; margin-bottom: 20px; }
   </style>
 </head>
 <body>
 <div class="card">
   <div class="logo"><span class="cv">Core</span><span class="voice">Voice</span></div>
-  <h1>Sign in</h1>
-  <p class="sub">Enter your CoreVoice email and we'll send you a one-time code.</p>
+  <h1>Check your email</h1>
+  <p class="sub">We sent a 6-digit code to <strong><?= h($email) ?></strong>.</p>
+  <p class="timer">Code expires in <span id="countdown"><?= $expires_in ?></span>s</p>
 
   <?php if ($error): ?>
     <div class="error"><?= h($error) ?></div>
   <?php endif; ?>
 
   <form method="POST">
-    <label for="email">Email address</label>
-    <input type="email" id="email" name="email"
-           value="<?= h($_POST['email'] ?? '') ?>"
-           placeholder="you@corevoice.in"
+    <label for="otp">One-time code</label>
+    <input type="text" id="otp" name="otp"
+           maxlength="6" pattern="\d{6}"
+           placeholder="000000"
+           inputmode="numeric"
+           autocomplete="one-time-code"
            required autofocus />
-    <button type="submit">Send code →</button>
+    <button type="submit">Verify →</button>
   </form>
+  <p class="back"><a href="login.php">← Use a different email</a></p>
 </div>
+<script>
+  let t = <?= $expires_in ?>;
+  const el = document.getElementById('countdown');
+  const iv = setInterval(() => {
+    t--;
+    if (t <= 0) { clearInterval(iv); el.textContent = '0'; }
+    else el.textContent = t;
+  }, 1000);
+</script>
 </body>
 </html>
