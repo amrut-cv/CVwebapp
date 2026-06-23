@@ -1003,13 +1003,14 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.querySelectorAll('.trigger').forEach(el => {
       el.checked = (d.triggers || []).includes(el.value);
     });
-    document.querySelectorAll('.scope').forEach(el => {
-      el.checked = (d.scope || []).includes(el.value);
-    });
     if (d.engagementType) {
       const card = document.querySelector(`[data-eng="${d.engagementType}"]`);
       if (card) selectEng(card);
     }
+    // Restore saved scope AFTER selectEng, otherwise selectEng overwrites it with the preset
+    document.querySelectorAll('.scope').forEach(el => {
+      el.checked = (d.scope || []).includes(el.value);
+    });
     if (d.currency)      setPill('currency', d.currency);
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
     if (d.cadence)       setPill('cadence', d.cadence);
