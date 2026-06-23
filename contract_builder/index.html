@@ -176,6 +176,8 @@
     }
     .check-item:hover { border-color: var(--accent); background: var(--accent-light); }
     .check-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+    .check-item.suggested { border-color: #7c3aed; background: #f5f3ff; }
+    .check-item.suggested::after { content: '✦ Suggested'; float: right; font-size: .65rem; font-weight: 700; color: #7c3aed; white-space: nowrap; margin-left: auto; padding-left: 6px; }
 
     /* ── Engagement cards ── */
     .eng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
@@ -862,10 +864,11 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     card.classList.add('selected');
     selectedEng = card.dataset.eng;
 
-    // Pre-select scope checkboxes
+    // Mark suggested scope items without auto-checking
     const preset = SCOPE_PRESETS[selectedEng] || [];
     document.querySelectorAll('.scope').forEach(cb => {
-      cb.checked = preset.includes(cb.value);
+      const item = cb.closest('.check-item');
+      if (item) item.classList.toggle('suggested', preset.includes(cb.value));
     });
   }
 
