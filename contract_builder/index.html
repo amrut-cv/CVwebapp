@@ -176,6 +176,11 @@
     }
     .check-item:hover { border-color: var(--accent); background: var(--accent-light); }
     .check-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+    .scope-add-row { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 4px; }
+    .scope-add-input { flex: 1; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px 12px; font-size: .85rem; outline: none; font-family: inherit; color: var(--text); background: white; }
+    .scope-add-input:focus { border-color: var(--accent); }
+    .scope-add-btn { padding: 8px 14px; background: var(--white); border: 1.5px solid var(--border); border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--text); white-space: nowrap; }
+    .scope-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── Engagement cards ── */
     .eng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
@@ -520,11 +525,6 @@
       <textarea id="objective" placeholder="What does the client want to achieve?"></textarea>
     </div>
 
-    <div class="field">
-      <label>Custom scope note <span class="text-muted">(optional)</span></label>
-      <input type="text" id="customScope" placeholder="Use this if the scope doesn't fit neatly into the checkboxes below" />
-    </div>
-
     <div class="section-head">Strategy</div>
     <div class="check-grid" id="strategyChecks">
       <label class="check-item"><input type="checkbox" class="scope" value="Positioning &amp; communication" /> Positioning &amp; communication</label>
@@ -538,6 +538,10 @@
       <label class="check-item"><input type="checkbox" class="scope" value="Content &amp; editorial strategy" /> Content &amp; editorial strategy</label>
       <label class="check-item"><input type="checkbox" class="scope" value="Founder personal brand strategy" /> Founder personal brand strategy</label>
       <label class="check-item"><input type="checkbox" class="scope" value="SEO, AEO &amp; AI visibility strategy" /> SEO, AEO &amp; AI visibility strategy</label>
+    </div>
+    <div class="scope-add-row">
+      <input type="text" class="scope-add-input" placeholder="Add to strategy…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('strategyChecks','strategy',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('strategyChecks','strategy',this.previousElementSibling)">+ Add</button>
     </div>
 
     <div class="section-head">Content</div>
@@ -559,6 +563,10 @@
       <label class="check-item"><input type="checkbox" class="scope" value="Thought leadership articles" /> Thought leadership articles</label>
       <label class="check-item"><input type="checkbox" class="scope" value="AI knowledge hub build" /> AI knowledge hub build</label>
     </div>
+    <div class="scope-add-row">
+      <input type="text" class="scope-add-input" placeholder="Add to content…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('contentChecks','content',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('contentChecks','content',this.previousElementSibling)">+ Add</button>
+    </div>
 
     <div class="section-head">Marketing ops</div>
     <div class="check-grid" id="opsChecks">
@@ -574,6 +582,10 @@
       <label class="check-item"><input type="checkbox" class="scope" value="Performance tracking &amp; dashboards" /> Performance tracking &amp; dashboards</label>
       <label class="check-item"><input type="checkbox" class="scope" value="Reporting &amp; dashboard setup" /> Reporting &amp; dashboard setup</label>
       <label class="check-item"><input type="checkbox" class="scope" value="AEO site architecture &amp; schema" /> AEO site architecture &amp; schema</label>
+    </div>
+    <div class="scope-add-row">
+      <input type="text" class="scope-add-input" placeholder="Add to marketing ops…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('opsChecks','ops',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('opsChecks','ops',this.previousElementSibling)">+ Add</button>
     </div>
 
     <div class="section-head">Governance cadence</div>
@@ -895,6 +907,26 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById('senderEmail').value = 'amrut@corevoice.in';
   }
 
+  /* ── Add custom scope item ──────────────────── */
+  function addScopeItem(gridId, section, input) {
+    const val = input.value.trim();
+    if (!val) return;
+    const grid = document.getElementById(gridId);
+    const label = document.createElement('label');
+    label.className = 'check-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'scope custom-scope';
+    cb.dataset.section = section;
+    cb.value = val;
+    cb.checked = true;
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(' ' + val));
+    grid.appendChild(label);
+    input.value = '';
+    input.focus();
+  }
+
   /* ── Generate — POST to generate.php ──────── */
   /* ── Draft save / load ───────────────────────── */
   let currentDraftId = null;
@@ -903,7 +935,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     const d = {};
     ['companyName','companyType','cin','gst','address','signatoryName','designation',
      'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
-     'effectiveDate','objective','customScope','additionalScope','monthlyFee',
+     'effectiveDate','objective','additionalScope','monthlyFee',
      'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
      'msgBody','senderName','senderTitle','senderEmail'].forEach(id => {
       const el = document.getElementById(id);
@@ -911,6 +943,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     });
     d.triggers      = Array.from(document.querySelectorAll('.trigger:checked')).map(e => e.value);
     d.scope         = Array.from(document.querySelectorAll('.scope:checked')).map(e => e.value);
+    d.customStrategyItems = Array.from(document.querySelectorAll('.custom-scope[data-section="strategy"]')).map(e => e.value);
+    d.customContentItems  = Array.from(document.querySelectorAll('.custom-scope[data-section="content"]')).map(e => e.value);
+    d.customOpsItems      = Array.from(document.querySelectorAll('.custom-scope[data-section="ops"]')).map(e => e.value);
     d.engagementType = selectedEng || '';
     ['currency','feeType','cadence','retainerTerms','fixedTerms','expenses'].forEach(name => {
       const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -922,7 +957,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   function restoreFormData(d) {
     ['companyName','companyType','cin','gst','address','signatoryName','designation',
      'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
-     'effectiveDate','objective','customScope','additionalScope','monthlyFee',
+     'effectiveDate','objective','additionalScope','monthlyFee',
      'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
      'msgBody','senderName','senderTitle','senderEmail'].forEach(id => {
       const el = document.getElementById(id);
@@ -935,7 +970,11 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       const card = document.querySelector(`[data-eng="${d.engagementType}"]`);
       if (card) selectEng(card);
     }
-    // Restore saved scope AFTER selectEng, otherwise selectEng overwrites it with the preset
+    // Recreate custom scope items, then restore checked state
+    [['strategy','strategyChecks'],['content','contentChecks'],['ops','opsChecks']].forEach(([section, gridId]) => {
+      const key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
+      (d[key] || []).forEach(val => { if (val) addScopeItem(gridId, section, {value: val, focus: ()=>{}}); });
+    });
     document.querySelectorAll('.scope').forEach(el => {
       el.checked = (d.scope || []).includes(el.value);
     });
@@ -1064,9 +1103,11 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 
     // Step 4
     add('objective',      document.getElementById('objective').value);
-    add('customScope',    document.getElementById('customScope').value);
     add('additionalScope',document.getElementById('additionalScope').value);
     document.querySelectorAll('.scope:checked').forEach(cb => add('scope[]', cb.value));
+    document.querySelectorAll('.custom-scope[data-section="strategy"]:checked').forEach(cb => add('customStrategy[]', cb.value));
+    document.querySelectorAll('.custom-scope[data-section="content"]:checked').forEach(cb => add('customContent[]', cb.value));
+    document.querySelectorAll('.custom-scope[data-section="ops"]:checked').forEach(cb => add('customOps[]', cb.value));
     add('cadence', radio('cadence'));
 
     // Step 5

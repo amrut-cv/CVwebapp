@@ -148,9 +148,18 @@ $opsAll = [
     'Community & audience building', 'Stakeholder communications', 'Marketing automation & CRM',
     'Performance tracking & dashboards', 'Reporting & dashboard setup', 'AEO site architecture & schema',
 ];
-$strategyScope = array_values(array_filter($scopeItems, fn($i) => in_array($i, $strategyAll)));
-$contentScope  = array_values(array_filter($scopeItems, fn($i) => in_array($i, $contentAll)));
-$opsScope      = array_values(array_filter($scopeItems, fn($i) => in_array($i, $opsAll)));
+$strategyScope = array_values(array_filter(array_merge(
+    array_filter($scopeItems, fn($i) => in_array($i, $strategyAll)),
+    cleanArr('customStrategy')
+)));
+$contentScope  = array_values(array_filter(array_merge(
+    array_filter($scopeItems, fn($i) => in_array($i, $contentAll)),
+    cleanArr('customContent')
+)));
+$opsScope      = array_values(array_filter(array_merge(
+    array_filter($scopeItems, fn($i) => in_array($i, $opsAll)),
+    cleanArr('customOps')
+)));
 
 /* ─────────────────────────────── contract scope display labels ── */
 $scopeContractLabels = [
