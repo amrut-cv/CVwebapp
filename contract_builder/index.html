@@ -176,8 +176,6 @@
     }
     .check-item:hover { border-color: var(--accent); background: var(--accent-light); }
     .check-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
-    .check-item.suggested { border-color: #7c3aed; background: #f5f3ff; }
-    .check-item.suggested::after { content: '✦ Suggested'; float: right; font-size: .65rem; font-weight: 700; color: #7c3aed; white-space: nowrap; margin-left: auto; padding-left: 6px; }
 
     /* ── Engagement cards ── */
     .eng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
@@ -187,14 +185,12 @@
     }
     .eng-card:hover    { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
     .eng-card.selected { border-color: var(--accent); background: var(--accent-light); }
-    .eng-card.suggested { border-color: #7c3aed; background: #f5f3ff; }
     .eng-card .eng-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
     .eng-card .badge {
       display: inline-block; font-size: .67rem; font-weight: 600;
       padding: 2px 7px; border-radius: 20px;
       background: #e0e7ff; color: #3730a3;
     }
-    .eng-card .badge.suggested-badge { background: #ede9fe; color: #7c3aed; }
     .eng-card .eng-title { font-weight: 700; font-size: .9rem; margin-bottom: 6px; }
     .eng-card .eng-desc  { font-size: .78rem; color: var(--muted); line-height: 1.4; }
     .eng-card .eng-triggers { font-size: .72rem; color: var(--muted); margin-top: 8px; font-style: italic; }
@@ -752,27 +748,6 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   let selectedEng    = null;
   let selectedOutput = null;
 
-  /* ── Trigger → engagement mapping ───────── */
-  const TRIGGER_MAP = {
-    'Need to reduce friction in sales':                       'content-retainer',
-    'Sales team lacks good supporting material':              'sales-video',
-    'Sales not working, needs a renewed vibe':                'gtm-relaunch',
-    'New product GTM / entering new segment / area':          'new-gtm',
-    'Post-fundraise, need to scale growth':                   'full-retainer',
-    "Market doesn't appreciate us enough":                    'outcome-retainer',
-    'Improve positioning for talent hiring':                  'outcome-retainer',
-    'Product is hard to explain':                             'sales-video',
-    'Preparing for fundraising event':                        'fundraising',
-    'Long sales cycle, need consistent engagement':           'content-retainer',
-    'Want to own category narrative':                         'content-retainer',
-    'Need video assets ASAP':                                 'sales-video',
-    'Founding team doing marketing':                          'full-retainer',
-    'Marketing function led by generalist (non-marketing)':  'full-retainer',
-    'Goal already defined':                                   'outcome-retainer',
-    'Timeline already defined':                               'outcome-retainer',
-    'Budget already defined':                                 'outcome-retainer',
-  };
-
   /* ── Scope presets per engagement type ───── */
   const SCOPE_PRESETS = {
     'full-retainer': [
@@ -819,54 +794,16 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       if (s === step) item.classList.add('active');
     });
 
-    if (step === 3) highlightSuggested();
-
     currentStep = step;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ── Highlight suggested engagement types ── */
-  function highlightSuggested() {
-    const counts = {};
-    document.querySelectorAll('.trigger:checked').forEach(cb => {
-      const eng = TRIGGER_MAP[cb.value];
-      if (eng) counts[eng] = (counts[eng] || 0) + 1;
-    });
-
-    const maxCount = Math.max(0, ...Object.values(counts));
-
-    document.querySelectorAll('.eng-card').forEach(card => {
-      card.classList.remove('suggested');
-      // Remove any existing suggested badge
-      const existing = card.querySelector('.suggested-badge');
-      if (existing) existing.remove();
-
-      if (!card.classList.contains('selected') && maxCount > 0 && counts[card.dataset.eng] === maxCount) {
-        card.classList.add('suggested');
-        const badge = document.createElement('span');
-        badge.className = 'badge suggested-badge';
-        badge.textContent = '✦ Suggested';
-        card.querySelector('.eng-badges').prepend(badge);
-      }
-    });
-  }
-
   /* ── Select engagement card ──────────────── */
   function selectEng(card) {
-    document.querySelectorAll('.eng-card').forEach(c => {
-      c.classList.remove('selected');
-      const sb = c.querySelector('.suggested-badge');
-      if (sb && !c.classList.contains('suggested')) sb.remove();
-    });
+    document.querySelectorAll('.eng-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
     selectedEng = card.dataset.eng;
 
-    // Mark suggested scope items without auto-checking
-    const preset = SCOPE_PRESETS[selectedEng] || [];
-    document.querySelectorAll('.scope').forEach(cb => {
-      const item = cb.closest('.check-item');
-      if (item) item.classList.toggle('suggested', preset.includes(cb.value));
-    });
   }
 
   /* ── Select output card ──────────────────── */
