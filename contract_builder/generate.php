@@ -101,17 +101,17 @@ $engLabels = [
     'new-gtm'          => 'New product GTM',
     'gtm-relaunch'     => 'GTM relaunch',
     'fundraising'      => 'Fundraising comms',
-    'sales-video'      => 'Sales video series',
+    'sales-video'      => 'Content sprint',
     'custom'           => 'Custom scope',
 ];
 $engDescs = [
     'full-retainer'    => 'Strategy, content, and marketing ops — all three running together on an ongoing basis. We operate as an external marketing team, shared across functions.',
-    'outcome-retainer' => 'A time-boxed engagement built around a specific goal. We define the target and the window together, then design and run whatever\'s needed to get there.',
-    'content-retainer' => 'Ongoing production of content assets — video, written, founder-led, or AI-optimised. Built to accumulate and compound over time.',
-    'new-gtm'          => 'Positioning, identity, website, and a full sales kit — deck, video, technical brochure. Optional press outreach. For companies launching for the first time or after a pivot.',
-    'gtm-relaunch'     => 'Visual refresh of existing brand artefacts, updated website, updated sales kit — deck, video, technical brochure. Optional booth redesign and press outreach.',
-    'fundraising'      => 'Narrative clean-up, pitch deck, and website tightening for startups heading into a funding round.',
-    'sales-video'      => '3–5 videos — product explainers, testimonials, or use-case demos — built specifically for sales enablement.',
+    'outcome-retainer' => 'Similar to full-stack retainer but it\'s time-boxed and around a specific goal. We define the target and the window together, then do everything needed to get there.',
+    'content-retainer' => 'Ongoing production of content assets — video, text, images, webpages, etc, etc. Built to accumulate and compound over time.',
+    'new-gtm'          => 'Positioning, identity, website, and a full sales kit (deck, videos, brochures, etc). Optional press outreach. For companies launching for the first time or after a pivot.',
+    'gtm-relaunch'     => 'Visual refresh of existing brand artefacts, updated website, updated sales kit (deck, videos, brochures, etc). Optional booth redesign and press outreach.',
+    'fundraising'      => 'Narrative clean-up, pitch deck, and website redesign (optional) for startups heading into a funding round.',
+    'sales-video'      => 'Fresh content for use in sales or others. Could be video focussed — product explainers, testimonials, or use-case demos. Could be other stuff.',
     'custom'           => 'Scope defined as agreed between the parties.',
 ];
 $engRationaleMap = [
