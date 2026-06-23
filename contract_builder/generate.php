@@ -25,6 +25,13 @@ function esc(string $s): string {
 function escNL(string $s): string {
     return nl2br(htmlspecialchars($s, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 }
+function rawHtml(string $s): string {
+    if (!$s) return '';
+    // Old plain-text drafts: no HTML tags — escape and convert newlines
+    if (!preg_match('/<[a-z]/i', $s)) return escNL($s);
+    // New rich-text content: allow safe formatting tags only
+    return strip_tags($s, '<p><br><strong><em><ul><ol><li>');
+}
 function fmtDate(string $d): string {
     if (!$d) return '';
     $ts = strtotime($d);
@@ -367,6 +374,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     }
     .note-sender strong { display: block; color: #1a1a2e; font-size: .88rem; margin-bottom: 1px; }
     .heard-quote { font-style: italic; color: #3a3a5e; font-size: .96rem; line-height: 1.82; margin-bottom: 20px; }
+    .heard-quote ul, .heard-quote ol, .scope-obj ul, .scope-obj ol, .ann-obj ul, .ann-obj ol { padding-left: 1.4em; margin: 6px 0; }
+    .heard-quote li, .scope-obj li, .ann-obj li { margin-bottom: 3px; }
     .trigger-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
     .trigger-list li {
       background: #f4f4f8; border-radius: 20px;
@@ -608,7 +617,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     <div class="prop-section">
       <div class="sec-label">What we heard from you</div>
       <div class="sec-title">What brought you here</div>
-      <?php if ($clientSaid): ?><div class="heard-quote"><?= escNL($clientSaid) ?></div><?php endif; ?>
+      <?php if ($clientSaid): ?><div class="heard-quote"><?= rawHtml($clientSaid) ?></div><?php endif; ?>
       <?php if ($triggers): ?>
         <ul class="trigger-list">
           <?php foreach ($triggers as $t): ?><li><?= esc($t) ?></li><?php endforeach; ?>
@@ -635,7 +644,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     <div class="prop-section">
       <div class="sec-label">Scope of work</div>
       <div class="sec-title">What we&rsquo;ll do</div>
-      <?php if ($objective): ?><div class="scope-obj"><?= escNL($objective) ?></div><?php endif; ?>
+      <?php if ($objective): ?><div class="scope-obj"><?= rawHtml($objective) ?></div><?php endif; ?>
       <?php if ($scopeItems): ?>
       <div class="scope-categories">
         <?php if ($strategyScope): ?>
@@ -893,7 +902,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 
     <?php if ($objective): ?>
       <div class="ann-kv" style="margin-top:14px;"><strong>Objective:</strong></div>
-      <div class="ann-obj"><?= esc($objective) ?></div>
+      <div class="ann-obj"><?= rawHtml($objective) ?></div>
     <?php endif; ?>
 
     <?php if ($scopeItems): ?>

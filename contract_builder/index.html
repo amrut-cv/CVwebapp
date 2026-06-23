@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CoreVoice — Contract Builder</title>
+  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -181,6 +182,19 @@
     .scope-add-input:focus { border-color: var(--accent); }
     .scope-add-btn { padding: 8px 14px; background: var(--white); border: 1.5px solid var(--border); border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--text); white-space: nowrap; }
     .scope-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Quill rich text editor ── */
+    .rte-wrap .ql-toolbar.ql-snow { border: 1.5px solid var(--border); border-radius: 7px 7px 0 0; padding: 6px 10px; background: #fafafa; }
+    .rte-wrap .ql-container.ql-snow { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 7px 7px; font-size: .9rem; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .rte-wrap .ql-editor { min-height: 90px; padding: 10px 13px; color: var(--text); line-height: 1.65; }
+    #clientSaidWrap .ql-editor { min-height: 120px; }
+    .rte-wrap .ql-editor.ql-blank::before { color: var(--muted); font-style: normal; left: 13px; right: 13px; }
+    .rte-wrap:focus-within .ql-toolbar.ql-snow,
+    .rte-wrap:focus-within .ql-container.ql-snow { border-color: var(--accent); }
+    .rte-wrap .ql-snow .ql-stroke { stroke: var(--muted); }
+    .rte-wrap .ql-snow .ql-fill { fill: var(--muted); }
+    .rte-wrap .ql-snow.ql-toolbar button:hover .ql-stroke { stroke: var(--accent); }
+    .rte-wrap .ql-editor ul, .rte-wrap .ql-editor ol { padding-left: 1.2em; }
 
     /* ── Engagement cards ── */
     .eng-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
@@ -386,7 +400,8 @@
 
     <div class="field">
       <label>What did the client say? <span class="req">*</span></label>
-      <textarea id="clientSaid" placeholder="A few lines is fine. This will appear in the proposal under 'What we heard from you.'" style="min-height:120px;"></textarea>
+      <div class="rte-wrap" id="clientSaidWrap"></div>
+      <input type="hidden" id="clientSaid" />
     </div>
 
     <div class="section-head">Sales triggers</div>
@@ -522,7 +537,8 @@
 
     <div class="field">
       <label>Marketing objective <span class="req">*</span></label>
-      <textarea id="objective" placeholder="What does the client want to achieve?"></textarea>
+      <div class="rte-wrap" id="objectiveWrap"></div>
+      <input type="hidden" id="objective" />
     </div>
 
     <div class="section-head">Strategy</div>
@@ -746,6 +762,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 
 <footer class="page-footer">CoreVoice &middot; Corebook Consulting Pvt Ltd</footer>
 
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
   let currentStep = 1;
   let selectedEng    = null;
@@ -855,10 +872,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById(‘bizDescription’).value = ‘builds AI-powered wellness programs for enterprise HR teams’;
 
     // ── Step 2 ──
-    document.getElementById(‘clientSaid’).value =
-      "We’ve been growing steadily but our marketing is entirely word-of-mouth. " +
+    setRTE(quillClientSaid,
+      "<p>We’ve been growing steadily but our marketing is entirely word-of-mouth. " +
       "The founding team is spending too much time on content and we need someone to take it off our plate. " +
-      "We have a real product and real customers — we just need the world to know about it.";
+      "We have a real product and real customers — we just need the world to know about it.</p>");
     [‘Founding team doing marketing’,
      ‘Post-fundraise, need to scale growth’,
      ‘Long sales cycle, need consistent engagement’,
@@ -875,10 +892,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById(‘effectiveDate’).value = ‘2026-06-15’;
 
     // ── Step 4 ──
-    document.getElementById(‘objective’).value =
-      "Build Nexora’s marketing function from scratch — establish clear positioning, " +
+    setRTE(quillObjective,
+      "<p>Build Nexora’s marketing function from scratch — establish clear positioning, " +
       "drive awareness among enterprise HR buyers, and create a consistent content engine " +
-      "that generates inbound leads over the next two quarters.";
+      "that generates inbound leads over the next two quarters.</p>");
     // Add a custom strategy item as an example
     addScopeItem(‘strategyChecks’, ‘strategy’, { value: ‘Quarterly brand health audit’, focus: () => {} });
     document.getElementById(‘additionalScope’).value =
@@ -933,6 +950,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   let currentDraftId = null;
 
   function collectFormData() {
+    syncRTE();
     const d = {};
     ['companyName','companyType','cin','gst','address','signatoryName','designation',
      'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
@@ -971,6 +989,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       const card = document.querySelector(`[data-eng="${d.engagementType}"]`);
       if (card) selectEng(card);
     }
+    setRTE(quillClientSaid, d.clientSaid || '');
+    setRTE(quillObjective,  d.objective  || '');
+    syncRTE();
     // Recreate custom scope items, then restore checked state
     [['strategy','strategyChecks'],['content','contentChecks'],['ops','opsChecks']].forEach(([section, gridId]) => {
       const key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
@@ -1062,6 +1083,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       alert('Please select a document type — Proposal or Contract.');
       return;
     }
+    syncRTE();
 
     const form = document.createElement('form');
     form.method = 'POST';
@@ -1134,6 +1156,38 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
+  }
+
+  /* ── Rich text editors ── */
+  const RTE_TOOLBAR = [['bold', 'italic'], [{ list: 'bullet' }, { list: 'ordered' }]];
+
+  const quillClientSaid = new Quill('#clientSaidWrap', {
+    theme: 'snow',
+    placeholder: "A few lines is fine. This will appear in the proposal under 'What we heard from you.'",
+    modules: { toolbar: RTE_TOOLBAR }
+  });
+  const quillObjective = new Quill('#objectiveWrap', {
+    theme: 'snow',
+    placeholder: 'What does the client want to achieve?',
+    modules: { toolbar: RTE_TOOLBAR }
+  });
+
+  function syncRTE() {
+    const empty = '<p><br></p>';
+    document.getElementById('clientSaid').value = quillClientSaid.root.innerHTML === empty ? '' : quillClientSaid.root.innerHTML;
+    document.getElementById('objective').value  = quillObjective.root.innerHTML  === empty ? '' : quillObjective.root.innerHTML;
+  }
+  quillClientSaid.on('text-change', syncRTE);
+  quillObjective.on('text-change', syncRTE);
+
+  function setRTE(quill, html) {
+    if (!html) { quill.setContents([]); return; }
+    // Plain text from old drafts (no HTML tags) — convert newlines to paragraphs
+    if (!/<[a-z]/i.test(html)) {
+      quill.root.innerHTML = html.split('\n').map(l => `<p>${l || '<br>'}</p>`).join('');
+    } else {
+      quill.root.innerHTML = html;
+    }
   }
 </script>
 </body>
