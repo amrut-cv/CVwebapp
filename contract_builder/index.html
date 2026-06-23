@@ -389,41 +389,42 @@
       <textarea id="clientSaid" placeholder="A few lines is fine. This will appear in the proposal under 'What we heard from you.'" style="min-height:120px;"></textarea>
     </div>
 
-    <div class="section-head">Team &amp; capacity</div>
-    <div class="check-grid">
-      <label class="check-item"><input type="checkbox" class="trigger" value="No marketing function in place" /> No marketing function in place</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Founding team doing marketing themselves" /> Founding team doing marketing themselves</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Post-fundraise, ready to scale output" /> Post-fundraise, ready to scale output</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="One goal, not ongoing work" /> One goal, not ongoing work</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Budget and deadline already defined" /> Budget and deadline already defined</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Specific metric needs to move" /> Specific metric needs to move</label>
-    </div>
-
-    <div class="section-head">Content &amp; visibility</div>
+    <div class="section-head">Sales triggers</div>
     <div class="check-grid">
       <label class="check-item"><input type="checkbox" class="trigger" value="Need to reduce friction in sales" /> Need to reduce friction in sales</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Long product cycle, need visibility" /> Long product cycle, need visibility</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Want to own category narrative" /> Want to own category narrative</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Sales team lacks good supporting material" /> Sales team lacks good supporting material</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Sales not working, needs a renewed vibe" /> Sales not working, needs a renewed vibe</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="New product GTM / entering new segment / area" /> New product GTM / entering new segment / area</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Post-fundraise, need to scale growth" /> Post-fundraise, need to scale growth</label>
+    </div>
+
+    <div class="section-head">Messaging / Positioning triggers</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="Market doesn't appreciate us enough" /> Market doesn't appreciate us enough</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Improve positioning for talent hiring" /> Improve positioning for talent hiring</label>
       <label class="check-item"><input type="checkbox" class="trigger" value="Product is hard to explain" /> Product is hard to explain</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="No video assets currently exist" /> No video assets currently exist</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Sales team lacks supporting material" /> Sales team lacks supporting material</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Preparing for fundraising event" /> Preparing for fundraising event</label>
     </div>
 
-    <div class="section-head">Brand &amp; GTM</div>
+    <div class="section-head">Marketing strategy triggers</div>
     <div class="check-grid">
-      <label class="check-item"><input type="checkbox" class="trigger" value="First time going to market" /> First time going to market</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="New product line launching soon" /> New product line launching soon</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Post-pivot, need fresh positioning" /> Post-pivot, need fresh positioning</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Sales needs a renewed vibe" /> Sales needs a renewed vibe</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Entering new market or segment" /> Entering new market or segment</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Preparing for fundraise or event" /> Preparing for fundraise or event</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Long sales cycle, need consistent engagement" /> Long sales cycle, need consistent engagement</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Want to own category narrative" /> Want to own category narrative</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Need video assets ASAP" /> Need video assets ASAP</label>
     </div>
 
-    <div class="section-head">Fundraising</div>
+    <div class="section-head">Existing marketing structure</div>
     <div class="check-grid">
-      <label class="check-item"><input type="checkbox" class="trigger" value="Round opening in 1–3 months" /> Round opening in 1–3 months</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="Pitch materials outdated or inconsistent" /> Pitch materials outdated or inconsistent</label>
-      <label class="check-item"><input type="checkbox" class="trigger" value="New investors seeing you first time" /> New investors seeing you first time</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Founding team doing marketing" /> Founding team doing marketing</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Marketing function led by generalist (non-marketing)" /> Marketing function led by generalist (non-marketing)</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Team has marketers" /> Team has marketers</label>
+    </div>
+
+    <div class="section-head">About the engagement</div>
+    <div class="check-grid">
+      <label class="check-item"><input type="checkbox" class="trigger" value="Goal already defined" /> Goal already defined</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Timeline already defined" /> Timeline already defined</label>
+      <label class="check-item"><input type="checkbox" class="trigger" value="Budget already defined" /> Budget already defined</label>
     </div>
 
     <div class="nav-row">
@@ -753,27 +754,23 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 
   /* ── Trigger → engagement mapping ───────── */
   const TRIGGER_MAP = {
-    'No marketing function in place':           'full-retainer',
-    'Founding team doing marketing themselves':  'full-retainer',
-    'Post-fundraise, ready to scale output':     'full-retainer',
-    'Specific metric needs to move':             'outcome-retainer',
-    'Budget and deadline already defined':       'outcome-retainer',
-    'One goal, not ongoing work':                'outcome-retainer',
-    'Need to reduce friction in sales':          'content-retainer',
-    'Long product cycle, need visibility':       'content-retainer',
-    'Want to own category narrative':            'content-retainer',
-    'Product is hard to explain':                'sales-video',
-    'No video assets currently exist':           'sales-video',
-    'Sales team lacks supporting material':      'sales-video',
-    'First time going to market':                'new-gtm',
-    'New product line launching soon':           'new-gtm',
-    'Post-pivot, need fresh positioning':        'new-gtm',
-    'Sales needs a renewed vibe':                'gtm-relaunch',
-    'Entering new market or segment':            'gtm-relaunch',
-    'Preparing for fundraise or event':          'gtm-relaunch',
-    'Round opening in 1–3 months':          'fundraising',
-    'Pitch materials outdated or inconsistent':  'fundraising',
-    'New investors seeing you first time':       'fundraising',
+    'Need to reduce friction in sales':                       'content-retainer',
+    'Sales team lacks good supporting material':              'sales-video',
+    'Sales not working, needs a renewed vibe':                'gtm-relaunch',
+    'New product GTM / entering new segment / area':          'new-gtm',
+    'Post-fundraise, need to scale growth':                   'full-retainer',
+    "Market doesn't appreciate us enough":                    'outcome-retainer',
+    'Improve positioning for talent hiring':                  'outcome-retainer',
+    'Product is hard to explain':                             'sales-video',
+    'Preparing for fundraising event':                        'fundraising',
+    'Long sales cycle, need consistent engagement':           'content-retainer',
+    'Want to own category narrative':                         'content-retainer',
+    'Need video assets ASAP':                                 'sales-video',
+    'Founding team doing marketing':                          'full-retainer',
+    'Marketing function led by generalist (non-marketing)':  'full-retainer',
+    'Goal already defined':                                   'outcome-retainer',
+    'Timeline already defined':                               'outcome-retainer',
+    'Budget already defined':                                 'outcome-retainer',
   };
 
   /* ── Scope presets per engagement type ───── */
