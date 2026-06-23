@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CoreVoice — Contract Builder</title>
-  <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+  <link href="/CVwebapp/assets/quill.snow.css" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -762,7 +762,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 
 <footer class="page-footer">CoreVoice &middot; Corebook Consulting Pvt Ltd</footer>
 
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script src="/CVwebapp/assets/quill.min.js"></script>
 <script>
   let currentStep = 1;
   let selectedEng    = null;
@@ -815,6 +815,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     });
 
     currentStep = step;
+    ensureRTE(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -872,7 +873,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById(‘bizDescription’).value = ‘builds AI-powered wellness programs for enterprise HR teams’;
 
     // ── Step 2 ──
-    setRTE(quillClientSaid,
+    setRTE(‘clientSaid’,
       "<p>We’ve been growing steadily but our marketing is entirely word-of-mouth. " +
       "The founding team is spending too much time on content and we need someone to take it off our plate. " +
       "We have a real product and real customers — we just need the world to know about it.</p>");
@@ -892,7 +893,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById(‘effectiveDate’).value = ‘2026-06-15’;
 
     // ── Step 4 ──
-    setRTE(quillObjective,
+    setRTE(‘objective’,
       "<p>Build Nexora’s marketing function from scratch — establish clear positioning, " +
       "drive awareness among enterprise HR buyers, and create a consistent content engine " +
       "that generates inbound leads over the next two quarters.</p>");
@@ -989,9 +990,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       const card = document.querySelector(`[data-eng="${d.engagementType}"]`);
       if (card) selectEng(card);
     }
-    setRTE(quillClientSaid, d.clientSaid || '');
-    setRTE(quillObjective,  d.objective  || '');
-    syncRTE();
+    setRTE('clientSaid', d.clientSaid || '');
+    setRTE('objective',  d.objective  || '');
     // Recreate custom scope items, then restore checked state
     [['strategy','strategyChecks'],['content','contentChecks'],['ops','opsChecks']].forEach(([section, gridId]) => {
       const key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
@@ -1158,35 +1158,58 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.body.removeChild(form);
   }
 
-  /* ── Rich text editors ── */
-  const RTE_TOOLBAR = [['bold', 'italic'], [{ list: 'bullet' }, { list: 'ordered' }]];
+  /* ── Rich text editors (lazy — init when step becomes visible) ── */
+  let quillClientSaid = null, quillObjective = null;
+  const _rteQueue = {};
+  const _RTE_TOOLBAR = [['bold', 'italic'], [{ list: 'bullet' }, { list: 'ordered' }]];
 
-  const quillClientSaid = new Quill('#clientSaidWrap', {
-    theme: 'snow',
-    placeholder: "A few lines is fine. This will appear in the proposal under 'What we heard from you.'",
-    modules: { toolbar: RTE_TOOLBAR }
-  });
-  const quillObjective = new Quill('#objectiveWrap', {
-    theme: 'snow',
-    placeholder: 'What does the client want to achieve?',
-    modules: { toolbar: RTE_TOOLBAR }
-  });
-
-  function syncRTE() {
-    const empty = '<p><br></p>';
-    document.getElementById('clientSaid').value = quillClientSaid.root.innerHTML === empty ? '' : quillClientSaid.root.innerHTML;
-    document.getElementById('objective').value  = quillObjective.root.innerHTML  === empty ? '' : quillObjective.root.innerHTML;
+  function ensureRTE(step) {
+    if (typeof Quill === 'undefined') return;
+    try {
+      if (step === 2 && !quillClientSaid) {
+        quillClientSaid = new Quill('#clientSaidWrap', {
+          theme: 'snow',
+          placeholder: "A few lines is fine. This will appear in the proposal under 'What we heard from you.'",
+          modules: { toolbar: _RTE_TOOLBAR }
+        });
+        quillClientSaid.on('text-change', syncRTE);
+        if ('clientSaid' in _rteQueue) { _applyRTE(quillClientSaid, 'clientSaid', _rteQueue.clientSaid); delete _rteQueue.clientSaid; }
+      }
+      if (step === 4 && !quillObjective) {
+        quillObjective = new Quill('#objectiveWrap', {
+          theme: 'snow',
+          placeholder: 'What does the client want to achieve?',
+          modules: { toolbar: _RTE_TOOLBAR }
+        });
+        quillObjective.on('text-change', syncRTE);
+        if ('objective' in _rteQueue) { _applyRTE(quillObjective, 'objective', _rteQueue.objective); delete _rteQueue.objective; }
+      }
+    } catch(e) { console.warn('Quill init failed:', e); }
   }
-  quillClientSaid.on('text-change', syncRTE);
-  quillObjective.on('text-change', syncRTE);
 
-  function setRTE(quill, html) {
+  function _applyRTE(quill, hiddenId, html) {
     if (!html) { quill.setContents([]); return; }
-    // Plain text from old drafts (no HTML tags) — convert newlines to paragraphs
     if (!/<[a-z]/i.test(html)) {
       quill.root.innerHTML = html.split('\n').map(l => `<p>${l || '<br>'}</p>`).join('');
     } else {
       quill.root.innerHTML = html;
+    }
+    syncRTE();
+  }
+
+  function syncRTE() {
+    const empty = '<p><br></p>';
+    if (quillClientSaid) document.getElementById('clientSaid').value = quillClientSaid.root.innerHTML === empty ? '' : quillClientSaid.root.innerHTML;
+    if (quillObjective)  document.getElementById('objective').value  = quillObjective.root.innerHTML  === empty ? '' : quillObjective.root.innerHTML;
+  }
+
+  function setRTE(key, html) {
+    const quill = key === 'clientSaid' ? quillClientSaid : quillObjective;
+    if (quill) {
+      _applyRTE(quill, key, html);
+    } else {
+      _rteQueue[key] = html || '';
+      document.getElementById(key).value = html || '';
     }
   }
 </script>
