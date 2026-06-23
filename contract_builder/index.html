@@ -843,68 +843,69 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 
   function fillSampleData() {
     // ── Step 1 ──
-    document.getElementById('companyName').value    = 'Nexora Health Technologies Pvt Ltd';
-    document.getElementById('companyType').value    = 'Private Limited';
-    document.getElementById('cin').value            = 'U85110KA2021PTC234567';
-    document.getElementById('gst').value            = '29AACCN1234M1Z5';
-    document.getElementById('address').value        = '42, HSR Layout Sector 6, Bengaluru, Karnataka 560102';
-    document.getElementById('signatoryName').value  = 'Priya Venkataraman';
-    document.getElementById('designation').value    = 'Co-Founder & CEO';
-    document.getElementById('signatoryEmail').value = 'priya@nexorahealth.in';
-    document.getElementById('agreementDate').value  = '2026-06-01';
-    document.getElementById('bizDescription').value = 'builds AI-powered wellness programs for enterprise HR teams';
+    document.getElementById(‘companyName’).value    = ‘Nexora Health Technologies Pvt Ltd’;
+    document.getElementById(‘companyType’).value    = ‘Private Limited’;
+    document.getElementById(‘cin’).value            = ‘U85110KA2021PTC234567’;
+    document.getElementById(‘gst’).value            = ‘29AACCN1234M1Z5’;
+    document.getElementById(‘address’).value        = ‘42, HSR Layout Sector 6, Bengaluru, Karnataka 560102’;
+    document.getElementById(‘signatoryName’).value  = ‘Priya Venkataraman’;
+    document.getElementById(‘designation’).value    = ‘Co-Founder & CEO’;
+    document.getElementById(‘signatoryEmail’).value = ‘priya@nexorahealth.in’;
+    document.getElementById(‘agreementDate’).value  = ‘2026-06-01’;
+    document.getElementById(‘bizDescription’).value = ‘builds AI-powered wellness programs for enterprise HR teams’;
 
     // ── Step 2 ──
-    document.getElementById('clientSaid').value =
-      "We've been growing steadily but our marketing is entirely word-of-mouth. " +
+    document.getElementById(‘clientSaid’).value =
+      "We’ve been growing steadily but our marketing is entirely word-of-mouth. " +
       "The founding team is spending too much time on content and we need someone to take it off our plate. " +
       "We have a real product and real customers — we just need the world to know about it.";
-    ['No marketing function in place',
-     'Founding team doing marketing themselves',
-     'Post-fundraise, ready to scale output',
-     'Long product cycle, need visibility',
-     'Want to own category narrative'
+    [‘Founding team doing marketing’,
+     ‘Post-fundraise, need to scale growth’,
+     ‘Long sales cycle, need consistent engagement’,
+     ‘Want to own category narrative’
     ].forEach(val => {
       const cb = document.querySelector(`.trigger[value="${val}"]`);
       if (cb) cb.checked = true;
     });
 
     // ── Step 3 ──
-    const engCard = document.querySelector('[data-eng="full-retainer"]');
+    const engCard = document.querySelector(‘[data-eng="full-retainer"]’);
     if (engCard) selectEng(engCard);
-    document.getElementById('duration').value      = '6 months';
-    document.getElementById('effectiveDate').value = '2026-06-15';
+    document.getElementById(‘duration’).value      = ‘6 months’;
+    document.getElementById(‘effectiveDate’).value = ‘2026-06-15’;
 
     // ── Step 4 ──
-    document.getElementById('objective').value =
-      "Build Nexora's marketing function from scratch — establish clear positioning, " +
+    document.getElementById(‘objective’).value =
+      "Build Nexora’s marketing function from scratch — establish clear positioning, " +
       "drive awareness among enterprise HR buyers, and create a consistent content engine " +
       "that generates inbound leads over the next two quarters.";
-    document.getElementById('additionalScope').value =
-      'Paid media execution deferred to month 3 pending creative readiness.';
-    setPill('cadence', 'monthly');
+    // Add a custom strategy item as an example
+    addScopeItem(‘strategyChecks’, ‘strategy’, { value: ‘Quarterly brand health audit’, focus: () => {} });
+    document.getElementById(‘additionalScope’).value =
+      ‘Paid media execution deferred to month 3 pending creative readiness.’;
+    setPill(‘cadence’, ‘monthly’);
 
     // ── Step 5 ──
-    setPill('currency', 'INR');
-    setPill('feeType', 'retainer');
-    showFeeFields('retainer');
-    document.getElementById('monthlyFee').value       = '225000';
-    document.getElementById('retainerDuration').value = '6 months';
-    setPill('retainerTerms', 'Net 15');
-    setPill('expenses', 'preapproved');
-    document.getElementById('paymentNotes').value =
-      'First invoice raised on 1 June 2026 upon contract signing.';
+    setPill(‘currency’, ‘INR’);
+    setPill(‘feeType’, ‘retainer’);
+    showFeeFields(‘retainer’);
+    document.getElementById(‘monthlyFee’).value       = ‘225000’;
+    document.getElementById(‘retainerDuration’).value = ‘6 months’;
+    setPill(‘retainerTerms’, ‘Net 15’);
+    setPill(‘expenses’, ‘preapproved’);
+    document.getElementById(‘paymentNotes’).value =
+      ‘First invoice raised on 1 June 2026 upon contract signing.’;
 
     // ── Step 6 ──
-    document.getElementById('msgBody').value =
+    document.getElementById(‘msgBody’).value =
       "Hi Priya,\n\nThanks for the conversation — it’s clear you’re building something that matters, " +
       "and we’d love to be part of it.\n\nWhat we do best is take the marketing off your plate in a way " +
       "that actually feels like an extension of your team, not an agency relationship.\n\nThis proposal outlines " +
       "what we’d recommend, what’s in scope, and what it costs. It’s a starting point — " +
       "if anything needs adjusting, just say so.";
-    document.getElementById('senderName').value  = 'Amrut Shastri';
-    document.getElementById('senderTitle').value = 'Founder, CoreVoice';
-    document.getElementById('senderEmail').value = 'amrut@corevoice.in';
+    document.getElementById(‘senderName’).value  = ‘Amrut Shastri’;
+    document.getElementById(‘senderTitle’).value = ‘Founder, CoreVoice’;
+    document.getElementById(‘senderEmail’).value = ‘amrut@corevoice.in’;
   }
 
   /* ── Add custom scope item ──────────────────── */
