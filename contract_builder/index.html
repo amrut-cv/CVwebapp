@@ -166,7 +166,7 @@
       margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
     }
 
-    /* ── Checkbox grid ── */
+    /* ── Checkbox grid (business brief) ── */
     .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 4px; }
     .check-item {
       display: flex; align-items: flex-start; gap: 9px;
@@ -177,7 +177,24 @@
     }
     .check-item:hover { border-color: var(--accent); background: var(--accent-light); }
     .check-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
-    .scope-add-row { display: flex; gap: 8px; margin-top: 8px; margin-bottom: 4px; }
+
+    /* ── Scope chips ── */
+    .scope-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+    .scope-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 13px; border-radius: 20px;
+      border: 1.5px solid var(--border);
+      font-size: .82rem; cursor: pointer; user-select: none;
+      color: var(--muted); background: var(--white);
+      transition: border-color .15s, color .15s, background .15s;
+      line-height: 1.4;
+    }
+    .scope-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .scope-chip.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .scope-chip.custom { border-style: dashed; }
+    .chip-remove { font-size: 14px; line-height: 1; opacity: .5; margin-left: 3px; }
+    .chip-remove:hover { opacity: 1; }
+    .scope-add-row { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 4px; }
     .scope-add-input { flex: 1; border: 1.5px solid var(--border); border-radius: 7px; padding: 8px 12px; font-size: .85rem; outline: none; font-family: inherit; color: var(--text); background: white; }
     .scope-add-input:focus { border-color: var(--accent); }
     .scope-add-btn { padding: 8px 14px; background: var(--white); border: 1.5px solid var(--border); border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--text); white-space: nowrap; }
@@ -541,67 +558,61 @@
       <input type="hidden" id="objective" />
     </div>
 
-    <div class="section-head">Strategy</div>
-    <div class="check-grid" id="strategyChecks">
-      <label class="check-item"><input type="checkbox" class="scope" value="Positioning &amp; communication" /> Positioning &amp; communication</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Marketing strategy" /> Marketing strategy</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="CMO office — goals &amp; reporting" /> CMO office — goals &amp; reporting</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="GTM &amp; launch strategy" /> GTM &amp; launch strategy</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Customer &amp; competitive research" /> Customer &amp; competitive research</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Budget &amp; resource planning" /> Budget &amp; resource planning</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Growth experiment framework" /> Growth experiment framework</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Investor narrative framework" /> Investor narrative framework</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Content &amp; editorial strategy" /> Content &amp; editorial strategy</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Founder personal brand strategy" /> Founder personal brand strategy</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="SEO, AEO &amp; AI visibility strategy" /> SEO, AEO &amp; AI visibility strategy</label>
+    <div class="section-head">Figure out...</div>
+    <div class="scope-chips" id="strategyChips">
+      <span class="scope-chip" data-section="strategy" data-value="Your positioning &amp; messaging" onclick="toggleScopeChip(this)">Your positioning &amp; messaging</span>
+      <span class="scope-chip" data-section="strategy" data-value="Your marketing strategy" onclick="toggleScopeChip(this)">Your marketing strategy</span>
+      <span class="scope-chip" data-section="strategy" data-value="CMO office &amp; OKRs" onclick="toggleScopeChip(this)">CMO office &amp; OKRs</span>
+      <span class="scope-chip" data-section="strategy" data-value="Your GTM strategy" onclick="toggleScopeChip(this)">Your GTM strategy</span>
+      <span class="scope-chip" data-section="strategy" data-value="Customer &amp; competitor research" onclick="toggleScopeChip(this)">Customer &amp; competitor research</span>
+      <span class="scope-chip" data-section="strategy" data-value="A growth experiment framework" onclick="toggleScopeChip(this)">A growth experiment framework</span>
+      <span class="scope-chip" data-section="strategy" data-value="Your investor narrative" onclick="toggleScopeChip(this)">Your investor narrative</span>
+      <span class="scope-chip" data-section="strategy" data-value="Your content strategy" onclick="toggleScopeChip(this)">Your content strategy</span>
+      <span class="scope-chip" data-section="strategy" data-value="Founder personal brand" onclick="toggleScopeChip(this)">Founder personal brand</span>
+      <span class="scope-chip" data-section="strategy" data-value="SEO, AEO &amp; AI visibility" onclick="toggleScopeChip(this)">SEO, AEO &amp; AI visibility</span>
     </div>
     <div class="scope-add-row">
-      <input type="text" class="scope-add-input" placeholder="Add to strategy…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('strategyChecks','strategy',this)}" />
-      <button type="button" class="scope-add-btn" onclick="addScopeItem('strategyChecks','strategy',this.previousElementSibling)">+ Add</button>
+      <input type="text" class="scope-add-input" placeholder="Add to Figure out…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('strategyChips','strategy',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('strategyChips','strategy',this.previousElementSibling)">+ Add</button>
     </div>
 
-    <div class="section-head">Content</div>
-    <div class="check-grid" id="contentChecks">
-      <label class="check-item"><input type="checkbox" class="scope" value="Website design" /> Website design</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Logo &amp; visual system" /> Logo &amp; visual system</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Brand guide" /> Brand guide</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Social posts — text, image, carousels" /> Social posts — text, image, carousels</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Reels, shorts &amp; social video" /> Reels, shorts &amp; social video</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Long-form video" /> Long-form video</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="SEO blogs &amp; newsletters" /> SEO blogs &amp; newsletters</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Ad creatives — static &amp; video" /> Ad creatives — static &amp; video</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Sales decks &amp; presentations" /> Sales decks &amp; presentations</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Testimonial &amp; case study videos" /> Testimonial &amp; case study videos</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Product explainers &amp; guides" /> Product explainers &amp; guides</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Event &amp; booth collateral" /> Event &amp; booth collateral</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Pitch deck" /> Pitch deck</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="One-pager &amp; exec summary" /> One-pager &amp; exec summary</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Thought leadership articles" /> Thought leadership articles</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="AI knowledge hub build" /> AI knowledge hub build</label>
+    <div class="section-head">Make these...</div>
+    <div class="scope-chips" id="contentChips">
+      <span class="scope-chip" data-section="content" data-value="Website" onclick="toggleScopeChip(this)">Website</span>
+      <span class="scope-chip" data-section="content" data-value="Logo &amp; visual identity" onclick="toggleScopeChip(this)">Logo &amp; visual identity</span>
+      <span class="scope-chip" data-section="content" data-value="Brand guide" onclick="toggleScopeChip(this)">Brand guide</span>
+      <span class="scope-chip" data-section="content" data-value="Social posts" onclick="toggleScopeChip(this)">Social posts</span>
+      <span class="scope-chip" data-section="content" data-value="Reels &amp; short video" onclick="toggleScopeChip(this)">Reels &amp; short video</span>
+      <span class="scope-chip" data-section="content" data-value="Long-form video" onclick="toggleScopeChip(this)">Long-form video</span>
+      <span class="scope-chip" data-section="content" data-value="Blogs &amp; newsletters" onclick="toggleScopeChip(this)">Blogs &amp; newsletters</span>
+      <span class="scope-chip" data-section="content" data-value="Ad creatives" onclick="toggleScopeChip(this)">Ad creatives</span>
+      <span class="scope-chip" data-section="content" data-value="Sales decks &amp; presentations" onclick="toggleScopeChip(this)">Sales decks &amp; presentations</span>
+      <span class="scope-chip" data-section="content" data-value="Testimonials &amp; case studies" onclick="toggleScopeChip(this)">Testimonials &amp; case studies</span>
+      <span class="scope-chip" data-section="content" data-value="Product explainers &amp; guides" onclick="toggleScopeChip(this)">Product explainers &amp; guides</span>
+      <span class="scope-chip" data-section="content" data-value="Event &amp; booth collateral" onclick="toggleScopeChip(this)">Event &amp; booth collateral</span>
+      <span class="scope-chip" data-section="content" data-value="Pitch deck" onclick="toggleScopeChip(this)">Pitch deck</span>
+      <span class="scope-chip" data-section="content" data-value="One-pager &amp; exec summary" onclick="toggleScopeChip(this)">One-pager &amp; exec summary</span>
+      <span class="scope-chip" data-section="content" data-value="Thought leadership" onclick="toggleScopeChip(this)">Thought leadership</span>
     </div>
     <div class="scope-add-row">
-      <input type="text" class="scope-add-input" placeholder="Add to content…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('contentChecks','content',this)}" />
-      <button type="button" class="scope-add-btn" onclick="addScopeItem('contentChecks','content',this.previousElementSibling)">+ Add</button>
+      <input type="text" class="scope-add-input" placeholder="Add to Make these…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('contentChips','content',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('contentChips','content',this.previousElementSibling)">+ Add</button>
     </div>
 
-    <div class="section-head">Marketing ops</div>
-    <div class="check-grid" id="opsChecks">
-      <label class="check-item"><input type="checkbox" class="scope" value="Social media management" /> Social media management</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Paid ads — Google, Meta, LinkedIn" /> Paid ads — Google, Meta, LinkedIn</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="SEO + AEO execution" /> SEO + AEO execution</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="ABM — account research &amp; outreach" /> ABM — account research &amp; outreach</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Campaign &amp; event execution" /> Campaign &amp; event execution</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Event planning &amp; marketing" /> Event planning &amp; marketing</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Community &amp; audience building" /> Community &amp; audience building</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Stakeholder communications" /> Stakeholder communications</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Marketing automation &amp; CRM" /> Marketing automation &amp; CRM</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Performance tracking &amp; dashboards" /> Performance tracking &amp; dashboards</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="Reporting &amp; dashboard setup" /> Reporting &amp; dashboard setup</label>
-      <label class="check-item"><input type="checkbox" class="scope" value="AEO site architecture &amp; schema" /> AEO site architecture &amp; schema</label>
+    <div class="section-head">Setup and/or Manage these...</div>
+    <div class="scope-chips" id="opsChips">
+      <span class="scope-chip" data-section="ops" data-value="Social media" onclick="toggleScopeChip(this)">Social media</span>
+      <span class="scope-chip" data-section="ops" data-value="Paid ads" onclick="toggleScopeChip(this)">Paid ads</span>
+      <span class="scope-chip" data-section="ops" data-value="SEO &amp; AEO" onclick="toggleScopeChip(this)">SEO &amp; AEO</span>
+      <span class="scope-chip" data-section="ops" data-value="ABM &amp; outreach" onclick="toggleScopeChip(this)">ABM &amp; outreach</span>
+      <span class="scope-chip" data-section="ops" data-value="Campaigns &amp; events" onclick="toggleScopeChip(this)">Campaigns &amp; events</span>
+      <span class="scope-chip" data-section="ops" data-value="Community building" onclick="toggleScopeChip(this)">Community building</span>
+      <span class="scope-chip" data-section="ops" data-value="Marketing automation &amp; CRM" onclick="toggleScopeChip(this)">Marketing automation &amp; CRM</span>
+      <span class="scope-chip" data-section="ops" data-value="Performance tracking" onclick="toggleScopeChip(this)">Performance tracking</span>
     </div>
     <div class="scope-add-row">
-      <input type="text" class="scope-add-input" placeholder="Add to marketing ops…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('opsChecks','ops',this)}" />
-      <button type="button" class="scope-add-btn" onclick="addScopeItem('opsChecks','ops',this.previousElementSibling)">+ Add</button>
+      <input type="text" class="scope-add-input" placeholder="Add to Setup/Manage…" onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('opsChips','ops',this)}" />
+      <button type="button" class="scope-add-btn" onclick="addScopeItem('opsChips','ops',this.previousElementSibling)">+ Add</button>
     </div>
 
     <div class="section-head">Governance cadence</div>
@@ -768,40 +779,6 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   let selectedEng    = null;
   let selectedOutput = null;
 
-  /* ── Scope presets per engagement type ───── */
-  const SCOPE_PRESETS = {
-    'full-retainer': [
-      'Positioning & communication', 'Marketing strategy', 'CMO office — goals & reporting', 'Content & editorial strategy',
-      'Social posts — text, image, carousels', 'SEO blogs & newsletters',
-      'Social media management', 'Performance tracking & dashboards', 'Reporting & dashboard setup'
-    ],
-    'outcome-retainer': [
-      'Marketing strategy', 'CMO office — goals & reporting', 'Growth experiment framework',
-      'Performance tracking & dashboards', 'Reporting & dashboard setup'
-    ],
-    'content-retainer': [
-      'Content & editorial strategy',
-      'Social posts — text, image, carousels', 'Reels, shorts & social video', 'SEO blogs & newsletters',
-      'Social media management'
-    ],
-    'new-gtm': [
-      'Positioning & communication', 'GTM & launch strategy',
-      'Website design', 'Logo & visual system', 'Brand guide', 'Sales decks & presentations', 'Product explainers & guides'
-    ],
-    'gtm-relaunch': [
-      'Positioning & communication', 'GTM & launch strategy',
-      'Website design', 'Brand guide', 'Sales decks & presentations'
-    ],
-    'fundraising': [
-      'Investor narrative framework',
-      'Pitch deck', 'One-pager & exec summary'
-    ],
-    'sales-video': [
-      'Reels, shorts & social video', 'Long-form video', 'Testimonial & case study videos', 'Product explainers & guides'
-    ],
-    'custom': []
-  };
-
   /* ── Navigation ──────────────────────────── */
   function goTo(step) {
     document.getElementById('step' + currentStep).classList.add('hidden');
@@ -898,7 +875,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       "drive awareness among enterprise HR buyers, and create a consistent content engine " +
       "that generates inbound leads over the next two quarters.</p>");
     // Add a custom strategy item as an example
-    addScopeItem('strategyChecks', 'strategy', { value: 'Quarterly brand health audit', focus: () => {} });
+    addScopeItem('strategyChips', 'strategy', { value: 'Quarterly brand health audit', focus: () => {} });
     document.getElementById('additionalScope').value =
       'Paid media execution deferred to month 3 pending creative readiness.';
     setPill('cadence', 'monthly');
@@ -927,23 +904,27 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   }
 
   /* ── Add custom scope item ──────────────────── */
-  function addScopeItem(gridId, section, input) {
-    const val = input.value.trim();
+  function toggleScopeChip(chip) {
+    chip.classList.toggle('selected');
+  }
+
+  function addScopeItem(chipsId, section, input) {
+    const val = typeof input === 'object' ? input.value.trim() : String(input).trim();
     if (!val) return;
-    const grid = document.getElementById(gridId);
-    const label = document.createElement('label');
-    label.className = 'check-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'scope custom-scope';
-    cb.dataset.section = section;
-    cb.value = val;
-    cb.checked = true;
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(' ' + val));
-    grid.appendChild(label);
-    input.value = '';
-    input.focus();
+    const chips = document.getElementById(chipsId);
+    if ([...chips.querySelectorAll('.custom')].some(c => c.dataset.value === val)) return;
+    const chip = document.createElement('span');
+    chip.className = 'scope-chip selected custom';
+    chip.dataset.section = section;
+    chip.dataset.value = val;
+    const rm = document.createElement('span');
+    rm.className = 'chip-remove';
+    rm.textContent = ' ×';
+    rm.onclick = e => { e.stopPropagation(); chip.remove(); };
+    chip.appendChild(document.createTextNode(val));
+    chip.appendChild(rm);
+    chips.appendChild(chip);
+    if (typeof input === 'object' && 'value' in input) { input.value = ''; if (input.focus) input.focus(); }
   }
 
   /* ── Generate — POST to generate.php ──────── */
@@ -962,10 +943,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       if (el) d[id] = el.value;
     });
     d.triggers      = Array.from(document.querySelectorAll('.trigger:checked')).map(e => e.value);
-    d.scope         = Array.from(document.querySelectorAll('.scope:checked')).map(e => e.value);
-    d.customStrategyItems = Array.from(document.querySelectorAll('.custom-scope[data-section="strategy"]')).map(e => e.value);
-    d.customContentItems  = Array.from(document.querySelectorAll('.custom-scope[data-section="content"]')).map(e => e.value);
-    d.customOpsItems      = Array.from(document.querySelectorAll('.custom-scope[data-section="ops"]')).map(e => e.value);
+    d.scope         = Array.from(document.querySelectorAll('.scope-chip.selected:not(.custom)')).map(e => e.dataset.value);
+    d.customStrategyItems = Array.from(document.querySelectorAll('.scope-chip.custom[data-section="strategy"]')).map(e => e.dataset.value);
+    d.customContentItems  = Array.from(document.querySelectorAll('.scope-chip.custom[data-section="content"]')).map(e => e.dataset.value);
+    d.customOpsItems      = Array.from(document.querySelectorAll('.scope-chip.custom[data-section="ops"]')).map(e => e.dataset.value);
     d.engagementType = selectedEng || '';
     ['currency','feeType','cadence','retainerTerms','fixedTerms','expenses'].forEach(name => {
       const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -992,13 +973,12 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     }
     setRTE('clientSaid', d.clientSaid || '');
     setRTE('objective',  d.objective  || '');
-    // Recreate custom scope items, then restore checked state
-    [['strategy','strategyChecks'],['content','contentChecks'],['ops','opsChecks']].forEach(([section, gridId]) => {
-      const key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
-      (d[key] || []).forEach(val => { if (val) addScopeItem(gridId, section, {value: val, focus: ()=>{}}); });
+    document.querySelectorAll('.scope-chip:not(.custom)').forEach(chip => {
+      chip.classList.toggle('selected', (d.scope || []).includes(chip.dataset.value));
     });
-    document.querySelectorAll('.scope').forEach(el => {
-      el.checked = (d.scope || []).includes(el.value);
+    [['strategy','strategyChips'],['content','contentChips'],['ops','opsChips']].forEach(([section, chipsId]) => {
+      const key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
+      (d[key] || []).forEach(val => { if (val) addScopeItem(chipsId, section, {value: val, focus: ()=>{}}); });
     });
     if (d.currency)      setPill('currency', d.currency);
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
