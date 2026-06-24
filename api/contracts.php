@@ -38,17 +38,12 @@ if ($action === 'save') {
     $data = json_encode($body['data'] ?? [], JSON_UNESCAPED_UNICODE);
 
     if ($id) {
-        if ($role === 'admin') {
-            $check = $pdo->prepare("SELECT id FROM contracts WHERE id = ?");
-            $check->execute([$id]);
-        } else {
-            $check = $pdo->prepare(
-                "SELECT c.id FROM contracts c
-                 LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
-                 WHERE c.id = ? AND (c.owner_email = ? OR cs.permission = 'edit')"
-            );
-            $check->execute([$email, $id, $email]);
-        }
+        $check = $pdo->prepare(
+            "SELECT c.id FROM contracts c
+             LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
+             WHERE c.id = ? AND (c.owner_email = ? OR cs.permission = 'edit')"
+        );
+        $check->execute([$email, $id, $email]);
         if ($check->fetch()) {
             $pdo->prepare("UPDATE contracts SET client_name = ?, data = ? WHERE id = ?")
                 ->execute([$name, $data, $id]);
@@ -75,24 +70,15 @@ if ($action === 'load') {
     $id = (int)($body['id'] ?? 0);
     if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
 
-    if ($role === 'admin') {
-        $stmt = $pdo->prepare(
-            "SELECT id, client_name AS name, status, data, updated_at, owner_email FROM contracts WHERE id = ?"
-        );
-        $stmt->execute([$id]);
-        $r = $stmt->fetch();
-        if ($r) $r['my_permission'] = 'owner';
-    } else {
-        $stmt = $pdo->prepare(
-            "SELECT c.id, c.client_name AS name, c.status, c.data, c.updated_at, c.owner_email,
-                    CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS my_permission
-             FROM contracts c
-             LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
-             WHERE c.id = ? AND (c.owner_email = ? OR cs.shared_with_email = ?)"
-        );
-        $stmt->execute([$email, $email, $id, $email, $email]);
-        $r = $stmt->fetch();
-    }
+    $stmt = $pdo->prepare(
+        "SELECT c.id, c.client_name AS name, c.status, c.data, c.updated_at, c.owner_email,
+                CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS my_permission
+         FROM contracts c
+         LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
+         WHERE c.id = ? AND (c.owner_email = ? OR cs.shared_with_email = ?)"
+    );
+    $stmt->execute([$email, $email, $id, $email, $email]);
+    $r = $stmt->fetch();
 
     if (!$r) { http_response_code(404); echo json_encode(['error' => 'Not found']); exit; }
     $r['data'] = json_decode($r['data'], true);
@@ -103,11 +89,7 @@ if ($action === 'load') {
 if ($action === 'delete') {
     $id = (int)($body['id'] ?? 0);
     if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
-    if ($role === 'admin') {
-        $pdo->prepare("DELETE FROM contracts WHERE id = ?")->execute([$id]);
-    } else {
-        $pdo->prepare("DELETE FROM contracts WHERE id = ? AND owner_email = ?")->execute([$id, $email]);
-    }
+    $pdo->prepare("DELETE FROM contracts WHERE id = ? AND owner_email = ?")->execute([$id, $email]);
     echo json_encode(['ok' => true]);
     exit;
 }
