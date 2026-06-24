@@ -348,6 +348,9 @@ foreach ($rows as $r) {
     <button class="btn-header accent" id="saveBtn" onclick="saveDraft()">Save</button>
   </div>
 </header>
+<div id="viewOnlyBanner" style="display:none;background:#fef3c7;border-bottom:2px solid #fcd34d;padding:9px 24px;font-size:.83rem;color:#92400e;text-align:center;position:sticky;top:0;z-index:50;">
+  You have <strong>view-only</strong> access &mdash; changes will not be saved.
+</div>
 
 <!-- Drafts panel -->
 <div class="drafts-overlay hidden" id="draftsOverlay" onclick="if(event.target===this)closeDraftsPanel()">
@@ -364,10 +367,6 @@ foreach ($rows as $r) {
 <div class="toast" id="toast"></div>
 
 <div class="wrapper">
-
-  <div id="viewOnlyBanner" class="hidden" style="background:#fef3c7;border-bottom:1px solid #fde68a;padding:10px 24px;font-size:.83rem;color:#92400e;text-align:center;">
-    You have <strong>view-only</strong> access to this file &mdash; changes will not be saved.
-  </div>
 
   <!-- Stepper -->
   <div class="stepper" id="stepper">
@@ -972,8 +971,13 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     _viewOnly = on;
     var btn = document.getElementById('saveBtn');
     var banner = document.getElementById('viewOnlyBanner');
-    if (btn) { btn.disabled = on; btn.style.opacity = on ? '.4' : ''; btn.title = on ? 'You have view-only access' : ''; }
-    if (banner) banner.classList.toggle('hidden', !on);
+    if (btn) { btn.disabled = on; btn.style.opacity = on ? '.4' : ''; btn.title = on ? 'View only' : ''; }
+    if (banner) banner.style.display = on ? 'block' : 'none';
+    // disable / re-enable all form inputs
+    document.querySelectorAll('.card input, .card textarea, .card select, .card .scope-chip, .card .eng-card, .card .cs-pick-card, .card .radio-pill').forEach(function(el) {
+      if (on) { el.setAttribute('disabled', ''); el.style.pointerEvents = 'none'; }
+      else    { el.removeAttribute('disabled'); el.style.pointerEvents = ''; }
+    });
   }
 
   function collectFormData() {
@@ -1097,6 +1101,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   }
 
   async function saveDraft() {
+    if (_viewOnly) { showToast('View only — cannot save'); return; }
     var data = collectFormData();
     var name = (data.companyName || '').trim() || ('Draft ' + new Date().toLocaleDateString('en-IN'));
     try {
