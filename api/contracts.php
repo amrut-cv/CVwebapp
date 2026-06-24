@@ -33,11 +33,12 @@ if ($action === 'save') {
     $data = json_encode($body['data'] ?? [], JSON_UNESCAPED_UNICODE);
 
     if ($id) {
-        $stmt = $pdo->prepare(
-            "UPDATE contracts SET client_name=?, data=? WHERE id=? AND owner_email=?"
-        );
-        $stmt->execute([$name, $data, $id, $email]);
-        if ($stmt->rowCount() === 0) {
+        $check = $pdo->prepare("SELECT id FROM contracts WHERE id=? AND owner_email=?");
+        $check->execute([$id, $email]);
+        if ($check->fetch()) {
+            $pdo->prepare("UPDATE contracts SET client_name=?, data=? WHERE id=?")
+                ->execute([$name, $data, $id]);
+        } else {
             $id = 0; // ownership fail or deleted — fall through to insert
         }
     }
