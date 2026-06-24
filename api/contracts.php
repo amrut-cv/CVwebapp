@@ -10,23 +10,15 @@ $pdo   = getDB();
 
 // GET — list this user's contracts (owned + shared)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if ($role === 'admin') {
-        $stmt = $pdo->prepare(
-            "SELECT c.id, c.client_name AS name, c.status, c.updated_at, c.owner_email, 'owner' AS my_permission
-             FROM contracts c ORDER BY c.updated_at DESC"
-        );
-        $stmt->execute();
-    } else {
-        $stmt = $pdo->prepare(
-            "SELECT c.id, c.client_name AS name, c.status, c.updated_at, c.owner_email,
-                    CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS my_permission
-             FROM contracts c
-             LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
-             WHERE c.owner_email = ? OR cs.shared_with_email = ?
-             ORDER BY c.updated_at DESC"
-        );
-        $stmt->execute([$email, $email, $email, $email]);
-    }
+    $stmt = $pdo->prepare(
+        "SELECT c.id, c.client_name AS name, c.status, c.updated_at, c.owner_email,
+                CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS my_permission
+         FROM contracts c
+         LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
+         WHERE c.owner_email = ? OR cs.shared_with_email = ?
+         ORDER BY c.updated_at DESC"
+    );
+    $stmt->execute([$email, $email, $email, $email]);
     echo json_encode($stmt->fetchAll());
     exit;
 }
