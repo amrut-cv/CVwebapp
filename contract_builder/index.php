@@ -345,7 +345,7 @@ foreach ($rows as $r) {
   <div class="header-actions">
     <a href="/CVwebapp/admin/lists.php" class="btn-header">Manage lists</a>
     <button class="btn-header" onclick="openDraftsPanel()">Files</button>
-    <button class="btn-header accent" onclick="saveDraft()">Save</button>
+    <button class="btn-header accent" id="saveBtn" onclick="saveDraft()">Save</button>
   </div>
 </header>
 
@@ -364,6 +364,10 @@ foreach ($rows as $r) {
 <div class="toast" id="toast"></div>
 
 <div class="wrapper">
+
+  <div id="viewOnlyBanner" class="hidden" style="background:#fef3c7;border-bottom:1px solid #fde68a;padding:10px 24px;font-size:.83rem;color:#92400e;text-align:center;">
+    You have <strong>view-only</strong> access to this file &mdash; changes will not be saved.
+  </div>
 
   <!-- Stepper -->
   <div class="stepper" id="stepper">
@@ -962,6 +966,15 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   var _urlId = parseInt(new URLSearchParams(window.location.search).get('id')) || null;
   var currentDraftId  = _urlId;
   var _restoringDraft = false;
+  var _viewOnly       = false;
+
+  function setViewOnly(on) {
+    _viewOnly = on;
+    var btn = document.getElementById('saveBtn');
+    var banner = document.getElementById('viewOnlyBanner');
+    if (btn) { btn.disabled = on; btn.style.opacity = on ? '.4' : ''; btn.title = on ? 'You have view-only access' : ''; }
+    if (banner) banner.classList.toggle('hidden', !on);
+  }
 
   function collectFormData() {
     syncRTE();
@@ -1064,7 +1077,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   }
 
   async function silentSave() {
-    if (_restoringDraft) return;
+    if (_restoringDraft || _viewOnly) return;
     var data = collectFormData();
     var name = (data.companyName || '').trim();
     // Don't create a new record until the user has entered a company name
@@ -1134,6 +1147,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       if (!json.ok) { showToast('Failed to load'); return; }
       currentDraftId = json.contract.id;
       history.replaceState({}, '', '?id=' + json.contract.id);
+      setViewOnly(json.contract.my_permission === 'view');
       _restoringDraft = true;
       restoreFormData(json.contract.data);
       _restoringDraft = false;
@@ -1301,6 +1315,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         });
         var json = await res.json();
         if (json.ok) {
+          setViewOnly(json.contract.my_permission === 'view');
           _restoringDraft = true;
           restoreFormData(json.contract.data);
           _restoringDraft = false;
