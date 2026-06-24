@@ -997,11 +997,6 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
       (d[key] || []).forEach(function(val) { if (val) addScopeItem(chipsId, section, {value: val, focus: function(){}}); });
     });
-    BRIEF_SECTIONS.forEach(function(sec) {
-      (d['customBrief_' + sec] || []).forEach(function(val) {
-        if (val) addBriefItem(sec, {value: val, focus: function(){}});
-      });
-    });
     if (d.currency)      setPill('currency', d.currency);
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
     if (d.cadence)       setPill('cadence', d.cadence);
