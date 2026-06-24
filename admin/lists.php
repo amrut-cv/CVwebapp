@@ -89,7 +89,10 @@ $listMeta = [
 <body>
 <header>
   <div class="logo">CoreVoice — Lists</div>
-  <a href="/CVwebapp/contract_builder/">← Back to builder</a>
+  <div style="display:flex;gap:20px;align-items:center;">
+    <a href="/CVwebapp/admin/case_studies.php">Case Studies</a>
+    <a href="/CVwebapp/contract_builder/">← Back to builder</a>
+  </div>
 </header>
 
 <div class="layout">

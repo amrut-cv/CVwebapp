@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/../session_guard.php';
+require __DIR__ . '/../db.php';
 // generate.php — CoreVoice document renderer (Proposal & Contract)
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -98,6 +99,17 @@ $senderTitle = clean('senderTitle');
 $senderEmail = clean('senderEmail');
 
 $isProposal = ($outputType !== 'contract');
+
+/* ─── case studies ── */
+$caseStudyRows = [];
+$rawCsIds = cleanArr('case_study_ids');
+if ($rawCsIds) {
+    $placeholders = implode(',', array_fill(0, count($rawCsIds), '?'));
+    $stmt = getDB()->prepare("SELECT id, name, description FROM case_studies WHERE id IN ($placeholders) ORDER BY FIELD(id," . $placeholders . ")");
+    $ordered = array_merge($rawCsIds, $rawCsIds);
+    $stmt->execute(array_map('intval', $ordered));
+    $caseStudyRows = $stmt->fetchAll();
+}
 
 /* ─────────────────────────────── engagement ── */
 $engLabels = [
@@ -650,28 +662,21 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     </div>
     <?php endif; ?>
 
+    <?php if ($caseStudyRows): ?>
     <div class="prop-section">
       <div class="sec-label">Relevant work</div>
       <div class="sec-title">Who we&rsquo;ve done this for</div>
       <p style="font-size:.86rem;color:#6b7280;margin-bottom:20px;">A few engagements similar to what we&rsquo;re proposing here.</p>
       <div class="cases">
+        <?php foreach ($caseStudyRows as $cs): ?>
         <div class="case-card">
-          <div class="case-name">GalaxEye</div>
-          <div class="case-type">Full-stack retainer</div>
-          <div class="case-desc">Built their entire marketing function — brand, website, social, sales collaterals, events and more. GalaxEye went from no marketing presence to a recognised name in the Indian space-tech ecosystem.</div>
+          <div class="case-name"><?= esc($cs['name']) ?></div>
+          <div class="case-desc"><?= esc($cs['description']) ?></div>
         </div>
-        <div class="case-card">
-          <div class="case-name">Mindgrove</div>
-          <div class="case-type">Full-stack retainer</div>
-          <div class="case-desc">Took Mindgrove&rsquo;s positioning from an interesting project to India&rsquo;s hottest semiconductor startup. Managed all content, socials, comms, pre-sales, events and more across the engagement.</div>
-        </div>
-        <div class="case-card">
-          <div class="case-name">AskIITM</div>
-          <div class="case-type">Full-stack retainer</div>
-          <div class="case-desc">Started with a business requirement &mdash; &lsquo;manage perception among applicants&rsquo; &mdash; and created India&rsquo;s largest and most successful higher education campaign, touching over 5 million students.</div>
-        </div>
+        <?php endforeach; ?>
       </div>
     </div>
+    <?php endif; ?>
 
     <?php if ($feeDisplayStr): ?>
     <div class="prop-section">

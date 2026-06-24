@@ -25,6 +25,12 @@ function getDB(): PDO {
         sort_order INT          NOT NULL DEFAULT 0,
         INDEX idx_list_key (list_key)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS case_studies (
+        id          INT AUTO_INCREMENT PRIMARY KEY,
+        name        VARCHAR(255) NOT NULL,
+        description TEXT         NOT NULL,
+        sort_order  INT          NOT NULL DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     $pdo->exec("CREATE TABLE IF NOT EXISTS contracts (
         id          INT AUTO_INCREMENT PRIMARY KEY,
         owner_email VARCHAR(255) NOT NULL,

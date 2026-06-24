@@ -4,6 +4,7 @@ require __DIR__ . '/../db.php';
 
 $pdo = getDB();
 $rows = $pdo->query("SELECT id, list_key, label, sort_order FROM list_items ORDER BY list_key, sort_order, id")->fetchAll();
+$caseStudies = $pdo->query("SELECT id, name, description FROM case_studies ORDER BY sort_order, id")->fetchAll();
 $lists = [];
 foreach ($rows as $r) {
     $lists[$r['list_key']][] = $r;
@@ -268,6 +269,18 @@ foreach ($rows as $r) {
     .radio-pill.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
 
     /* Message box */
+    .cs-pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .cs-pick-card { border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .cs-pick-card:hover { border-color: var(--accent); }
+    .cs-pick-card.selected { border-color: var(--accent); background: var(--accent-light); }
+    .cs-pick-card.disabled { opacity: .45; cursor: default; pointer-events: none; }
+    .cs-pick-name { font-weight: 700; font-size: .88rem; margin-bottom: 5px; color: var(--text); }
+    .cs-pick-desc { font-size: .76rem; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .cs-pick-card.selected .cs-pick-name { color: var(--accent); }
+    .cs-pick-card.selected .cs-pick-desc { color: var(--text); }
+    .cs-count { font-size: .78rem; color: var(--muted); margin-bottom: 18px; }
+    .cs-empty { font-size: .85rem; color: var(--muted); padding: 12px 0; margin-bottom: 18px; }
+
     .msg-box { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; background: #fafafa; margin-bottom: 20px; }
     .msg-box textarea { width: 100%; border: none; background: transparent; font-size: .9rem; color: var(--text); resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.65; }
     .msg-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
@@ -686,6 +699,22 @@ foreach ($rows as $r) {
     <div class="card-title">Generate document</div>
     <div class="card-subtitle">Choose what you'd like to produce. Both use the same inputs you've just filled in.</div>
 
+    <div class="section-head">Case studies</div>
+    <p class="text-muted" style="margin-bottom:12px;">Pick up to 3 to show in the proposal.</p>
+    <?php if (empty($caseStudies)): ?>
+    <div class="cs-empty">No case studies yet. <a href="/CVwebapp/admin/case_studies.php">Add some in the admin.</a></div>
+    <?php else: ?>
+    <div class="cs-pick-grid" id="csPickGrid">
+      <?php foreach ($caseStudies as $cs): ?>
+      <div class="cs-pick-card" data-id="<?= (int)$cs['id'] ?>" onclick="toggleCaseStudy(this)">
+        <div class="cs-pick-name"><?= htmlspecialchars($cs['name']) ?></div>
+        <div class="cs-pick-desc"><?= htmlspecialchars($cs['description']) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <div class="cs-count" id="csCount">0 of 3 selected</div>
+    <?php endif; ?>
+
     <div class="section-head">Message from CV team</div>
     <p class="text-muted" style="margin-bottom:12px;">Editable — appears at the top of the proposal.</p>
     <div class="msg-box">
@@ -845,6 +874,24 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById('senderEmail').value = 'amrut@corevoice.in';
   }
 
+  /* Case study picker */
+  function toggleCaseStudy(card) {
+    var grid = document.getElementById('csPickGrid');
+    if (!grid) return;
+    var selected = grid.querySelectorAll('.cs-pick-card.selected');
+    if (card.classList.contains('selected')) {
+      card.classList.remove('selected');
+    } else {
+      if (selected.length >= 3) return;
+      card.classList.add('selected');
+    }
+    var now = grid.querySelectorAll('.cs-pick-card.selected').length;
+    document.getElementById('csCount').textContent = now + ' of 3 selected';
+    grid.querySelectorAll('.cs-pick-card:not(.selected)').forEach(function(c) {
+      c.classList.toggle('disabled', now >= 3);
+    });
+  }
+
   /* Scope chips */
   function toggleScopeChip(chip) {
     chip.classList.toggle('selected');
@@ -905,6 +952,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var el = document.querySelector('input[name="' + name + '"]:checked');
       d[name] = el ? el.value : '';
     });
+    var csGrid = document.getElementById('csPickGrid');
+    d.caseStudyIds = csGrid
+      ? [].slice.call(csGrid.querySelectorAll('.cs-pick-card.selected')).map(function(c) { return parseInt(c.dataset.id); })
+      : [];
     return d;
   }
 
@@ -956,6 +1007,21 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     if (d.retainerTerms) setPill('retainerTerms', d.retainerTerms);
     if (d.fixedTerms)    setPill('fixedTerms', d.fixedTerms);
     if (d.expenses)      setPill('expenses', d.expenses);
+    var csGrid = document.getElementById('csPickGrid');
+    if (csGrid && Array.isArray(d.caseStudyIds)) {
+      csGrid.querySelectorAll('.cs-pick-card').forEach(function(c) {
+        c.classList.remove('selected', 'disabled');
+      });
+      d.caseStudyIds.forEach(function(id) {
+        var c = csGrid.querySelector('[data-id="' + id + '"]');
+        if (c) c.classList.add('selected');
+      });
+      var count = csGrid.querySelectorAll('.cs-pick-card.selected').length;
+      document.getElementById('csCount').textContent = count + ' of 3 selected';
+      csGrid.querySelectorAll('.cs-pick-card:not(.selected)').forEach(function(c) {
+        c.classList.toggle('disabled', count >= 3);
+      });
+    }
     goTo(1);
   }
 
@@ -1111,6 +1177,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('expenses',          radio('expenses'));
     add('paymentNotes',      document.getElementById('paymentNotes').value);
     add('outputType',        selectedOutput);
+    var csGrid = document.getElementById('csPickGrid');
+    if (csGrid) {
+      csGrid.querySelectorAll('.cs-pick-card.selected').forEach(function(c) { add('case_study_ids[]', c.dataset.id); });
+    }
     add('msgBody',           document.getElementById('msgBody').value);
     add('senderName',        document.getElementById('senderName').value);
     add('senderTitle',       document.getElementById('senderTitle').value);
