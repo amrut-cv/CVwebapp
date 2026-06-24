@@ -917,7 +917,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   }
 
   /* Draft save / load */
-  var currentDraftId  = null;
+  var _urlId = parseInt(new URLSearchParams(window.location.search).get('id')) || null;
+  var currentDraftId  = _urlId;
   var _restoringDraft = false;
 
   function collectFormData() {
@@ -1035,7 +1036,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         body: JSON.stringify({action: 'save', id: currentDraftId, name: name, data: data})
       });
       var json = await res.json();
-      if (json.ok && json.id) currentDraftId = json.id;
+      if (json.ok && json.id) {
+        currentDraftId = json.id;
+        history.replaceState({}, '', '?id=' + json.id);
+      }
     } catch(e) {}
   }
 
@@ -1048,7 +1052,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         body: JSON.stringify({action: 'save', id: currentDraftId, name: name, data: data})
       });
       var json = await res.json();
-      if (json.ok) { currentDraftId = json.id; showToast('Saved'); }
+      if (json.ok) { currentDraftId = json.id; history.replaceState({}, '', '?id=' + json.id); showToast('Saved'); }
       else showToast('Save failed');
     } catch(e) { showToast('Save failed'); }
   }
@@ -1089,6 +1093,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var json = await res.json();
       if (!json.ok) { showToast('Failed to load'); return; }
       currentDraftId = json.contract.id;
+      history.replaceState({}, '', '?id=' + json.contract.id);
       _restoringDraft = true;
       restoreFormData(json.contract.data);
       _restoringDraft = false;
@@ -1244,6 +1249,27 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       _rteQueue[key] = html || '';
       document.getElementById(key).value = html || '';
     }
+  }
+
+  // Auto-load draft on page open when ?id= is in the URL
+  if (_urlId) {
+    (async function() {
+      try {
+        var res = await fetch('/CVwebapp/api/contracts.php', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'load', id: _urlId})
+        });
+        var json = await res.json();
+        if (json.ok) {
+          _restoringDraft = true;
+          restoreFormData(json.contract.data);
+          _restoringDraft = false;
+        } else {
+          history.replaceState({}, '', window.location.pathname);
+          currentDraftId = null;
+        }
+      } catch(e) {}
+    })();
   }
 </script>
 </body>
