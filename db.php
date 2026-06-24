@@ -18,5 +18,12 @@ function getDB(): PDO {
         updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS list_items (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        list_key   VARCHAR(50)  NOT NULL,
+        label      VARCHAR(255) NOT NULL,
+        sort_order INT          NOT NULL DEFAULT 0,
+        INDEX idx_list_key (list_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     return $pdo;
 }
