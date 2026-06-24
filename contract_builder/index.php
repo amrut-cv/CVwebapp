@@ -15,11 +15,13 @@ foreach ($rows as $r) {
 }
 
 // Determine view-only at page-load time (PHP) when ?id= is present
-$pageViewOnly = false;
-$pageLoadId   = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$pageViewOnly    = false;
+$pageFileName    = '';
+$pageLoadId      = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($pageLoadId) {
     $chk = $pdo->prepare(
-        "SELECT CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS perm
+        "SELECT c.client_name,
+                CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS perm
          FROM contracts c
          LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
          WHERE c.id = ? AND (c.owner_email = ? OR cs.shared_with_email = ?)"
@@ -27,6 +29,7 @@ if ($pageLoadId) {
     $chk->execute([$currentEmail, $currentEmail, $pageLoadId, $currentEmail, $currentEmail]);
     $chkRow = $chk->fetch();
     $pageViewOnly = ($chkRow && $chkRow['perm'] === 'view');
+    $pageFileName = $chkRow ? $chkRow['client_name'] : '';
 }
 ?>
 <!DOCTYPE html>
@@ -357,6 +360,7 @@ if ($pageLoadId) {
   <div class="logo">Core<span>Voice</span></div>
   <span class="sep">·</span>
   <span class="sub">Contract builder</span>
+  <span id="headerFileName" style="font-size:.8rem;color:rgba(255,255,255,.55);margin-left:10px;font-weight:400;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= $pageFileName ? '— ' . htmlspecialchars($pageFileName) : '' ?></span>
   <div class="header-actions">
     <a href="/CVwebapp/admin/lists.php" class="btn-header">Manage lists</a>
     <button class="btn-header" onclick="openDraftsPanel()">Files</button>
@@ -984,6 +988,11 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   var _restoringDraft = false;
   var _viewOnly       = <?= $pageViewOnly ? 'true' : 'false' ?>;
 
+  function setHeaderFileName(name) {
+    var el = document.getElementById('headerFileName');
+    if (el) el.textContent = name ? '— ' + name : '';
+  }
+
   function setViewOnly(on) {
     _viewOnly = on;
     var btn = document.getElementById('saveBtn');
@@ -1113,6 +1122,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       if (json.ok && json.id) {
         currentDraftId = json.id;
         history.replaceState({}, '', '?id=' + json.id);
+        setHeaderFileName(name);
       }
     } catch(e) {}
   }
@@ -1127,7 +1137,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         body: JSON.stringify({action: 'save', id: currentDraftId, name: name, data: data})
       });
       var json = await res.json();
-      if (json.ok) { currentDraftId = json.id; history.replaceState({}, '', '?id=' + json.id); showToast('Saved'); }
+      if (json.ok) { currentDraftId = json.id; history.replaceState({}, '', '?id=' + json.id); setHeaderFileName(name); showToast('Saved'); }
       else showToast('Save failed');
     } catch(e) { showToast('Save failed'); }
   }
@@ -1170,6 +1180,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       currentDraftId = json.contract.id;
       history.replaceState({}, '', '?id=' + json.contract.id);
       setViewOnly(json.contract.my_permission === 'view');
+      setHeaderFileName(json.contract.name);
       _restoringDraft = true;
       restoreFormData(json.contract.data);
       _restoringDraft = false;
@@ -1338,6 +1349,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         var json = await res.json();
         if (json.ok) {
           setViewOnly(json.contract.my_permission === 'view');
+          setHeaderFileName(json.contract.name);
           _restoringDraft = true;
           restoreFormData(json.contract.data);
           _restoringDraft = false;
