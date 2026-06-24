@@ -426,32 +426,32 @@ foreach ($rows as $r) {
 
     <?php
     $briefSections = [
-        ['key' => 'brief_sales',        'label' => 'Sales triggers',                   'section' => 'sales'],
-        ['key' => 'brief_messaging',    'label' => 'Messaging / Positioning triggers', 'section' => 'messaging'],
-        ['key' => 'brief_mkt_strategy', 'label' => 'Marketing strategy triggers',      'section' => 'mkt_strategy'],
-        ['key' => 'brief_structure',    'label' => 'Existing marketing structure',      'section' => 'structure'],
-        ['key' => 'brief_engagement',   'label' => 'About the engagement',             'section' => 'engagement'],
+        ['key' => 'brief_sales',        'label' => 'Sales triggers',                   'section' => 'sales',        'id' => 'briefSalesChips'],
+        ['key' => 'brief_messaging',    'label' => 'Messaging / Positioning triggers', 'section' => 'messaging',    'id' => 'briefMessagingChips'],
+        ['key' => 'brief_mkt_strategy', 'label' => 'Marketing strategy triggers',      'section' => 'mkt_strategy', 'id' => 'briefMktStrategyChips'],
+        ['key' => 'brief_structure',    'label' => 'Existing marketing structure',      'section' => 'structure',    'id' => 'briefStructureChips'],
+        ['key' => 'brief_engagement',   'label' => 'About the engagement',             'section' => 'engagement',   'id' => 'briefEngagementChips'],
     ];
     foreach ($briefSections as $bs):
-        $items = $lists[$bs['key']] ?? [];
-        $sec   = htmlspecialchars($bs['section']);
+        $items   = $lists[$bs['key']] ?? [];
+        $sec     = htmlspecialchars($bs['section']);
+        $chipsId = htmlspecialchars($bs['id']);
+        $ph      = htmlspecialchars('Add to ' . $bs['label'] . '...');
     ?>
     <div class="section-head"><?= htmlspecialchars($bs['label']) ?></div>
-    <div class="check-grid" data-section="<?= $sec ?>">
+    <div class="scope-chips" id="<?= $chipsId ?>">
       <?php foreach ($items as $item):
         $val = htmlspecialchars($item['label']);
       ?>
-      <label class="check-item">
-        <input type="checkbox" class="trigger" data-section="<?= $sec ?>" value="<?= $val ?>" />
-        <span class="check-text"><?= $val ?></span>
-      </label>
+      <span class="scope-chip" data-section="<?= $sec ?>" data-value="<?= $val ?>"
+        onclick="toggleScopeChip(this)"><?= $val ?></span>
       <?php endforeach; ?>
     </div>
-    <div class="check-add-row">
-      <input class="check-add-input" placeholder="Add item..."
-        onkeydown="if(event.key==='Enter'){event.preventDefault();addBriefItem('<?= $sec ?>',this)}" />
-      <button type="button" class="check-add-btn"
-        onclick="addBriefItem('<?= $sec ?>',this.previousElementSibling)">+ Add</button>
+    <div class="scope-add-row">
+      <input type="text" class="scope-add-input" placeholder="<?= $ph ?>"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addScopeItem('<?= $chipsId ?>','<?= $sec ?>',this)}" />
+      <button type="button" class="scope-add-btn"
+        onclick="addScopeItem('<?= $chipsId ?>','<?= $sec ?>',this.previousElementSibling)">+ Add</button>
     </div>
     <?php endforeach; ?>
 
@@ -733,7 +733,6 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   var currentStep   = 1;
   var selectedEng    = null;
   var selectedOutput = null;
-  var BRIEF_SECTIONS = ['sales', 'messaging', 'mkt_strategy', 'structure', 'engagement'];
 
   function goTo(step) {
     document.getElementById('step' + currentStep).classList.add('hidden');
@@ -804,8 +803,12 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
      'Long sales cycle, need consistent engagement',
      'Want to own category narrative'
     ].forEach(function(val) {
-      var cb = document.querySelector('.trigger[value="' + val + '"]');
-      if (cb) cb.checked = true;
+      var chip = document.querySelector('#briefSalesChips .scope-chip[data-value="' + val + '"],' +
+        '#briefMessagingChips .scope-chip[data-value="' + val + '"],' +
+        '#briefMktStrategyChips .scope-chip[data-value="' + val + '"],' +
+        '#briefStructureChips .scope-chip[data-value="' + val + '"],' +
+        '#briefEngagementChips .scope-chip[data-value="' + val + '"]');
+      if (chip) chip.classList.add('selected');
     });
 
     var engCard = document.querySelector('[data-eng="full-retainer"]');
@@ -865,28 +868,6 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     if (typeof input === 'object' && 'value' in input) { input.value = ''; if (input.focus) input.focus(); }
   }
 
-  /* Brief custom items */
-  function addBriefItem(section, input) {
-    var val = (typeof input === 'object') ? input.value.trim() : String(input).trim();
-    if (!val) return;
-    var grid = document.querySelector('.check-grid[data-section="' + section + '"]');
-    if (!grid) return;
-    if ([].slice.call(grid.querySelectorAll('.trigger.custom')).some(function(c) { return c.value === val; })) return;
-    var label = document.createElement('label');
-    label.className = 'check-item custom-check';
-    var cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.className = 'trigger custom';
-    cb.dataset.section = section; cb.value = val; cb.checked = true;
-    var txt = document.createElement('span');
-    txt.className = 'check-text'; txt.textContent = val;
-    var rm = document.createElement('button');
-    rm.type = 'button'; rm.className = 'check-remove'; rm.textContent = 'x'; rm.title = 'Remove';
-    rm.onclick = function(e) { e.stopPropagation(); label.remove(); };
-    label.appendChild(cb); label.appendChild(txt); label.appendChild(rm);
-    grid.appendChild(label);
-    if (typeof input === 'object' && 'value' in input) { input.value = ''; if (input.focus) input.focus(); }
-  }
-
   /* Draft save / load */
   var currentDraftId = null;
 
@@ -901,14 +882,22 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var el = document.getElementById(id);
       if (el) d[id] = el.value;
     });
-    d.triggers = [].slice.call(document.querySelectorAll('.trigger:checked:not(.custom)')).map(function(e) { return e.value; });
-    d.scope    = [].slice.call(document.querySelectorAll('.scope-chip.selected:not(.custom)')).map(function(e) { return e.dataset.value; });
-    d.customStrategyItems = [].slice.call(document.querySelectorAll('.scope-chip.custom[data-section="strategy"]')).map(function(e) { return e.dataset.value; });
-    d.customContentItems  = [].slice.call(document.querySelectorAll('.scope-chip.custom[data-section="content"]')).map(function(e) { return e.dataset.value; });
-    d.customOpsItems      = [].slice.call(document.querySelectorAll('.scope-chip.custom[data-section="ops"]')).map(function(e) { return e.dataset.value; });
-    BRIEF_SECTIONS.forEach(function(sec) {
-      d['customBrief_' + sec] = [].slice.call(document.querySelectorAll('.trigger.custom[data-section="' + sec + '"]')).map(function(e) { return e.value; });
+    var BRIEF_CHIP_MAP = [
+      ['briefSalesChips','sales'],['briefMessagingChips','messaging'],
+      ['briefMktStrategyChips','mkt_strategy'],['briefStructureChips','structure'],
+      ['briefEngagementChips','engagement']
+    ];
+    d.triggers = [];
+    BRIEF_CHIP_MAP.forEach(function(pair) {
+      var container = document.getElementById(pair[0]);
+      if (!container) return;
+      [].slice.call(container.querySelectorAll('.scope-chip.selected:not(.custom)')).forEach(function(chip) { d.triggers.push(chip.dataset.value); });
+      d['customBrief_' + pair[1]] = [].slice.call(container.querySelectorAll('.scope-chip.custom')).map(function(c) { return c.dataset.value; });
     });
+    d.scope    = [].slice.call(document.querySelectorAll('#strategyChips .scope-chip.selected:not(.custom),#contentChips .scope-chip.selected:not(.custom),#opsChips .scope-chip.selected:not(.custom)')).map(function(e) { return e.dataset.value; });
+    d.customStrategyItems = [].slice.call(document.querySelectorAll('#strategyChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
+    d.customContentItems  = [].slice.call(document.querySelectorAll('#contentChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
+    d.customOpsItems      = [].slice.call(document.querySelectorAll('#opsChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.engagementType = selectedEng || '';
     ['currency','feeType','cadence','retainerTerms','fixedTerms','expenses'].forEach(function(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
@@ -926,8 +915,19 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var el = document.getElementById(id);
       if (el && d[id] !== undefined) el.value = d[id];
     });
-    document.querySelectorAll('.trigger:not(.custom)').forEach(function(el) {
-      el.checked = (d.triggers || []).indexOf(el.value) !== -1;
+    var BRIEF_CHIP_MAP = [
+      ['briefSalesChips','sales'],['briefMessagingChips','messaging'],
+      ['briefMktStrategyChips','mkt_strategy'],['briefStructureChips','structure'],
+      ['briefEngagementChips','engagement']
+    ];
+    BRIEF_CHIP_MAP.forEach(function(pair) {
+      var chipsId = pair[0], sec = pair[1];
+      var container = document.getElementById(chipsId);
+      if (!container) return;
+      container.querySelectorAll('.scope-chip:not(.custom)').forEach(function(chip) {
+        chip.classList.toggle('selected', (d.triggers || []).indexOf(chip.dataset.value) !== -1);
+      });
+      (d['customBrief_' + sec] || []).forEach(function(val) { if (val) addScopeItem(chipsId, sec, {value: val, focus: function(){}}); });
     });
     if (d.engagementType) {
       var card = document.querySelector('[data-eng="' + d.engagementType + '"]');
