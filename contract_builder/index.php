@@ -554,6 +554,8 @@ foreach ($rows as $r) {
           <option>1 month</option>
           <option>2 months</option>
           <option>3 months</option>
+          <option>4 months</option>
+          <option>5 months</option>
           <option>6 months</option>
           <option>12 months</option>
           <option>Ongoing</option>
