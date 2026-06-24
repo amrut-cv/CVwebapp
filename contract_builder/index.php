@@ -746,6 +746,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     currentStep = step;
     ensureRTE(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    silentSave();
   }
 
   function selectEng(card) {
@@ -869,7 +870,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   }
 
   /* Draft save / load */
-  var currentDraftId = null;
+  var currentDraftId  = null;
+  var _restoringDraft = false;
 
   function collectFormData() {
     syncRTE();
@@ -957,16 +959,30 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     goTo(1);
   }
 
+  async function silentSave() {
+    if (_restoringDraft) return;
+    var data = collectFormData();
+    var name = (data.companyName || '').trim() || 'Untitled';
+    try {
+      var res = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'save', id: currentDraftId, name: name, data: data})
+      });
+      var json = await res.json();
+      if (json.ok && json.id) currentDraftId = json.id;
+    } catch(e) {}
+  }
+
   async function saveDraft() {
     var data = collectFormData();
     var name = (data.companyName || '').trim() || ('Draft ' + new Date().toLocaleDateString('en-IN'));
     try {
-      var res  = await fetch('/CVwebapp/save_draft.php', {
+      var res = await fetch('/CVwebapp/api/contracts.php', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ id: currentDraftId, name: name, data: data }),
+        body: JSON.stringify({action: 'save', id: currentDraftId, name: name, data: data})
       });
       var json = await res.json();
-      if (json.id) { currentDraftId = json.id; showToast('Draft saved'); }
+      if (json.ok) { currentDraftId = json.id; showToast('Saved'); }
       else showToast('Save failed');
     } catch(e) { showToast('Save failed'); }
   }
@@ -976,16 +992,17 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     var list = document.getElementById('draftsList');
     list.innerHTML = '<div class="drafts-empty">Loading...</div>';
     try {
-      var rows = await fetch('/CVwebapp/load_drafts.php').then(function(r) { return r.json(); });
-      if (!rows.length) {
+      var rows = await fetch('/CVwebapp/api/contracts.php').then(function(r) { return r.json(); });
+      if (!Array.isArray(rows) || !rows.length) {
         list.innerHTML = '<div class="drafts-empty">No files saved yet.<br>Hit Save to save your current entries.</div>';
         return;
       }
       list.innerHTML = rows.map(function(r) {
-        return '<div class="draft-item" onclick="loadDraft(' + r.id + ', ' + JSON.stringify(r.data).replace(/"/g, '&quot;') + ')">' +
+        var dt = new Date(r.updated_at).toLocaleString('en-IN', {dateStyle: 'medium', timeStyle: 'short'});
+        return '<div class="draft-item" onclick="loadDraft(' + r.id + ')">' +
           '<div class="draft-item-info">' +
-          '<div class="draft-item-name">' + r.name + '</div>' +
-          '<div class="draft-item-date">' + r.email.split('@')[0] + ' &middot; ' + new Date(r.updated_at).toLocaleString('en-IN', {dateStyle:'medium',timeStyle:'short'}) + '</div>' +
+          '<div class="draft-item-name">' + (r.name || 'Untitled') + '</div>' +
+          '<div class="draft-item-date">' + dt + '</div>' +
           '</div>' +
           '<button class="draft-delete" title="Delete" onclick="event.stopPropagation();deleteDraft(' + r.id + ',this)">&#x2715;</button>' +
           '</div>';
@@ -997,24 +1014,39 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById('draftsOverlay').classList.add('hidden');
   }
 
-  function loadDraft(id, data) {
-    currentDraftId = id;
-    restoreFormData(data);
-    closeDraftsPanel();
-    showToast('Draft loaded');
+  async function loadDraft(id) {
+    try {
+      var res = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'load', id: id})
+      });
+      var json = await res.json();
+      if (!json.ok) { showToast('Failed to load'); return; }
+      currentDraftId = json.contract.id;
+      _restoringDraft = true;
+      restoreFormData(json.contract.data);
+      _restoringDraft = false;
+      closeDraftsPanel();
+      showToast('Loaded');
+    } catch(e) { showToast('Failed to load'); }
   }
 
   async function deleteDraft(id, btn) {
-    if (!confirm('Delete this draft?')) return;
-    await fetch('/CVwebapp/delete_draft.php', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ id: id }),
-    });
-    btn.closest('.draft-item').remove();
-    if (!document.querySelector('.draft-item')) {
-      document.getElementById('draftsList').innerHTML = '<div class="drafts-empty">No files saved yet.</div>';
-    }
-    if (currentDraftId === id) currentDraftId = null;
+    if (!confirm('Delete this file?')) return;
+    try {
+      var res = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'delete', id: id})
+      });
+      var json = await res.json();
+      if (json.ok) {
+        btn.closest('.draft-item').remove();
+        if (!document.querySelector('.draft-item')) {
+          document.getElementById('draftsList').innerHTML = '<div class="drafts-empty">No files saved yet.</div>';
+        }
+        if (currentDraftId === id) currentDraftId = null;
+      }
+    } catch(e) { showToast('Delete failed'); }
   }
 
   function showToast(msg) {
