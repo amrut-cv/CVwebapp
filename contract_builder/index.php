@@ -989,7 +989,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     }
     setRTE('clientSaid', d.clientSaid || '');
     setRTE('objective',  d.objective  || '');
-    document.querySelectorAll('.scope-chip:not(.custom)').forEach(function(chip) {
+    document.querySelectorAll('#strategyChips .scope-chip:not(.custom),#contentChips .scope-chip:not(.custom),#opsChips .scope-chip:not(.custom)').forEach(function(chip) {
       chip.classList.toggle('selected', (d.scope || []).indexOf(chip.dataset.value) !== -1);
     });
     [['strategy','strategyChips'],['content','contentChips'],['ops','opsChips']].forEach(function(pair) {
