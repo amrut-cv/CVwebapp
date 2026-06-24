@@ -13,6 +13,21 @@ $lists = [];
 foreach ($rows as $r) {
     $lists[$r['list_key']][] = $r;
 }
+
+// Determine view-only at page-load time (PHP) when ?id= is present
+$pageViewOnly = false;
+$pageLoadId   = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($pageLoadId) {
+    $chk = $pdo->prepare(
+        "SELECT CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS perm
+         FROM contracts c
+         LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
+         WHERE c.id = ? AND (c.owner_email = ? OR cs.shared_with_email = ?)"
+    );
+    $chk->execute([$currentEmail, $currentEmail, $pageLoadId, $currentEmail, $currentEmail]);
+    $chkRow = $chk->fetch();
+    $pageViewOnly = ($chkRow && $chkRow['perm'] === 'view');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -345,10 +360,10 @@ foreach ($rows as $r) {
   <div class="header-actions">
     <a href="/CVwebapp/admin/lists.php" class="btn-header">Manage lists</a>
     <button class="btn-header" onclick="openDraftsPanel()">Files</button>
-    <button class="btn-header accent" id="saveBtn" onclick="saveDraft()">Save</button>
+    <button class="btn-header accent" id="saveBtn" onclick="saveDraft()"<?= $pageViewOnly ? ' disabled style="opacity:.4" title="View only"' : '' ?>>Save</button>
   </div>
 </header>
-<div id="viewOnlyBanner" style="display:none;background:#fef3c7;border-bottom:2px solid #fcd34d;padding:9px 24px;font-size:.83rem;color:#92400e;text-align:center;position:sticky;top:0;z-index:50;">
+<div id="viewOnlyBanner" style="display:<?= $pageViewOnly ? 'block' : 'none' ?>;background:#fef3c7;border-bottom:2px solid #fcd34d;padding:9px 24px;font-size:.83rem;color:#92400e;text-align:center;position:sticky;top:0;z-index:50;">
   You have <strong>view-only</strong> access &mdash; changes will not be saved.
 </div>
 
@@ -967,7 +982,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   var _urlId = parseInt(new URLSearchParams(window.location.search).get('id')) || null;
   var currentDraftId  = _urlId;
   var _restoringDraft = false;
-  var _viewOnly       = false;
+  var _viewOnly       = <?= $pageViewOnly ? 'true' : 'false' ?>;
 
   function setViewOnly(on) {
     _viewOnly = on;
