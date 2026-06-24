@@ -1066,7 +1066,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   async function silentSave() {
     if (_restoringDraft) return;
     var data = collectFormData();
-    var name = (data.companyName || '').trim() || 'Untitled';
+    var name = (data.companyName || '').trim();
+    // Don't create a new record until the user has entered a company name
+    if (!name && !currentDraftId) return;
+    name = name || 'Untitled';
     try {
       var res = await fetch('/CVwebapp/api/contracts.php', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
