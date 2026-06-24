@@ -1063,10 +1063,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('effectiveDate',  document.getElementById('effectiveDate').value);
     add('objective',      document.getElementById('objective').value);
     add('additionalScope',document.getElementById('additionalScope').value);
-    document.querySelectorAll('.scope-chip.selected:not(.custom)').forEach(function(chip) { add('scope[]', chip.dataset.value); });
-    document.querySelectorAll('.scope-chip.custom[data-section="strategy"]').forEach(function(chip) { add('customStrategy[]', chip.dataset.value); });
-    document.querySelectorAll('.scope-chip.custom[data-section="content"]').forEach(function(chip) { add('customContent[]', chip.dataset.value); });
-    document.querySelectorAll('.scope-chip.custom[data-section="ops"]').forEach(function(chip) { add('customOps[]', chip.dataset.value); });
+    document.querySelectorAll('#strategyChips .scope-chip.selected').forEach(function(chip) { add('scope_strategy[]', chip.dataset.value); });
+    document.querySelectorAll('#contentChips .scope-chip.selected').forEach(function(chip) { add('scope_content[]', chip.dataset.value); });
+    document.querySelectorAll('#opsChips .scope-chip.selected').forEach(function(chip) { add('scope_ops[]', chip.dataset.value); });
     add('cadence',           radio('cadence'));
     add('currency',          radio('currency') || 'INR');
     add('feeType',           radio('feeType'));

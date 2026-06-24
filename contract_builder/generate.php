@@ -79,7 +79,6 @@ $duration    = clean('duration');
 $effDate     = clean('effectiveDate');
 $objective   = clean('objective');
 $addlScope   = clean('additionalScope');
-$scopeItems  = cleanArr('scope');
 $cadence     = clean('cadence');
 $currCode    = clean('currency') ?: 'INR';
 $feeType     = clean('feeType');
@@ -136,37 +135,10 @@ $engDesc      = $engDescs[$engType]          ?? '';
 $engRationale = $engRationaleMap[$engType]   ?? '';
 
 /* ─────────────────────────────── scope groups ── */
-$strategyAll = [
-    'Positioning & communication', 'Marketing strategy', 'CMO office — goals & reporting',
-    'GTM & launch strategy', 'Customer & competitive research', 'Budget & resource planning',
-    'Growth experiment framework', 'Investor narrative framework', 'Content & editorial strategy',
-    'Founder personal brand strategy', 'SEO, AEO & AI visibility strategy',
-];
-$contentAll = [
-    'Website design', 'Logo & visual system', 'Brand guide',
-    'Social posts — text, image, carousels', 'Reels, shorts & social video', 'Long-form video',
-    'SEO blogs & newsletters', 'Ad creatives — static & video', 'Sales decks & presentations',
-    'Testimonial & case study videos', 'Product explainers & guides', 'Event & booth collateral',
-    'Pitch deck', 'One-pager & exec summary', 'Thought leadership articles', 'AI knowledge hub build',
-];
-$opsAll = [
-    'Social media management', 'Paid ads — Google, Meta, LinkedIn', 'SEO + AEO execution',
-    'ABM — account research & outreach', 'Campaign & event execution', 'Event planning & marketing',
-    'Community & audience building', 'Stakeholder communications', 'Marketing automation & CRM',
-    'Performance tracking & dashboards', 'Reporting & dashboard setup', 'AEO site architecture & schema',
-];
-$strategyScope = array_values(array_filter(array_merge(
-    array_filter($scopeItems, fn($i) => in_array($i, $strategyAll)),
-    cleanArr('customStrategy')
-)));
-$contentScope  = array_values(array_filter(array_merge(
-    array_filter($scopeItems, fn($i) => in_array($i, $contentAll)),
-    cleanArr('customContent')
-)));
-$opsScope      = array_values(array_filter(array_merge(
-    array_filter($scopeItems, fn($i) => in_array($i, $opsAll)),
-    cleanArr('customOps')
-)));
+$strategyScope = cleanArr('scope_strategy');
+$contentScope  = cleanArr('scope_content');
+$opsScope      = cleanArr('scope_ops');
+$scopeItems    = array_merge($strategyScope, $contentScope, $opsScope);
 
 /* ─────────────────────────────── contract scope display labels ── */
 $scopeContractLabels = [
