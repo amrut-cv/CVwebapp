@@ -1053,7 +1053,11 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('agreementDate',  document.getElementById('agreementDate').value);
     add('bizDescription', document.getElementById('bizDescription').value);
     add('clientSaid',     document.getElementById('clientSaid').value);
-    document.querySelectorAll('.trigger:checked').forEach(function(cb) { add('triggers[]', cb.value); });
+    ['briefSalesChips','briefMessagingChips','briefMktStrategyChips','briefStructureChips','briefEngagementChips'].forEach(function(id) {
+      var container = document.getElementById(id);
+      if (!container) return;
+      container.querySelectorAll('.scope-chip.selected').forEach(function(chip) { add('triggers[]', chip.dataset.value); });
+    });
     add('engagementType', selectedEng || '');
     add('duration',       document.getElementById('duration').value);
     add('effectiveDate',  document.getElementById('effectiveDate').value);

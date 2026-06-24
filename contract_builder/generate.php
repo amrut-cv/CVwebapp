@@ -376,6 +376,11 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .heard-quote { font-style: italic; color: #3a3a5e; font-size: .96rem; line-height: 1.82; margin-bottom: 20px; }
     .heard-quote ul, .heard-quote ol, .scope-obj ul, .scope-obj ol, .ann-obj ul, .ann-obj ol { padding-left: 1.4em; margin: 6px 0; }
     .heard-quote li, .scope-obj li, .ann-obj li { margin-bottom: 3px; }
+    .trigger-subhead {
+      font-family: 'Segoe UI', sans-serif; font-size: .72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .12em;
+      color: #9ca3af; margin: 20px 0 10px;
+    }
     .trigger-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
     .trigger-list li {
       background: #f4f4f8; border-radius: 20px;
@@ -619,6 +624,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="sec-title">What brought you here</div>
       <?php if ($clientSaid): ?><div class="heard-quote"><?= rawHtml($clientSaid) ?></div><?php endif; ?>
       <?php if ($triggers): ?>
+        <div class="trigger-subhead">Triggers for this engagement</div>
         <ul class="trigger-list">
           <?php foreach ($triggers as $t): ?><li><?= esc($t) ?></li><?php endforeach; ?>
         </ul>
