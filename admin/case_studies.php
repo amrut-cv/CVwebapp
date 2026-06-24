@@ -83,7 +83,8 @@ $rows = $pdo->query("SELECT id, name, description, sort_order FROM case_studies 
   <div class="logo">CoreVoice — Case Studies</div>
   <div class="nav-links">
     <a href="/CVwebapp/admin/lists.php">Lists</a>
-    <a href="/CVwebapp/contract_builder/">← Back to builder</a>
+    <a href="/CVwebapp/admin/users.php">Users</a>
+    <a href="/CVwebapp/contract_builder/">&#x2190; Back to builder</a>
   </div>
 </header>
 

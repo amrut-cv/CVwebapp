@@ -41,5 +41,33 @@ function getDB(): PDO {
         updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_contracts_owner (owner_email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        email      VARCHAR(255) NOT NULL,
+        name       VARCHAR(255) NOT NULL DEFAULT '',
+        role       ENUM('admin','editor','viewer') NOT NULL DEFAULT 'editor',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY idx_user_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS contract_shares (
+        id                INT AUTO_INCREMENT PRIMARY KEY,
+        contract_id       INT NOT NULL,
+        shared_with_email VARCHAR(255) NOT NULL,
+        permission        ENUM('view','edit') NOT NULL DEFAULT 'view',
+        shared_by_email   VARCHAR(255) NOT NULL,
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_share (contract_id, shared_with_email),
+        INDEX idx_shared_with (shared_with_email),
+        FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Seed known users if table is empty
+    $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+    if ($count === 0) {
+        $seed = $pdo->prepare("INSERT IGNORE INTO users (email, name, role) VALUES (?,?,?)");
+        $seed->execute(['amrut@corevoice.in',        'Amrut',      'admin']);
+        $seed->execute(['subhasmita@corevoice.in',   'Subhasmita', 'editor']);
+        $seed->execute(['nikhil@corevoice.in',        'Nikhil',     'editor']);
+        $seed->execute(['piyush@corevoice.in',        'Piyush',     'editor']);
+    }
     return $pdo;
 }

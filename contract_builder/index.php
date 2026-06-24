@@ -5,6 +5,10 @@ require __DIR__ . '/../db.php';
 $pdo = getDB();
 $rows = $pdo->query("SELECT id, list_key, label, sort_order FROM list_items ORDER BY list_key, sort_order, id")->fetchAll();
 $caseStudies = $pdo->query("SELECT id, name, description FROM case_studies ORDER BY sort_order, id")->fetchAll();
+$currentEmail = $_SESSION['auth_email'];
+$allUsers = $pdo->prepare("SELECT email, name FROM users WHERE email != ? ORDER BY name, email");
+$allUsers->execute([$currentEmail]);
+$allUsers = $allUsers->fetchAll();
 $lists = [];
 foreach ($rows as $r) {
     $lists[$r['list_key']][] = $r;
@@ -280,6 +284,24 @@ foreach ($rows as $r) {
     .cs-pick-card.selected .cs-pick-desc { color: var(--text); }
     .cs-count { font-size: .78rem; color: var(--muted); margin-bottom: 18px; }
     .cs-empty { font-size: .85rem; color: var(--muted); padding: 12px 0; margin-bottom: 18px; }
+
+    .share-gate { font-size: .83rem; color: var(--muted); padding: 8px 0 20px; }
+    .share-add-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .share-select { flex: 1; min-width: 200px; border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: .85rem; font-family: inherit; color: var(--text); background: var(--bg); outline: none; }
+    .share-select:focus { border-color: var(--accent); }
+    .share-perm-sel { border: 1.5px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: .85rem; font-family: inherit; color: var(--text); background: var(--bg); outline: none; }
+    .share-perm-sel:focus { border-color: var(--accent); }
+    .share-btn { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: .83rem; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .share-btn:hover { opacity: .88; }
+    .share-list { margin-bottom: 10px; }
+    .share-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; background: var(--white); }
+    .share-who { flex: 1; font-size: .85rem; color: var(--text); }
+    .share-addr { color: var(--muted); font-size: .78rem; }
+    .share-perm-tag { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 20px; background: #f3f4f6; color: var(--muted); }
+    .share-perm-tag.edit { background: #dbeafe; color: #1e40af; }
+    .share-remove { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 2px 4px; border-radius: 4px; line-height: 1; }
+    .share-remove:hover { color: var(--accent); background: var(--accent-light); }
+    .share-empty { font-size: .82rem; color: var(--muted); padding: 4px 0 8px; }
 
     .msg-box { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; background: #fafafa; margin-bottom: 20px; }
     .msg-box textarea { width: 100%; border: none; background: transparent; font-size: .9rem; color: var(--text); resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.65; }
@@ -747,6 +769,25 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       </div>
     </div>
 
+    <div class="section-head" style="margin-top:28px;">Share this file</div>
+    <div id="shareGate" class="share-gate">Save the file at least once before sharing.</div>
+    <div id="shareUI" class="hidden">
+      <div class="share-list" id="shareList"></div>
+      <div class="share-add-row">
+        <select id="shareEmail" class="share-select">
+          <option value="">Select person to share with...</option>
+          <?php foreach ($allUsers as $u): ?>
+          <option value="<?= htmlspecialchars($u['email']) ?>"><?= htmlspecialchars($u['name'] ?: $u['email']) ?> &lt;<?= htmlspecialchars($u['email']) ?>&gt;</option>
+          <?php endforeach; ?>
+        </select>
+        <select id="sharePerm" class="share-perm-sel">
+          <option value="view">View only</option>
+          <option value="edit">Can edit</option>
+        </select>
+        <button class="share-btn" onclick="addShare()">+ Share</button>
+      </div>
+    </div>
+
     <div class="nav-row">
       <button class="btn btn-secondary" onclick="goTo(5)">&#x2190; Back to fee</button>
       <div></div>
@@ -776,6 +817,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     ensureRTE(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     silentSave();
+    if (step === 6) loadShares();
   }
 
   function selectEng(card) {
@@ -1265,6 +1307,81 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         }
       } catch(e) {}
     })();
+  }
+
+  // ── Sharing ─────────────────────────────────────────────
+  async function loadShares() {
+    var gate = document.getElementById('shareGate');
+    var ui   = document.getElementById('shareUI');
+    if (!currentDraftId) {
+      gate.classList.remove('hidden');
+      ui.classList.add('hidden');
+      return;
+    }
+    gate.classList.add('hidden');
+    ui.classList.remove('hidden');
+    try {
+      var res  = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'get_shares', contract_id: currentDraftId})
+      });
+      var json = await res.json();
+      if (!json.ok) return;
+      renderShares(json.shares);
+    } catch(e) {}
+  }
+
+  function renderShares(shares) {
+    var list = document.getElementById('shareList');
+    if (!shares.length) {
+      list.innerHTML = '<div class="share-empty">No one else has access yet.</div>';
+      return;
+    }
+    list.innerHTML = shares.map(function(s) {
+      var label = (s.name || s.shared_with_email);
+      var addr  = s.name ? ' <span class="share-addr">&lt;' + escHTML(s.shared_with_email) + '&gt;</span>' : '';
+      var tag   = s.permission === 'edit'
+        ? '<span class="share-perm-tag edit">Can edit</span>'
+        : '<span class="share-perm-tag">View only</span>';
+      return '<div class="share-row">' +
+        '<div class="share-who">' + escHTML(label) + addr + '</div>' +
+        tag +
+        '<button class="share-remove" onclick="removeShare(\'' + escHTML(s.shared_with_email) + '\')" title="Remove">&#x2715;</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  async function addShare() {
+    var email = document.getElementById('shareEmail').value;
+    var perm  = document.getElementById('sharePerm').value;
+    if (!email) { showToast('Select a person first'); return; }
+    try {
+      var res  = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'share', contract_id: currentDraftId, shared_with_email: email, permission: perm})
+      });
+      var json = await res.json();
+      if (json.ok) {
+        document.getElementById('shareEmail').value = '';
+        loadShares();
+        showToast('Shared');
+      } else { showToast(json.error || 'Share failed'); }
+    } catch(e) { showToast('Share failed'); }
+  }
+
+  async function removeShare(email) {
+    try {
+      var res  = await fetch('/CVwebapp/api/contracts.php', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'unshare', contract_id: currentDraftId, shared_with_email: email})
+      });
+      var json = await res.json();
+      if (json.ok) { loadShares(); showToast('Removed'); }
+    } catch(e) {}
+  }
+
+  function escHTML(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 </script>
 </body>

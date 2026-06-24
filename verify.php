@@ -26,10 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Incorrect code. Please try again.';
     } else {
         $email = $_SESSION['otp_email'];
+        $role  = $_SESSION['otp_role'] ?? 'editor';
         session_unset();
         session_regenerate_id(true);
         $_SESSION['auth_email'] = $email;
         $_SESSION['auth_time']  = time();
+        $_SESSION['user_role']  = $role;
         header('Location: index.php');
         exit;
     }

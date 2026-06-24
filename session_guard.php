@@ -9,3 +9,15 @@ if (empty($_SESSION['auth_email']) ||
     header('Location: login.php');
     exit;
 }
+
+// Backfill user_role for sessions created before the users table existed
+if (empty($_SESSION['user_role'])) {
+    require_once __DIR__ . '/db.php';
+    $stmt = getDB()->prepare("SELECT role FROM users WHERE email = ?");
+    $stmt->execute([$_SESSION['auth_email']]);
+    $r = $stmt->fetch();
+    $_SESSION['user_role'] = $r ? $r['role'] : 'editor';
+}
+
+function current_role(): string { return $_SESSION['user_role'] ?? 'editor'; }
+function is_admin(): bool { return current_role() === 'admin'; }

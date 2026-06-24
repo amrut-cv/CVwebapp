@@ -1,13 +1,7 @@
 <?php
 session_start();
 require __DIR__ . '/ses_config.php';
-
-const ALLOWED = [
-    'amrut@corevoice.in',
-    'subhasmita@corevoice.in',
-    'nikhil@corevoice.in',
-    'piyush@corevoice.in',
-];
+require __DIR__ . '/db.php';
 
 if (!empty($_SESSION['auth_email'])) {
     header('Location: index.php');
@@ -19,13 +13,18 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
 
-    if (!in_array($email, ALLOWED, true)) {
+    $stmt = getDB()->prepare("SELECT email, role FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
         $error = 'That email is not authorised.';
     } else {
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $_SESSION['otp_email']   = $email;
         $_SESSION['otp_code']    = $otp;
         $_SESSION['otp_expires'] = time() + 300; // 5 minutes
+        $_SESSION['otp_role']    = $user['role'];
 
         $sent = ses_send(
             $email,
