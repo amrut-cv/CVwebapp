@@ -363,6 +363,7 @@ if ($pageLoadId) {
   <span id="headerFileName" style="font-size:.8rem;color:rgba(255,255,255,.55);margin-left:10px;font-weight:400;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= $pageFileName ? '— ' . htmlspecialchars($pageFileName) : '' ?></span>
   <div class="header-actions">
     <a href="/CVwebapp/admin/lists.php" class="btn-header">Manage lists</a>
+    <a href="/CVwebapp/account.php" class="btn-header">Account</a>
     <button class="btn-header" onclick="openDraftsPanel()">Files</button>
     <button class="btn-header accent" id="saveBtn" onclick="saveDraft()"<?= $pageViewOnly ? ' disabled style="opacity:.4" title="View only"' : '' ?>>Save</button>
   </div>
