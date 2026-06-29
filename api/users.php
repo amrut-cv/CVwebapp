@@ -86,4 +86,15 @@ if ($action === 'delete') {
     exit;
 }
 
+if ($action === 'set_password') {
+    $id       = (int)($body['id'] ?? 0);
+    $password = $body['password'] ?? '';
+    if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
+    if (strlen($password) < 8) { http_response_code(400); echo json_encode(['error' => 'Password must be at least 8 characters']); exit; }
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$hash, $id]);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
 http_response_code(400); echo json_encode(['error' => 'Unknown action']);

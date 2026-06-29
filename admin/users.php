@@ -8,7 +8,7 @@ if (!is_admin()) {
 
 require __DIR__ . '/../db.php';
 $pdo  = getDB();
-$rows = $pdo->query("SELECT id, email, name, role, created_at FROM users ORDER BY role, email")->fetchAll();
+$rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FROM users ORDER BY role, email")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,6 +102,7 @@ $rows = $pdo->query("SELECT id, email, name, role, created_at FROM users ORDER B
         <th>Email</th>
         <th>Name</th>
         <th>Role</th>
+        <th>Password</th>
         <th>Added</th>
         <th></th>
       </tr>
@@ -112,10 +113,18 @@ $rows = $pdo->query("SELECT id, email, name, role, created_at FROM users ORDER B
         <td><?= htmlspecialchars($u['email']) ?></td>
         <td><?= htmlspecialchars($u['name'] ?: '&mdash;') ?></td>
         <td><span class="role-badge role-<?= $u['role'] ?>"><?= $u['role'] ?></span></td>
+        <td>
+          <?php if ($u['password_hash']): ?>
+            <span style="color:#16a34a;font-size:.78rem;">&#10003; set</span>
+          <?php else: ?>
+            <span style="color:#dc2626;font-size:.78rem;">&#9888; not set</span>
+          <?php endif; ?>
+        </td>
         <td><?= date('d M Y', strtotime($u['created_at'])) ?></td>
         <td>
           <div class="td-actions">
             <button class="btn-edit" onclick="openEdit(this.closest('tr'))">Edit</button>
+            <button class="btn-edit" onclick="openSetPw(<?= $u['id'] ?>, '<?= htmlspecialchars($u['email']) ?>')">Set pw</button>
             <button class="btn-del"  onclick="deleteUser(<?= $u['id'] ?>, this.closest('tr'))">Remove</button>
           </div>
         </td>
@@ -161,10 +170,29 @@ $rows = $pdo->query("SELECT id, email, name, role, created_at FROM users ORDER B
   </div>
 </div>
 
+<!-- Set password modal -->
+<div class="overlay" id="pwOverlay" onclick="if(event.target===this)closePw()">
+  <div class="modal">
+    <h2>Set password</h2>
+    <label>User</label>
+    <input type="text" id="pwEmail" disabled style="color:var(--muted);" />
+    <label>New password</label>
+    <input type="password" id="pwInput" placeholder="Min 8 characters" />
+    <label>Confirm password</label>
+    <input type="password" id="pwConfirm" placeholder="Repeat password" />
+    <div style="font-size:.75rem;color:#dc2626;margin-top:6px;display:none;" id="pwErr"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closePw()">Cancel</button>
+      <button class="btn-save"   onclick="savePw()">Set password</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 var editingId = null;
+var pwUserId  = null;
 
 function openEdit(row) {
   editingId = parseInt(row.dataset.id);
@@ -217,9 +245,11 @@ async function addUser() {
       '<td>' + esc(email) + '</td>' +
       '<td>' + (name ? esc(name) : '—') + '</td>' +
       '<td><span class="role-badge role-' + role + '">' + role + '</span></td>' +
+      '<td><span style="color:#dc2626;font-size:.78rem;">&#9888; not set</span></td>' +
       '<td>Today</td>' +
       '<td><div class="td-actions">' +
         '<button class="btn-edit" onclick="openEdit(this.closest(\'tr\'))">Edit</button>' +
+        '<button class="btn-edit" onclick="openSetPw(' + r.id + ', \'' + esc(email) + '\')">Set pw</button>' +
         '<button class="btn-del" onclick="deleteUser(' + r.id + ', this.closest(\'tr\'))">Remove</button>' +
       '</div></td>';
     tbody.appendChild(tr);
@@ -254,6 +284,38 @@ function toast(msg) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
+
+function openSetPw(id, email) {
+  pwUserId = id;
+  document.getElementById('pwEmail').value   = email;
+  document.getElementById('pwInput').value   = '';
+  document.getElementById('pwConfirm').value = '';
+  document.getElementById('pwErr').style.display = 'none';
+  document.getElementById('pwOverlay').classList.add('open');
+}
+function closePw() {
+  document.getElementById('pwOverlay').classList.remove('open');
+  pwUserId = null;
+}
+async function savePw() {
+  var pw  = document.getElementById('pwInput').value;
+  var pw2 = document.getElementById('pwConfirm').value;
+  var err = document.getElementById('pwErr');
+  err.style.display = 'none';
+  if (pw.length < 8) { err.textContent = 'Password must be at least 8 characters'; err.style.display = 'block'; return; }
+  if (pw !== pw2)    { err.textContent = 'Passwords do not match'; err.style.display = 'block'; return; }
+  var r = await api({action: 'set_password', id: pwUserId, password: pw});
+  if (r.ok) {
+    // Update the password status cell in the table
+    var row = document.querySelector('#userTable tr[data-id="' + pwUserId + '"]');
+    if (row) row.cells[3].innerHTML = '<span style="color:#16a34a;font-size:.78rem;">&#10003; set</span>';
+    closePw();
+    toast('Password set');
+  } else {
+    err.textContent = r.error || 'Failed';
+    err.style.display = 'block';
+  }
 }
 </script>
 </body>

@@ -60,6 +60,11 @@ function getDB(): PDO {
         INDEX idx_shared_with (shared_with_email),
         FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Add password_hash column (migration — safe to run repeatedly)
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+
     // Seed known users if table is empty
     $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count === 0) {
