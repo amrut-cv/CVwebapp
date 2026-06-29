@@ -365,9 +365,6 @@ if ($pageLoadId) {
     <a href="/CVwebapp/admin/lists.php" class="btn-header">Manage lists</a>
     <button class="btn-header" onclick="openDraftsPanel()">Files</button>
     <button class="btn-header accent" id="saveBtn" onclick="saveDraft()"<?= $pageViewOnly ? ' disabled style="opacity:.4" title="View only"' : '' ?>>Save</button>
-    <span style="width:1px;height:18px;background:rgba(255,255,255,.2);display:inline-block;margin:0 4px;vertical-align:middle;"></span>
-    <a href="/CVwebapp/account.php" class="btn-header">Account</a>
-    <a href="/CVwebapp/logout.php" class="btn-header">Sign out</a>
   </div>
 </header>
 <div id="viewOnlyBanner" style="display:<?= $pageViewOnly ? 'block' : 'none' ?>;background:#fef3c7;border-bottom:2px solid #fcd34d;padding:9px 24px;font-size:.83rem;color:#92400e;text-align:center;position:sticky;top:0;z-index:50;">

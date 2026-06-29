@@ -87,6 +87,7 @@ $base  = '/CVwebapp';
   </nav>
   <div class="nav-footer">
     <?= $email ?><br>
+    <a href="<?= $base ?>/account.php">Account</a> &middot;
     <a href="<?= $base ?>/logout.php">Sign out</a>
   </div>
 </div>
