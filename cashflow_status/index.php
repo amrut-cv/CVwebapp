@@ -42,12 +42,17 @@ $nav_active = 'cashflow';
     .sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit}
     .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
-    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
-    .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:24px}
-    .stat{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
-    .stat .label{font-size:.72rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
-    .stat .value{font-size:1.4rem;font-weight:700}
-    .trend{font-size:.78rem;font-weight:600;display:inline-block;margin-top:6px}
+    .sum-card{margin-bottom:24px}
+    .sum-table{width:100%;border-collapse:collapse;font-size:.9rem}
+    .sum-table th{text-align:right;font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em;padding:4px 0;font-weight:700}
+    .sum-table th:first-child{text-align:left}
+    .sum-table td{padding:10px 0;text-align:right}
+    .sum-table td:first-child{text-align:left;color:#6b7280;font-weight:600}
+    .sum-table tr+tr td{border-top:1px solid #f1f0e8}
+    .sum-table tr.sum-total td{font-weight:700;border-top:1.5px solid #e2e5ef;padding-top:12px;padding-bottom:12px}
+    .sum-table tr.sum-total td:first-child{color:#1a1a2e}
+    .sum-table td.muted{color:#9ca3af}
+    .trend{font-size:.76rem;font-weight:600;display:inline-block;margin-top:4px}
     .trend.up{color:#16a34a}.trend.down{color:#dc2626}.trend.flat{color:#9ca3af}
     .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:22px 26px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
@@ -97,33 +102,48 @@ $nav_active = 'cashflow';
         <?php endif ?>
       </p>
 
-      <div class="grid3">
-        <div class="stat">
-          <div class="label">Est EOM cash position</div>
-          <div class="value"><?= cf_inr($c['eom_position']) ?></div>
-          <?= trend_html($c['eom_position'], $cp['eom_position'] ?? null) ?>
-        </div>
-        <div class="stat">
-          <div class="label">Total liquid position</div>
-          <div class="value"><?= cf_inr($c['total_liquid_position']) ?></div>
-          <?= trend_html($c['total_liquid_position'], $cp['total_liquid_position'] ?? null) ?>
-        </div>
-        <div class="stat">
-          <div class="label">Total cash position</div>
-          <div class="value"><?= cf_inr($c['total_position']) ?></div>
-          <?= trend_html($c['total_position'], $cp['total_position'] ?? null) ?>
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div class="stat">
-          <div class="label">Months of cash (salary only) &mdash; liquid</div>
-          <div class="value"><?= $c['months_liquid'] === null ? '—' : round($c['months_liquid'], 2) ?></div>
-        </div>
-        <div class="stat">
-          <div class="label">Months of cash (salary only) &mdash; total</div>
-          <div class="value"><?= $c['months_total'] === null ? '—' : round($c['months_total'], 2) ?></div>
-        </div>
+      <div class="card sum-card">
+        <table class="sum-table">
+          <tr>
+            <th></th>
+            <th>EOM</th>
+            <th>Total liquid</th>
+            <th>Total</th>
+          </tr>
+          <tr>
+            <td>Assets</td>
+            <td><?= cf_inr($c['eom_assets']) ?></td>
+            <td><?= cf_inr($c['total_liquid_assets']) ?></td>
+            <td><?= cf_inr($c['total_assets']) ?></td>
+          </tr>
+          <tr>
+            <td>Liabilities</td>
+            <td><?= cf_inr($c['eom_liab']) ?></td>
+            <td><?= cf_inr($c['total_liquid_liab']) ?></td>
+            <td><?= cf_inr($c['total_liab']) ?></td>
+          </tr>
+          <tr class="sum-total">
+            <td>Position</td>
+            <td>
+              <div><?= cf_inr($c['eom_position']) ?></div>
+              <?= trend_html($c['eom_position'], $cp['eom_position'] ?? null) ?>
+            </td>
+            <td>
+              <div><?= cf_inr($c['total_liquid_position']) ?></div>
+              <?= trend_html($c['total_liquid_position'], $cp['total_liquid_position'] ?? null) ?>
+            </td>
+            <td>
+              <div><?= cf_inr($c['total_position']) ?></div>
+              <?= trend_html($c['total_position'], $cp['total_position'] ?? null) ?>
+            </td>
+          </tr>
+          <tr>
+            <td>Months of cash (salary only)</td>
+            <td class="muted">—</td>
+            <td><?= $c['months_liquid'] === null ? '—' : round($c['months_liquid'], 2) ?></td>
+            <td><?= $c['months_total'] === null ? '—' : round($c['months_total'], 2) ?></td>
+          </tr>
+        </table>
       </div>
 
       <div class="breakdown">
