@@ -52,13 +52,14 @@ $nav_active = 'cashflow';
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
     .page{padding:36px 40px;max-width:760px}
-    .page-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;gap:8px}
-    .page-header h1{font-family:Georgia,serif;font-size:1.5rem;font-weight:700}
+    .page-header{display:flex;align-items:center;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef}
+    .page-header .icon-badge{width:42px;height:42px;border-radius:11px;background:#1a1a2e;color:#C9972A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .page-header h1{font-family:Georgia,serif;font-size:1.65rem;font-weight:700;line-height:1.15}
     .page-header h1 span{color:#C9972A}
-    .sub{font-size:.82rem;color:#6b7280;margin-bottom:24px}
+    .sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:24px 28px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
-    .sec{padding:16px 0 6px;font-weight:700;color:#6b7280;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em}
-    .sec:first-child{padding-top:0}
+    .sec-cell{padding:20px 0 10px;border-top:none}
+    .sec{display:inline-block;background:#f3f4f8;color:#1a1a2e;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:5px 12px;border-radius:6px}
     table{width:100%;border-collapse:collapse;font-size:.85rem}
     th{text-align:right;font-size:.7rem;color:#9ca3af;text-transform:uppercase;padding:4px 0;font-weight:700}
     th:first-child{text-align:left}
@@ -78,6 +79,9 @@ $nav_active = 'cashflow';
   <?php require __DIR__ . '/../nav.php'; ?>
   <div class="page">
     <div class="page-header">
+      <div class="icon-badge">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
       <h1>Cashflow <span>entry</span></h1>
     </div>
     <p class="sub">
@@ -97,7 +101,7 @@ $nav_active = 'cashflow';
           <th class="in-cell">Today</th>
         </tr>
         <?php foreach ($fields as $section => $items): ?>
-          <tr><td colspan="3" class="sec"><?= h($section) ?></td></tr>
+          <tr><td colspan="3" class="sec-cell"><span class="sec"><?= h($section) ?></span></td></tr>
           <?php foreach ($items as $col => $label): ?>
             <tr>
               <td><?= h($label) ?></td>

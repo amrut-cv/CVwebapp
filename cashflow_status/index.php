@@ -34,10 +34,12 @@ $nav_active = 'cashflow';
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
     .page{padding:36px 40px;max-width:900px}
-    .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:12px}
-    .page-header h1{font-family:Georgia,serif;font-size:1.5rem;font-weight:700}
+    .page-header{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef;flex-wrap:wrap}
+    .page-header .title-group{display:flex;align-items:center;gap:14px}
+    .page-header .icon-badge{width:42px;height:42px;border-radius:11px;background:#1a1a2e;color:#C9972A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .page-header h1{font-family:Georgia,serif;font-size:1.65rem;font-weight:700;line-height:1.15}
     .page-header h1 span{color:#C9972A}
-    .sub{font-size:.82rem;color:#6b7280;margin-bottom:24px}
+    .sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit}
     .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
     .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
@@ -49,8 +51,8 @@ $nav_active = 'cashflow';
     .trend.up{color:#16a34a}.trend.down{color:#dc2626}.trend.flat{color:#9ca3af}
     .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:22px 26px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
-    .card h2{font-size:.95rem;font-weight:700;margin-bottom:12px}
-    .sec{font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em;font-weight:700;margin:14px 0 4px}
+    .card h2{font-size:1rem;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f0e8}
+    .sec{display:inline-block;background:#f3f4f8;color:#1a1a2e;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding:5px 12px;border-radius:6px;margin:16px 0 6px}
     .sec:first-of-type{margin-top:0}
     .row{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem;border-top:1px solid #f1f0e8}
     .row:first-of-type{border-top:none}
@@ -66,7 +68,12 @@ $nav_active = 'cashflow';
   <?php require __DIR__ . '/../nav.php'; ?>
   <div class="page">
     <div class="page-header">
-      <h1>Cashflow <span>status</span></h1>
+      <div class="title-group">
+        <div class="icon-badge">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h1>Cashflow <span>status</span></h1>
+      </div>
       <a href="entry.php" class="btn btn-primary">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add / update entry
