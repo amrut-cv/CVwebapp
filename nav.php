@@ -58,31 +58,9 @@ $base  = '/CVwebapp';
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Contract Builder
     </a>
-    <a href="<?= $base ?>/core_contacts/" class="<?= str_starts_with($nav_active, 'contacts') ? 'active' : '' ?>">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      CoreContacts
-    </a>
-    <?php
-      // Duplicate badge — only query if we're in core_contacts context
-      if (str_starts_with($nav_active, 'contacts') && isset($member)) {
-          try {
-              $db_nav = getDB();
-              $dupe_q = $db_nav->prepare("SELECT COUNT(*) FROM duplicate_links dl
-                  JOIN contacts ca ON ca.contact_id = dl.contact_id_a
-                  WHERE ca.owner_member_id = ? AND dl.status = 'pending'");
-              $dupe_q->execute([$member['member_id']]);
-              $dupe_count = $dupe_q->fetchColumn();
-          } catch (Exception $e) { $dupe_count = 0; }
-      } else { $dupe_count = 0; }
-    ?>
-    <a href="<?= $base ?>/core_contacts/duplicates.php"
-       class="<?= $nav_active === 'contacts_dupes' ? 'active' : '' ?>"
-       style="padding-left:40px;font-size:.82rem">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><rect x="8" y="8" width="12" height="12" rx="2"/></svg>
-      Duplicates
-      <?php if ($dupe_count > 0): ?>
-        <span style="margin-left:auto;background:#ef4444;color:#fff;font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:8px"><?= $dupe_count ?></span>
-      <?php endif ?>
+    <a href="<?= $base ?>/cashflow_status/" class="<?= $nav_active === 'cashflow' ? 'active' : '' ?>">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Cashflow Status
     </a>
   </nav>
   <div class="nav-footer">

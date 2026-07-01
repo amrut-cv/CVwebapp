@@ -85,10 +85,10 @@ $nav_active = 'home';
       <div class="card-arrow">→</div>
     </a>
 
-    <a href="/CVwebapp/core_contacts/" class="feature-card" style="margin-top:16px">
+    <a href="/CVwebapp/cashflow_status/" class="feature-card" style="margin-top:16px">
       <div class="card-text">
-        <h2>CoreContacts</h2>
-        <p>Unified contact intelligence across the team's network.</p>
+        <h2>Cashflow Status</h2>
+        <p>Daily cash position, assets, and liabilities at a glance.</p>
       </div>
       <div class="card-arrow">→</div>
     </a>
