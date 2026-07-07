@@ -5,6 +5,7 @@ require __DIR__ . '/../db.php';
 $pdo = getDB();
 $rows = $pdo->query("SELECT id, list_key, label, sort_order FROM list_items ORDER BY list_key, sort_order, id")->fetchAll();
 $caseStudies = $pdo->query("SELECT id, name, description FROM case_studies ORDER BY sort_order, id")->fetchAll();
+$engagementTypes = $pdo->query("SELECT * FROM engagement_types ORDER BY sort_order, id")->fetchAll();
 $currentEmail = $_SESSION['auth_email'];
 $allUsers = $pdo->prepare("SELECT email, name FROM users WHERE email != ? ORDER BY name, email");
 $allUsers->execute([$currentEmail]);
@@ -524,46 +525,16 @@ if ($pageLoadId) {
     <div class="card-title">Select the type of engagement.</div>
 
     <div class="eng-grid">
-      <div class="eng-card" data-eng="full-retainer" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Ongoing</span></div>
-        <div class="eng-title">Full-stack retainer</div>
-        <div class="eng-desc">Strategy, content, and marketing ops — all three running together on an ongoing basis. We operate as an external marketing team, shared across functions.</div>
-      </div>
-      <div class="eng-card" data-eng="outcome-retainer" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Time-boxed</span></div>
-        <div class="eng-title">Outcome-focused retainer</div>
-        <div class="eng-desc">Similar to full-stack retainer but it's time-boxed and around a specific goal. We define the target and the window together, then do everything needed to get there.</div>
-      </div>
-      <div class="eng-card" data-eng="content-retainer" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Retainership</span><span class="badge">Ongoing</span></div>
-        <div class="eng-title">Content retainer</div>
-        <div class="eng-desc">Ongoing production of content assets — video, text, images, webpages, etc, etc. Built to accumulate and compound over time.</div>
-      </div>
-      <div class="eng-card" data-eng="new-gtm" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Project</span></div>
-        <div class="eng-title">New product GTM</div>
-        <div class="eng-desc">Positioning, identity, website, and a full sales kit (deck, videos, brochures, etc). Optional press outreach. For companies launching for the first time or after a pivot.</div>
-      </div>
-      <div class="eng-card" data-eng="gtm-relaunch" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Project</span></div>
-        <div class="eng-title">GTM relaunch</div>
-        <div class="eng-desc">Visual refresh of existing brand artefacts, updated website, updated sales kit (deck, videos, brochures, etc). Optional booth redesign and press outreach.</div>
-      </div>
-      <div class="eng-card" data-eng="fundraising" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Project</span></div>
-        <div class="eng-title">Fundraising comms</div>
-        <div class="eng-desc">Narrative clean-up, pitch deck, and website redesign (optional) for startups heading into a funding round.</div>
-      </div>
-      <div class="eng-card" data-eng="sales-video" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Project</span></div>
-        <div class="eng-title">Content sprint</div>
-        <div class="eng-desc">Fresh content for use in sales or others. Could be video focussed — product explainers, testimonials, or use-case demos. Could be other stuff.</div>
-      </div>
-      <div class="eng-card" data-eng="custom" onclick="selectEng(this)">
-        <div class="eng-badges"><span class="badge">Custom</span></div>
-        <div class="eng-title">Custom scope</div>
-        <div class="eng-desc">Define your own scope from scratch.</div>
-      </div>
+      <?php foreach ($engagementTypes as $et): ?>
+        <div class="eng-card" data-eng="<?= htmlspecialchars($et['type_key']) ?>" onclick="selectEng(this)">
+          <div class="eng-badges">
+            <span class="badge"><?= htmlspecialchars($et['category']) ?></span>
+            <?php if ($et['duration_tag']): ?><span class="badge"><?= htmlspecialchars($et['duration_tag']) ?></span><?php endif ?>
+          </div>
+          <div class="eng-title"><?= htmlspecialchars($et['label']) ?></div>
+          <div class="eng-desc"><?= htmlspecialchars($et['card_description']) ?></div>
+        </div>
+      <?php endforeach ?>
     </div>
 
     <div class="field-group mt-4">

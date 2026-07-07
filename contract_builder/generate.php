@@ -112,36 +112,13 @@ if ($rawCsIds) {
 }
 
 /* ─────────────────────────────── engagement ── */
-$engLabels = [
-    'full-retainer'    => 'Full-stack retainer',
-    'outcome-retainer' => 'Outcome-focused retainer',
-    'content-retainer' => 'Content retainer',
-    'new-gtm'          => 'New product GTM',
-    'gtm-relaunch'     => 'GTM relaunch',
-    'fundraising'      => 'Fundraising comms',
-    'sales-video'      => 'Content sprint',
-    'custom'           => 'Custom scope',
-];
-$engDescs = [
-    'full-retainer'    => 'Strategy, content, and marketing ops — all three running together on an ongoing basis. We operate as an external marketing team, shared across functions.',
-    'outcome-retainer' => 'Similar to full-stack retainer but it\'s time-boxed and around a specific goal. We define the target and the window together, then do everything needed to get there.',
-    'content-retainer' => 'Ongoing production of content assets — video, text, images, webpages, etc, etc. Built to accumulate and compound over time.',
-    'new-gtm'          => 'Positioning, identity, website, and a full sales kit (deck, videos, brochures, etc). Optional press outreach. For companies launching for the first time or after a pivot.',
-    'gtm-relaunch'     => 'Visual refresh of existing brand artefacts, updated website, updated sales kit (deck, videos, brochures, etc). Optional booth redesign and press outreach.',
-    'fundraising'      => 'Narrative clean-up, pitch deck, and website redesign (optional) for startups heading into a funding round.',
-    'sales-video'      => 'Fresh content for use in sales or others. Could be video focussed — product explainers, testimonials, or use-case demos. Could be other stuff.',
-    'custom'           => 'Scope defined as agreed between the parties.',
-];
-$engRationaleMap = [
-    'full-retainer'    => 'Based on what you\'ve shared, a full-stack retainer makes the most sense. You need consistent output across strategy, content, and execution — not a one-time project. We\'d operate as your marketing function, with clear goals, a shared calendar, and regular governance to make sure the work stays aligned with where the business is going.',
-    'outcome-retainer' => 'What you\'ve described is a time-boxed problem, not a forever engagement. An outcome-focused retainer lets us define the goal together, set a window, and deploy whatever\'s needed to get there — then reassess. No lock-in beyond what the goal requires.',
-    'content-retainer' => 'Your content engine isn\'t running at the level it needs to be. A content retainer gives you consistent, quality output that builds over time — compounding rather than campaign-based. Volume plus consistency is what moves the needle.',
-    'new-gtm'          => 'You\'re entering the market fresh — or after a meaningful pivot. That means you need positioning, identity, and a full sales kit before anything else. We\'ll build the foundation so that every subsequent marketing activity has something real to stand on.',
-    'gtm-relaunch'     => 'You already have something in the market, but it\'s not landing the way it should. A relaunch isn\'t about starting over — it\'s about updating what exists to reflect where the company actually is now.',
-    'fundraising'      => 'When you\'re heading into a round, the narrative has to do the work before you even get in the room. We\'ll clean up your positioning, tighten the deck, and make sure the website backs up the story you\'re telling investors.',
-    'sales-video'      => 'Video is the most efficient format for a complex product or a crowded market. A short series of well-made videos — explainers, use cases, testimonials — gives your sales team something that travels across every channel and conversation.',
-    'custom'           => 'The scope here has been defined specifically for this engagement, based on what you\'ve described and what we believe will move the needle. We\'ll work from this as our starting point and adjust as we go.',
-];
+$engLabels = []; $engDescs = []; $engRationaleMap = [];
+$engTypeRows = getDB()->query("SELECT type_key, label, doc_description, rationale FROM engagement_types")->fetchAll();
+foreach ($engTypeRows as $et) {
+    $engLabels[$et['type_key']]       = $et['label'];
+    $engDescs[$et['type_key']]        = $et['doc_description'];
+    $engRationaleMap[$et['type_key']] = $et['rationale'];
+}
 $engLabel     = $engLabels[$engType]         ?? ucwords(str_replace('-', ' ', $engType));
 $engDesc      = $engDescs[$engType]          ?? '';
 $engRationale = $engRationaleMap[$engType]   ?? '';
