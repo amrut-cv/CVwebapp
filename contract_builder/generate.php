@@ -89,7 +89,16 @@ $payTerms    = clean('paymentTerms');
 $totalFee    = clean('totalFee');
 $fixedAdv    = clean('fixedAdvance');
 $fixPayTerms = clean('fixedPaymentTerms');
-$milestones  = clean('milestoneSchedule');
+$msAdvanceAmt = clean('msAdvanceAmt');
+$msM1Desc     = clean('msM1Desc');
+$msM1Amt      = clean('msM1Amt');
+$msM2Desc     = clean('msM2Desc');
+$msM2Amt      = clean('msM2Amt');
+$msM3Desc     = clean('msM3Desc');
+$msM3Amt      = clean('msM3Amt');
+$msCompDesc   = clean('msCompDesc');
+$msCompAmt    = clean('msCompAmt');
+$msPayTerms   = clean('milestonePaymentTerms');
 $expenses    = clean('expenses');
 $payNotes    = clean('paymentNotes');
 $outputType  = clean('outputType');
@@ -110,6 +119,15 @@ if ($rawCsIds) {
     $stmt->execute(array_map('intval', $ordered));
     $caseStudyRows = $stmt->fetchAll();
 }
+
+/* ─────────────────────────────── milestone items ── */
+$msItems = [];
+if ($msAdvanceAmt !== '') $msItems[] = ['label' => 'Advance', 'amount' => $msAdvanceAmt];
+if ($msM1Desc !== '' || $msM1Amt !== '') $msItems[] = ['label' => 'Milestone 1' . ($msM1Desc !== '' ? ': ' . $msM1Desc : ''), 'amount' => $msM1Amt];
+if ($msM2Desc !== '' || $msM2Amt !== '') $msItems[] = ['label' => 'Milestone 2' . ($msM2Desc !== '' ? ': ' . $msM2Desc : ''), 'amount' => $msM2Amt];
+if ($msM3Desc !== '' || $msM3Amt !== '') $msItems[] = ['label' => 'Milestone 3' . ($msM3Desc !== '' ? ': ' . $msM3Desc : ''), 'amount' => $msM3Amt];
+if ($msCompDesc !== '' || $msCompAmt !== '') $msItems[] = ['label' => 'Completion' . ($msCompDesc !== '' ? ': ' . $msCompDesc : ''), 'amount' => $msCompAmt];
+$msTotal = array_sum(array_map(fn($i) => (float)($i['amount'] ?: 0), $msItems));
 
 /* ─────────────────────────────── engagement ── */
 $engLabels = []; $engDescs = []; $engRationaleMap = [];
@@ -148,7 +166,7 @@ function scopeContractLabel(string $item): string {
 
 /* ─────────────────────────────── fee display ── */
 function feeDisplay(string $feeType, string $currCode, string $monthlyFee, string $retDur,
-                    string $totalFee, string $fixedAdv, string $milestones): string {
+                    string $totalFee, string $fixedAdv, array $msItems, float $msTotal): string {
     switch ($feeType) {
         case 'retainer':
             $parts = [];
@@ -163,18 +181,23 @@ function feeDisplay(string $feeType, string $currCode, string $monthlyFee, strin
             if ($fixedAdv) $parts[] = fmtMoney($fixedAdv, $currCode) . ' advance';
             return implode(' &middot; ', $parts);
         case 'milestone':
-            return $milestones ? 'Milestone-based fee' : '';
+            if (!$msItems) return '';
+            $parts = [fmtMoney((string)$msTotal, $currCode) . ' + ' . ($currCode === 'INR' ? 'GST' : 'tax')];
+            $parts[] = 'milestone-based';
+            return implode(' &middot; ', $parts);
         default:
             return '';
     }
 }
-$feeDisplayStr = feeDisplay($feeType, $currCode, $monthlyFee, $retDur, $totalFee, $fixedAdv, $milestones);
+$feeDisplayStr = feeDisplay($feeType, $currCode, $monthlyFee, $retDur, $totalFee, $fixedAdv, $msItems, $msTotal);
 
 /* ─────────────────────────────── payment terms ── */
-$payDaysMap    = ['Net 15' => '15 days', 'Net 30' => '30 days', 'Advance' => 'advance'];
+$payDaysMap    = ['Net 15' => '15 days', 'Net 30' => '30 days'];
 $payDays       = $payDaysMap[$payTerms]    ?? ($payTerms    ?: '15 days');
 $fixPayDaysMap = ['Net 15' => '15 days', 'Net 30' => '30 days'];
 $fixPayDays    = $fixPayDaysMap[$fixPayTerms] ?? ($fixPayTerms ?: '15 days');
+$msPayDaysMap  = ['Net 15' => '15 days', 'Net 30' => '30 days'];
+$msPayDays     = $msPayDaysMap[$msPayTerms] ?? ($msPayTerms ?: '15 days');
 
 /* ─────────────────────────────── OPE texts ── */
 $opeSubMap = [
@@ -201,6 +224,7 @@ if ($feeType === 'retainer') {
     $investSubParts[] = 'Payable within ' . $fixPayDays;
 } elseif ($feeType === 'milestone') {
     $investSubParts[] = 'Payable per milestone schedule';
+    $investSubParts[] = 'Payable within ' . $msPayDays;
 }
 if ($opeSub) $investSubParts[] = $opeSub;
 $investSub = implode(' &middot; ', $investSubParts);
@@ -389,8 +413,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .invest-sub  { font-family: 'Segoe UI', sans-serif; font-size: .82rem; color: #6b7280; margin-bottom: 18px; line-height: 1.6; }
     .invest-note { font-size: .86rem; color: #4a4a6a; line-height: 1.72; padding: 14px 18px; background: #f9fafb; border-radius: 4px; border: 1px solid #e8e8f0; }
     .milestone-list { margin-bottom: 18px; }
-    .milestone-line { font-family: 'Segoe UI', sans-serif; font-size: .92rem; font-weight: 400; color: #1a1a2e; line-height: 1.6; padding: 10px 0; border-bottom: 1px solid #eceef5; }
-    .milestone-line:last-child { border-bottom: none; }
+    .milestone-line { display: flex; justify-content: space-between; gap: 16px; font-family: 'Segoe UI', sans-serif; font-size: .92rem; font-weight: 400; color: #1a1a2e; line-height: 1.6; padding: 10px 0; border-bottom: 1px solid #eceef5; }
+    .milestone-total { font-weight: 700; border-bottom: none; border-top: 1.5px solid #d8d8e8; margin-top: 2px; }
     .steps-list  { list-style: none; }
     .steps-list li {
       display: flex; align-items: flex-start; gap: 18px;
@@ -664,11 +688,18 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="sec-title">Fee &amp; payment</div>
       <div class="invest-big"><?= $feeDisplayStr ?></div>
       <?php if ($investSub): ?><div class="invest-sub"><?= $investSub ?></div><?php endif; ?>
-      <?php if ($feeType === 'milestone' && $milestones): ?>
+      <?php if ($feeType === 'milestone' && $msItems): ?>
         <div class="milestone-list">
-          <?php foreach (preg_split('/\r\n|\r|\n/', trim($milestones)) as $line): $line = trim($line); if ($line === '') continue; ?>
-            <div class="milestone-line"><?= esc($line) ?></div>
+          <?php foreach ($msItems as $mi): ?>
+            <div class="milestone-line">
+              <span><?= esc($mi['label']) ?></span>
+              <span><?= $mi['amount'] !== '' ? fmtMoney($mi['amount'], $currCode) : '' ?></span>
+            </div>
           <?php endforeach; ?>
+          <div class="milestone-line milestone-total">
+            <span>Total</span>
+            <span><?= fmtMoney((string)$msTotal, $currCode) ?> + <?= $currCode === 'INR' ? 'GST' : 'tax' ?></span>
+          </div>
         </div>
       <?php endif; ?>
       <?php if ($payNotes):  ?><div class="invest-note"><?= esc($payNotes) ?></div><?php endif; ?>
@@ -939,7 +970,11 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
         <?php if ($fixedAdv):   ?><li>Advance payable: <?= fmtMoney($fixedAdv, $currCode) ?></li><?php endif; ?>
         <li>All invoices to be paid within <?= esc($fixPayDays) ?> of the invoice being raised</li>
       <?php elseif ($feeType === 'milestone'): ?>
-        <?php if ($milestones): ?><li style="white-space:pre-wrap;"><?= esc($milestones) ?></li><?php endif; ?>
+        <?php foreach ($msItems as $mi): ?>
+          <li><?= esc($mi['label']) ?><?= $mi['amount'] !== '' ? ': ' . fmtMoney($mi['amount'], $currCode) : '' ?></li>
+        <?php endforeach; ?>
+        <?php if ($msItems): ?><li>Total: <?= fmtMoney((string)$msTotal, $currCode) ?> + <?= $currCode === 'INR' ? 'GST' : 'tax' ?></li><?php endif; ?>
+        <li>All invoices to be paid within <?= esc($msPayDays) ?> of the invoice being raised</li>
       <?php endif; ?>
       <li>Consultancy has the right to slow down work when payment is delayed</li>
       <?php if ($opeAnnex): ?><li><?= esc($opeAnnex) ?></li><?php endif; ?>

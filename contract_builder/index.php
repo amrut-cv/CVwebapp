@@ -663,7 +663,6 @@ if ($pageLoadId) {
         <div class="radio-group" id="retainerTermsGroup">
           <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Net 15" /> Net 15</label>
           <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Net 30" /> Net 30</label>
-          <label class="radio-pill" onclick="selectPill(this,'retainerTermsGroup')"><input type="radio" name="retainerTerms" value="Advance" /> Advance</label>
         </div>
       </div>
     </div>
@@ -690,8 +689,55 @@ if ($pageLoadId) {
 
     <div id="milestoneFields" class="hidden">
       <div class="field">
-        <label>Milestone payment schedule <span class="req">*</span></label>
-        <textarea id="milestoneSchedule" placeholder="e.g.&#10;Milestone 1 — Kickoff &amp; strategy: &#x20B9;1,00,000&#10;Milestone 2 — Mid-delivery review: &#x20B9;1,50,000&#10;Milestone 3 — Final delivery: &#x20B9;1,00,000"></textarea>
+        <label>Advance <span class="req">*</span></label>
+        <input type="number" id="msAdvanceAmt" placeholder="Amount, excl. GST" />
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>Milestone 1 — description <span class="req">*</span></label>
+          <input type="text" id="msM1Desc" placeholder="e.g. Deck + website completed" />
+        </div>
+        <div class="field">
+          <label>Milestone 1 — amount <span class="req">*</span></label>
+          <input type="number" id="msM1Amt" placeholder="Amount, excl. GST" />
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>Milestone 2 — description</label>
+          <input type="text" id="msM2Desc" placeholder="Optional" />
+        </div>
+        <div class="field">
+          <label>Milestone 2 — amount</label>
+          <input type="number" id="msM2Amt" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>Milestone 3 — description</label>
+          <input type="text" id="msM3Desc" placeholder="Optional" />
+        </div>
+        <div class="field">
+          <label>Milestone 3 — amount</label>
+          <input type="number" id="msM3Amt" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field">
+          <label>Completion — description</label>
+          <input type="text" id="msCompDesc" placeholder="Optional" />
+        </div>
+        <div class="field">
+          <label>Completion — amount</label>
+          <input type="number" id="msCompAmt" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Payment terms</label>
+        <div class="radio-group" id="milestoneTermsGroup">
+          <label class="radio-pill" onclick="selectPill(this,'milestoneTermsGroup')"><input type="radio" name="milestoneTerms" value="Net 15" /> Net 15</label>
+          <label class="radio-pill" onclick="selectPill(this,'milestoneTermsGroup')"><input type="radio" name="milestoneTerms" value="Net 30" /> Net 30</label>
+        </div>
       </div>
     </div>
 
@@ -898,6 +944,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.getElementById('monthlyFee').value       = '225000';
     document.getElementById('retainerDuration').value = '6 months';
     setPill('retainerTerms', 'Net 15');
+    setPill('milestoneTerms', 'Net 15');
     setPill('expenses', 'preapproved');
     document.getElementById('paymentNotes').value = 'First invoice raised on 1 June 2026 upon contract signing.';
 
@@ -984,7 +1031,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     ['companyName','companyType','cin','gst','address','signatoryName','designation',
      'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
      'effectiveDate','objective','additionalScope','monthlyFee',
-     'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
+     'retainerDuration','totalFee','fixedAdvance',
+     'msAdvanceAmt','msM1Desc','msM1Amt','msM2Desc','msM2Amt','msM3Desc','msM3Amt','msCompDesc','msCompAmt',
+     'paymentNotes',
      'msgBody','senderName','senderTitle','senderEmail'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) d[id] = el.value;
@@ -1006,7 +1055,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     d.customContentItems  = [].slice.call(document.querySelectorAll('#contentChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.customOpsItems      = [].slice.call(document.querySelectorAll('#opsChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.engagementType = selectedEng || '';
-    ['currency','feeType','cadence','retainerTerms','fixedTerms','expenses'].forEach(function(name) {
+    ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses'].forEach(function(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
       d[name] = el ? el.value : '';
     });
@@ -1021,7 +1070,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     ['companyName','companyType','cin','gst','address','signatoryName','designation',
      'signatoryEmail','agreementDate','bizDescription','clientSaid','duration',
      'effectiveDate','objective','additionalScope','monthlyFee',
-     'retainerDuration','totalFee','fixedAdvance','milestoneSchedule','paymentNotes',
+     'retainerDuration','totalFee','fixedAdvance',
+     'msAdvanceAmt','msM1Desc','msM1Amt','msM2Desc','msM2Amt','msM3Desc','msM3Amt','msCompDesc','msCompAmt',
+     'paymentNotes',
      'msgBody','senderName','senderTitle','senderEmail'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el && d[id] !== undefined) el.value = d[id];
@@ -1058,6 +1109,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
     if (d.cadence)       setPill('cadence', d.cadence);
     if (d.retainerTerms) setPill('retainerTerms', d.retainerTerms);
+    if (d.milestoneTerms) setPill('milestoneTerms', d.milestoneTerms);
     if (d.fixedTerms)    setPill('fixedTerms', d.fixedTerms);
     if (d.expenses)      setPill('expenses', d.expenses);
     var csGrid = document.getElementById('csPickGrid');
@@ -1237,7 +1289,16 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('totalFee',          document.getElementById('totalFee').value);
     add('fixedAdvance',      document.getElementById('fixedAdvance').value);
     add('fixedPaymentTerms', radio('fixedTerms'));
-    add('milestoneSchedule', document.getElementById('milestoneSchedule').value);
+    add('msAdvanceAmt',      document.getElementById('msAdvanceAmt').value);
+    add('msM1Desc',          document.getElementById('msM1Desc').value);
+    add('msM1Amt',           document.getElementById('msM1Amt').value);
+    add('msM2Desc',          document.getElementById('msM2Desc').value);
+    add('msM2Amt',           document.getElementById('msM2Amt').value);
+    add('msM3Desc',          document.getElementById('msM3Desc').value);
+    add('msM3Amt',           document.getElementById('msM3Amt').value);
+    add('msCompDesc',        document.getElementById('msCompDesc').value);
+    add('msCompAmt',         document.getElementById('msCompAmt').value);
+    add('milestonePaymentTerms', radio('milestoneTerms'));
     add('expenses',          radio('expenses'));
     add('paymentNotes',      document.getElementById('paymentNotes').value);
     add('outputType',        selectedOutput);
