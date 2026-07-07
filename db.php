@@ -188,6 +188,18 @@ function getDB(): PDO {
         $pdo->exec("ALTER TABLE deals ADD COLUMN archived TINYINT(1) NOT NULL DEFAULT 0");
     } catch (PDOException $e) { /* column already exists */ }
 
+    // Many-to-many links between deals and contracts (a deal can share several
+    // contracts with the same client, e.g. proposal + signed contract)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS deal_contracts (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        deal_id      INT NOT NULL,
+        contract_id  INT NOT NULL,
+        created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_deal_contract (deal_id, contract_id),
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE,
+        FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed known users if table is empty
     $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count === 0) {

@@ -7,12 +7,28 @@ $pdo = getDB();
 
 $engagementTypes = $pdo->query("SELECT id, label, category FROM engagement_types ORDER BY sort_order, id")->fetchAll();
 $users = $pdo->query("SELECT email, name FROM users ORDER BY name, email")->fetchAll();
+$contracts = $pdo->query("SELECT id, client_name, updated_at FROM contracts ORDER BY updated_at DESC")->fetchAll();
 $deals = $pdo->query(
     "SELECT d.*, et.label AS eng_label
      FROM deals d
      LEFT JOIN engagement_types et ON et.id = d.engagement_type_id
      ORDER BY d.updated_at DESC"
 )->fetchAll();
+
+$dealContractRows = $pdo->query(
+    "SELECT dc.deal_id, c.id, c.client_name
+     FROM deal_contracts dc
+     JOIN contracts c ON c.id = dc.contract_id
+     ORDER BY c.updated_at DESC"
+)->fetchAll();
+$contractsByDeal = [];
+foreach ($dealContractRows as $r) {
+    $contractsByDeal[$r['deal_id']][] = ['id' => (int)$r['id'], 'client_name' => $r['client_name']];
+}
+foreach ($deals as &$d) {
+    $d['contracts'] = $contractsByDeal[$d['id']] ?? [];
+}
+unset($d);
 
 $activeDeals   = array_values(array_filter($deals, fn($d) => !$d['archived']));
 $archivedDeals = array_values(array_filter($deals, fn($d) => $d['archived']));
@@ -65,6 +81,8 @@ $nav_active = 'deals';
     .deal-card .dval{font-size:.78rem;color:#6b7280;margin-bottom:6px}
     .dtags{display:flex;gap:4px;flex-wrap:wrap}
     .dtag{font-size:.65rem;padding:2px 7px;border-radius:10px;background:#f3f4f6;color:#374151}
+    .dtag-link{background:#fdf6e8;color:#92400e;text-decoration:none}
+    .dtag-link:hover{text-decoration:underline}
     .col-add{width:100%;text-align:left;background:none;border:1.5px dashed #d1d5db;border-radius:8px;padding:8px 10px;font-size:.78rem;color:#9ca3af;cursor:pointer;font-family:inherit}
     .col-add:hover{border-color:#C9972A;color:#C9972A}
 
@@ -88,6 +106,13 @@ $nav_active = 'deals';
     .field input:focus,.field select:focus,.field textarea:focus{border-color:#C9972A}
     .field textarea{min-height:64px;resize:vertical}
     .val-none{font-size:.82rem;color:#9ca3af;margin-bottom:14px}
+    .contract-links{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    .contract-links:empty{display:none}
+    .contract-link-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fdf6e8;border:1px solid #f3e6c8;border-radius:7px;padding:7px 12px}
+    .contract-link-row a{font-size:.82rem;color:#92400e;text-decoration:none}
+    .contract-link-row a:hover{text-decoration:underline}
+    .contract-link-remove{border:none;background:none;color:#9ca3af;cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
+    .contract-link-remove:hover{color:#dc2626}
     .toggle-row{display:flex;gap:8px;margin-bottom:14px}
     .toggle-btn{border:1.5px solid #d1d5db;border-radius:7px;padding:7px 16px;font-size:.82rem;background:#fff;cursor:pointer;font-family:inherit}
     .toggle-btn.active{border-color:#C9972A;background:#fdf6e8;color:#92400e}
@@ -127,6 +152,9 @@ $nav_active = 'deals';
                 <span class="dtag"><?= h($d['stage']) ?></span>
                 <?php if ($d['eng_label']): ?><span class="dtag"><?= h($d['eng_label']) ?></span><?php endif ?>
                 <span class="dtag"><?= h($d['source']) ?></span>
+                <?php foreach ($d['contracts'] as $dc): ?>
+                  <a class="dtag dtag-link" href="../contract_builder/?id=<?= (int)$dc['id'] ?>" target="_blank" onclick="event.stopPropagation()">Contract: <?= h($dc['client_name']) ?></a>
+                <?php endforeach ?>
               </div>
             </div>
             <button class="btn btn-secondary" onclick="event.stopPropagation();unarchiveDeal(<?= (int)$d['id'] ?>)">Unarchive</button>
@@ -156,6 +184,9 @@ $nav_active = 'deals';
                     <div class="dtags">
                       <?php if ($d['eng_label']): ?><span class="dtag"><?= h($d['eng_label']) ?></span><?php endif ?>
                       <span class="dtag"><?= h($d['source']) ?></span>
+                      <?php foreach ($d['contracts'] as $dc): ?>
+                        <a class="dtag dtag-link" href="../contract_builder/?id=<?= (int)$dc['id'] ?>" target="_blank" onclick="event.stopPropagation()">Contract: <?= h($dc['client_name']) ?></a>
+                      <?php endforeach ?>
                     </div>
                   </div>
                 <?php endforeach ?>
@@ -179,6 +210,22 @@ $nav_active = 'deals';
         <div class="field">
           <label>Deal name</label>
           <input id="fName" required>
+        </div>
+      </div>
+      <div class="frow full">
+        <div class="field">
+          <label>Linked contracts</label>
+          <div class="contract-links" id="contractLinksList"></div>
+          <div class="val-none" id="contractLinksNone" style="display:none">Save the deal first, then you can link contracts.</div>
+          <div id="contractLinksAdd" style="display:flex;gap:8px">
+            <select id="fAddContract" style="flex:1">
+              <option value="">Select a contract to link&hellip;</option>
+              <?php foreach ($contracts as $c): ?>
+                <option value="<?= (int)$c['id'] ?>" data-name="<?= h($c['client_name']) ?>"><?= h($c['client_name']) ?> (<?= h(date('j M Y', strtotime($c['updated_at']))) ?>)</option>
+              <?php endforeach ?>
+            </select>
+            <button type="button" class="btn btn-secondary" onclick="addContractLink()">Link</button>
+          </div>
         </div>
       </div>
       <div class="frow">
@@ -322,6 +369,7 @@ function openAddModal(stage) {
   document.getElementById('deleteBtn').style.display = 'none';
   document.getElementById('archiveBtn').style.display = 'none';
   document.getElementById('fArchived').value = '0';
+  renderContractLinks(null);
   openModal();
 }
 
@@ -331,6 +379,7 @@ function openEditModal(id) {
   document.getElementById('fId').value = d.id;
   document.getElementById('fArchived').value = d.archived ? '1' : '0';
   document.getElementById('fName').value = d.deal_name || '';
+  renderContractLinks(d);
   document.getElementById('fEngType').value = d.engagement_type_id || '';
   document.getElementById('fStage').value = d.stage;
   document.getElementById('fMonthly').value = d.monthly_value ?? '';
@@ -350,6 +399,68 @@ function openEditModal(id) {
   archiveBtn.style.display = '';
   archiveBtn.textContent = d.archived ? 'Unarchive' : 'Archive';
   openModal();
+}
+
+function renderContractLinks(d) {
+  const list = document.getElementById('contractLinksList');
+  const none = document.getElementById('contractLinksNone');
+  const add  = document.getElementById('contractLinksAdd');
+  list.innerHTML = '';
+  if (!d) {
+    none.style.display = '';
+    add.style.display = 'none';
+    return;
+  }
+  none.style.display = 'none';
+  add.style.display = 'flex';
+  (d.contracts || []).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'contract-link-row';
+    row.innerHTML =
+      '<a href="../contract_builder/?id=' + c.id + '" target="_blank">' + escHtml(c.client_name) + '</a>' +
+      '<button type="button" class="contract-link-remove" title="Unlink" onclick="removeContractLink(' + c.id + ')">&times;</button>';
+    list.appendChild(row);
+  });
+}
+
+function escHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+async function addContractLink() {
+  const dealId = document.getElementById('fId').value;
+  const contractId = document.getElementById('fAddContract').value;
+  if (!dealId || !contractId) return;
+  const r = await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'link_contract', deal_id: dealId, contract_id: contractId})});
+  const j = await r.json();
+  if (j.ok) {
+    const d = DEALS.find(x => String(x.id) === String(dealId));
+    const opt = document.getElementById('fAddContract').selectedOptions[0];
+    if (d) {
+      d.contracts = d.contracts || [];
+      if (!d.contracts.some(c => String(c.id) === String(contractId))) {
+        d.contracts.push({id: parseInt(contractId), client_name: opt.dataset.name});
+      }
+      renderContractLinks(d);
+    }
+    document.getElementById('fAddContract').value = '';
+  }
+}
+
+async function removeContractLink(contractId) {
+  const dealId = document.getElementById('fId').value;
+  if (!dealId) return;
+  const r = await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'unlink_contract', deal_id: dealId, contract_id: contractId})});
+  const j = await r.json();
+  if (j.ok) {
+    const d = DEALS.find(x => String(x.id) === String(dealId));
+    if (d) {
+      d.contracts = (d.contracts || []).filter(c => String(c.id) !== String(contractId));
+      renderContractLinks(d);
+    }
+  }
 }
 
 async function saveDeal() {

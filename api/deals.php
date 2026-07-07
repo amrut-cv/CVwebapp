@@ -67,6 +67,24 @@ switch ($action) {
         echo json_encode(['ok' => true]);
         break;
 
+    case 'link_contract':
+        $dealId     = (int)($body['deal_id'] ?? 0);
+        $contractId = (int)($body['contract_id'] ?? 0);
+        if (!$dealId || !$contractId) { http_response_code(400); echo json_encode(['error' => 'Missing fields']); exit; }
+        $pdo->prepare("INSERT IGNORE INTO deal_contracts (deal_id, contract_id) VALUES (?,?)")
+            ->execute([$dealId, $contractId]);
+        echo json_encode(['ok' => true]);
+        break;
+
+    case 'unlink_contract':
+        $dealId     = (int)($body['deal_id'] ?? 0);
+        $contractId = (int)($body['contract_id'] ?? 0);
+        if (!$dealId || !$contractId) { http_response_code(400); echo json_encode(['error' => 'Missing fields']); exit; }
+        $pdo->prepare("DELETE FROM deal_contracts WHERE deal_id = ? AND contract_id = ?")
+            ->execute([$dealId, $contractId]);
+        echo json_encode(['ok' => true]);
+        break;
+
     case 'archive':
         $id = (int)($body['id'] ?? 0);
         $archived = !empty($body['archived']) ? 1 : 0;
