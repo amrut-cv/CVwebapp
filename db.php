@@ -158,6 +158,26 @@ function getDB(): PDO {
         foreach ($engRows as $row) $engSeed->execute($row);
     }
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS deals (
+        id                  INT AUTO_INCREMENT PRIMARY KEY,
+        deal_name           VARCHAR(255) NOT NULL,
+        engagement_type_id  INT NULL,
+        monthly_value       DECIMAL(14,2) NULL,
+        expected_months     SMALLINT NULL,
+        project_value       DECIMAL(14,2) NULL,
+        stage               VARCHAR(30) NOT NULL DEFAULT '1. Contact',
+        next_steps          TEXT NULL,
+        main_contact        VARCHAR(255) NULL,
+        phone_number        VARCHAR(50) NULL,
+        email_address       VARCHAR(255) NULL,
+        deal_owner          VARCHAR(255) NULL,
+        source              ENUM('Outbound','Inbound') NOT NULL DEFAULT 'Outbound',
+        created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_deals_stage (stage),
+        FOREIGN KEY (engagement_type_id) REFERENCES engagement_types(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Add password_hash column (migration — safe to run repeatedly)
     try {
         $pdo->exec("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL DEFAULT NULL");

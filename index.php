@@ -92,6 +92,14 @@ $nav_active = 'home';
       </div>
       <div class="card-arrow">→</div>
     </a>
+
+    <a href="/CVwebapp/deal_tracker/" class="feature-card" style="margin-top:16px">
+      <div class="card-text">
+        <h2>Deal Tracker</h2>
+        <p>Kanban board for the sales pipeline, deal by deal.</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
   </div>
 </div>
 </body>
