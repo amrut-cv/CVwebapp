@@ -163,7 +163,7 @@ function feeDisplay(string $feeType, string $currCode, string $monthlyFee, strin
             if ($fixedAdv) $parts[] = fmtMoney($fixedAdv, $currCode) . ' advance';
             return implode(' &middot; ', $parts);
         case 'milestone':
-            return $milestones ? nl2br(esc($milestones)) : '';
+            return $milestones ? 'Milestone-based fee' : '';
         default:
             return '';
     }
@@ -388,6 +388,9 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     }
     .invest-sub  { font-family: 'Segoe UI', sans-serif; font-size: .82rem; color: #6b7280; margin-bottom: 18px; line-height: 1.6; }
     .invest-note { font-size: .86rem; color: #4a4a6a; line-height: 1.72; padding: 14px 18px; background: #f9fafb; border-radius: 4px; border: 1px solid #e8e8f0; }
+    .milestone-list { margin-bottom: 18px; }
+    .milestone-line { font-family: 'Segoe UI', sans-serif; font-size: .92rem; font-weight: 400; color: #1a1a2e; line-height: 1.6; padding: 10px 0; border-bottom: 1px solid #eceef5; }
+    .milestone-line:last-child { border-bottom: none; }
     .steps-list  { list-style: none; }
     .steps-list li {
       display: flex; align-items: flex-start; gap: 18px;
@@ -661,6 +664,13 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="sec-title">Fee &amp; payment</div>
       <div class="invest-big"><?= $feeDisplayStr ?></div>
       <?php if ($investSub): ?><div class="invest-sub"><?= $investSub ?></div><?php endif; ?>
+      <?php if ($feeType === 'milestone' && $milestones): ?>
+        <div class="milestone-list">
+          <?php foreach (preg_split('/\r\n|\r|\n/', trim($milestones)) as $line): $line = trim($line); if ($line === '') continue; ?>
+            <div class="milestone-line"><?= esc($line) ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
       <?php if ($payNotes):  ?><div class="invest-note"><?= esc($payNotes) ?></div><?php endif; ?>
     </div>
     <?php endif; ?>
