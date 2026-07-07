@@ -8,6 +8,7 @@ $lists = [];
 foreach ($rows as $r) {
     $lists[$r['list_key']][] = $r;
 }
+$engagementTypes = $pdo->query("SELECT * FROM engagement_types ORDER BY sort_order, id")->fetchAll();
 
 $listMeta = [
     'scope_strategy'     => ['group' => 'Scope of work', 'label' => 'Strategy — Figure out...'],
@@ -75,6 +76,23 @@ $listMeta = [
     .item-delete { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 17px; line-height: 1; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; }
     .item-delete:hover { color: var(--accent); background: var(--accent-light); }
 
+    /* ── Engagement type cards ── */
+    .eng-row { display: block; cursor: grab; padding: 14px; }
+    .eng-row:active { cursor: grabbing; }
+    .eng-top { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .eng-top .drag-handle { flex-shrink: 0; }
+    .eng-field { border: 1.5px solid var(--border); border-radius: 7px; padding: 7px 10px; font-size: .85rem; font-family: inherit; color: var(--text); background: var(--bg); outline: none; }
+    .eng-field:focus { border-color: var(--accent); background: var(--white); }
+    .eng-label-input { flex: 2; font-weight: 600; }
+    .eng-category-input { flex: 1; }
+    .eng-duration-input { flex: 1; }
+    .eng-textarea { width: 100%; min-height: 52px; resize: vertical; margin-bottom: 8px; line-height: 1.4; }
+    .eng-textarea-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; display: block; }
+    .eng-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .eng-key { font-size: .72rem; color: var(--muted); font-family: monospace; }
+    .eng-save { padding: 5px 14px; border: 1.5px solid var(--accent); border-radius: 6px; background: var(--accent-light); color: var(--accent); font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .eng-save.visible { display: inline-block; } .eng-save:not(.visible) { display: none; }
+
     /* ── Add new ── */
     .add-row { display: flex; gap: 8px; margin-top: 16px; }
     .add-input { flex: 1; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 14px; font-size: .88rem; outline: none; font-family: inherit; color: var(--text); background: var(--bg); }
@@ -112,15 +130,28 @@ $listMeta = [
       <?php $first = false; endforeach; ?>
     </div>
     <?php endforeach; ?>
+    <div class="sidebar-group">
+      <div class="sidebar-group-label">Contract Builder</div>
+      <button class="sidebar-item" onclick="showEngagementTypes(this)">Engagement Types</button>
+    </div>
   </nav>
 
   <div class="panel" id="panel">
-    <div class="panel-title" id="panelTitle"></div>
-    <div class="panel-sub">Drag to reorder · Click a label to rename · Press Enter or click Save</div>
-    <ul class="item-list" id="itemList"></ul>
-    <div class="add-row">
-      <input class="add-input" id="addInput" placeholder="New item…" onkeydown="if(event.key==='Enter')addItem()" />
-      <button class="add-btn" onclick="addItem()">+ Add</button>
+    <div id="simplePanel">
+      <div class="panel-title" id="panelTitle"></div>
+      <div class="panel-sub">Drag to reorder · Click a label to rename · Press Enter or click Save</div>
+      <ul class="item-list" id="itemList"></ul>
+      <div class="add-row">
+        <input class="add-input" id="addInput" placeholder="New item…" onkeydown="if(event.key==='Enter')addItem()" />
+        <button class="add-btn" onclick="addItem()">+ Add</button>
+      </div>
+    </div>
+
+    <div id="engPanel" style="display:none">
+      <div class="panel-title">Engagement Types</div>
+      <div class="panel-sub">Drag to reorder · Edit any field · Save each card individually</div>
+      <ul class="item-list" id="engList"></ul>
+      <button class="add-btn" onclick="addEngType()" style="margin-top:8px">+ Add engagement type</button>
     </div>
   </div>
 </div>
@@ -130,6 +161,7 @@ $listMeta = [
 <script>
 const LISTS = <?= json_encode($lists, JSON_UNESCAPED_UNICODE) ?>;
 const META  = <?= json_encode($listMeta, JSON_UNESCAPED_UNICODE) ?>;
+const ENG_TYPES = <?= json_encode($engagementTypes, JSON_UNESCAPED_UNICODE) ?>;
 
 let currentKey = '<?= array_key_first($listMeta) ?>';
 let dragSrc = null;
@@ -138,10 +170,20 @@ function showList(key, btn) {
   currentKey = key;
   document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('simplePanel').style.display = '';
+  document.getElementById('engPanel').style.display = 'none';
   document.getElementById('panelTitle').textContent = META[key].label;
   renderList();
   document.getElementById('addInput').value = '';
   document.getElementById('addInput').focus();
+}
+
+function showEngagementTypes(btn) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('simplePanel').style.display = 'none';
+  document.getElementById('engPanel').style.display = '';
+  renderEngList();
 }
 
 function renderList() {
@@ -236,6 +278,103 @@ async function saveOrder() {
 
 async function api(body) {
   const r = await fetch('/CVwebapp/api/lists.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  return r.json();
+}
+
+// ── Engagement types ────────────────────────────────────────────────────────
+function renderEngList() {
+  const ul = document.getElementById('engList');
+  ul.innerHTML = '';
+  ENG_TYPES.forEach(et => ul.appendChild(makeEngRow(et)));
+}
+
+function makeEngRow(et) {
+  const li = document.createElement('li');
+  li.className = 'item-row eng-row';
+  li.dataset.id = et.id;
+  li.draggable = true;
+  li.innerHTML = `
+    <div class="eng-top">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
+      <input class="eng-field eng-label-input" data-f="label" value="${esc(et.label)}" oninput="engToggleSave(this)" placeholder="Label" />
+      <input class="eng-field eng-category-input" data-f="category" value="${esc(et.category)}" oninput="engToggleSave(this)" placeholder="Category (e.g. Retainership)" />
+      <input class="eng-field eng-duration-input" data-f="duration_tag" value="${esc(et.duration_tag || '')}" oninput="engToggleSave(this)" placeholder="Duration tag (optional)" />
+    </div>
+    <label class="eng-textarea-label">Card description (shown when picking the type)</label>
+    <textarea class="eng-field eng-textarea" data-f="card_description" oninput="engToggleSave(this)">${esc(et.card_description)}</textarea>
+    <label class="eng-textarea-label">Document description (used in generated proposal/contract)</label>
+    <textarea class="eng-field eng-textarea" data-f="doc_description" oninput="engToggleSave(this)">${esc(et.doc_description)}</textarea>
+    <label class="eng-textarea-label">Rationale (why we recommend this type, used in generated proposal)</label>
+    <textarea class="eng-field eng-textarea" data-f="rationale" oninput="engToggleSave(this)">${esc(et.rationale)}</textarea>
+    <div class="eng-actions">
+      <span class="eng-key">key: ${esc(et.type_key)}</span>
+      <div style="display:flex;gap:8px">
+        <button class="eng-save" onclick="saveEngType(${et.id}, this)">Save</button>
+        <button class="item-delete" title="Delete" onclick="deleteEngType(${et.id}, this)">×</button>
+      </div>
+    </div>
+  `;
+  li.addEventListener('dragstart', e => { dragSrc = li; li.style.opacity = '.4'; e.dataTransfer.effectAllowed = 'move'; });
+  li.addEventListener('dragend', () => { li.style.opacity = ''; document.querySelectorAll('.eng-row').forEach(r => r.classList.remove('drag-over')); });
+  li.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; li.classList.add('drag-over'); });
+  li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+  li.addEventListener('drop', e => {
+    e.preventDefault();
+    li.classList.remove('drag-over');
+    if (dragSrc && dragSrc !== li) {
+      li.parentNode.insertBefore(dragSrc, li.nextSibling);
+      saveEngOrder();
+    }
+  });
+  return li;
+}
+
+function engToggleSave(field) {
+  field.closest('.eng-row').querySelector('.eng-save').classList.add('visible');
+}
+
+async function saveEngType(id, btn) {
+  const row = btn.closest('.eng-row');
+  const body = {action: 'update', id};
+  row.querySelectorAll('[data-f]').forEach(f => body[f.dataset.f] = f.value.trim());
+  const r = await api2(body);
+  if (r.ok) {
+    btn.classList.remove('visible');
+    const et = ENG_TYPES.find(e => e.id === id);
+    if (et) Object.assign(et, body);
+    toast('Saved');
+  }
+}
+
+async function deleteEngType(id, btn) {
+  if (!confirm('Delete this engagement type? Any past contracts using it will keep showing its key as a fallback label.')) return;
+  const r = await api2({action: 'delete', id});
+  if (r.ok) {
+    btn.closest('.eng-row').remove();
+    const idx = ENG_TYPES.findIndex(e => e.id === id);
+    if (idx > -1) ENG_TYPES.splice(idx, 1);
+    toast('Deleted');
+  }
+}
+
+async function addEngType() {
+  const r = await api2({action: 'add', label: 'New engagement type', category: '', duration_tag: '', card_description: '', doc_description: '', rationale: ''});
+  if (r.id) {
+    const et = {id: r.id, type_key: r.type_key, label: 'New engagement type', category: '', duration_tag: '', card_description: '', doc_description: '', rationale: '', sort_order: r.sort_order};
+    ENG_TYPES.push(et);
+    document.getElementById('engList').appendChild(makeEngRow(et));
+    toast('Added');
+  }
+}
+
+async function saveEngOrder() {
+  const ids = [...document.querySelectorAll('#engList .eng-row')].map(r => parseInt(r.dataset.id));
+  await api2({action: 'reorder', ids});
+  toast('Order saved');
+}
+
+async function api2(body) {
+  const r = await fetch('/CVwebapp/api/engagement_types.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
   return r.json();
 }
 
