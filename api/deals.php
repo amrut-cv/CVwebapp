@@ -67,6 +67,14 @@ switch ($action) {
         echo json_encode(['ok' => true]);
         break;
 
+    case 'archive':
+        $id = (int)($body['id'] ?? 0);
+        $archived = !empty($body['archived']) ? 1 : 0;
+        if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
+        $pdo->prepare("UPDATE deals SET archived=? WHERE id=?")->execute([$archived, $id]);
+        echo json_encode(['ok' => true]);
+        break;
+
     case 'move_stage':
         $id    = (int)($body['id'] ?? 0);
         $stage = trim($body['stage'] ?? '');

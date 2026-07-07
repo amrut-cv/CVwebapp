@@ -183,6 +183,11 @@ function getDB(): PDO {
         $pdo->exec("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL DEFAULT NULL");
     } catch (PDOException $e) { /* column already exists */ }
 
+    // Add archived flag to deals (migration — safe to run repeatedly)
+    try {
+        $pdo->exec("ALTER TABLE deals ADD COLUMN archived TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (PDOException $e) { /* column already exists */ }
+
     // Seed known users if table is empty
     $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count === 0) {
