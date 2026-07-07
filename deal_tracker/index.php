@@ -89,6 +89,12 @@ $nav_active = 'deals';
     .tab-bar{display:flex;gap:4px;background:#e9ebf0;border-radius:8px;padding:4px;margin-bottom:20px;width:fit-content}
     .tab-bar a{padding:7px 18px;border-radius:6px;font-size:.85rem;font-weight:600;color:#6b7280;text-decoration:none}
     .tab-bar a.active{background:#fff;color:#1a1a2e;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+    .stage-toggles{display:flex;gap:16px;margin-bottom:16px}
+    .stage-toggle{border:none;background:none;color:#C9972A;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;padding:0}
+    .stage-toggle:hover{text-decoration:underline}
+    .col[data-group="early"], .col[data-group="late"] { display: none; }
+    .board.show-early .col[data-group="early"] { display: block; }
+    .board.show-late .col[data-group="late"] { display: block; }
     .archive-list{display:flex;flex-direction:column;gap:8px;max-width:680px}
     .archive-row{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border:1px solid #e2e5ef;border-radius:8px;padding:12px 16px}
     .archive-row .dname{font-weight:700;font-size:.85rem;margin-bottom:4px}
@@ -141,6 +147,13 @@ $nav_active = 'deals';
       <a href="index.php?archived=1" class="<?= $showArchived ? 'active' : '' ?>">Archived (<?= count($archivedDeals) ?>)</a>
     </div>
 
+    <?php if (!$showArchived): ?>
+      <div class="stage-toggles">
+        <button type="button" class="stage-toggle" id="toggleEarly" onclick="toggleStageGroup('early', this)">Show 1. Contact</button>
+        <button type="button" class="stage-toggle" id="toggleLate" onclick="toggleStageGroup('late', this)">Show 5c&ndash;7b</button>
+      </div>
+    <?php endif ?>
+
     <?php if ($showArchived): ?>
       <div class="archive-list">
         <?php foreach ($archivedDeals as $d): ?>
@@ -166,7 +179,7 @@ $nav_active = 'deals';
       <div class="board-scroll">
         <div class="board">
           <?php foreach ($stages as $s): $label = $s['label']; ?>
-            <div class="col">
+            <div class="col" data-group="<?= h($s['group']) ?>">
               <div class="col-head tone-<?= h($s['tone']) ?>">
                 <span><?= h($label) ?></span>
                 <span><?= count($byStage[$label]) ?></span>
@@ -535,6 +548,14 @@ function refreshCounts() {
     const countEl = col.querySelector('.col-head span:last-child');
     if (countEl) countEl.textContent = count;
   });
+}
+
+const STAGE_TOGGLE_LABELS = { early: '1. Contact', late: '5c–7b' };
+function toggleStageGroup(group, btn) {
+  const board = document.querySelector('.board');
+  if (!board) return;
+  const showing = board.classList.toggle('show-' + group);
+  btn.textContent = (showing ? 'Hide ' : 'Show ') + STAGE_TOGGLE_LABELS[group];
 }
 </script>
 </body>
