@@ -100,6 +100,14 @@ $nav_active = 'home';
       </div>
       <div class="card-arrow">→</div>
     </a>
+
+    <a href="/CVwebapp/guest_tracker/" class="feature-card" style="margin-top:16px">
+      <div class="card-text">
+        <h2>Guest Tracker</h2>
+        <p>Kanban board for booking Founder Stories podcast guests.</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
   </div>
 </div>
 </body>

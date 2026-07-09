@@ -200,6 +200,29 @@ function getDB(): PDO {
         FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS guests (
+        id                       INT AUTO_INCREMENT PRIMARY KEY,
+        guest_name               VARCHAR(255) NOT NULL,
+        company_title            VARCHAR(255) NULL,
+        bio                      TEXT NULL,
+        email                    VARCHAR(255) NULL,
+        phone                    VARCHAR(50) NULL,
+        social_link              VARCHAR(255) NULL,
+        source                   ENUM('Referral','Cold outreach','Inbound') NOT NULL DEFAULT 'Cold outreach',
+        episode_topic            TEXT NULL,
+        recording_date           DATE NULL,
+        recording_date_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+        release_date             DATE NULL,
+        release_date_confirmed   TINYINT(1) NOT NULL DEFAULT 0,
+        episode_link             VARCHAR(500) NULL,
+        notes                    TEXT NULL,
+        stage                    VARCHAR(30) NOT NULL DEFAULT '1. Prospect',
+        archived                 TINYINT(1) NOT NULL DEFAULT 0,
+        created_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_guests_stage (stage)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed known users if table is empty
     $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count === 0) {
