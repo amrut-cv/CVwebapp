@@ -6,5 +6,4 @@ return [
     'cashflow_status'  => 'Cashflow Status',
     'deal_tracker'     => 'Deal Tracker',
     'guest_tracker'    => 'Guest Tracker',
-    'core_contacts'    => 'CoreContacts',
 ];
