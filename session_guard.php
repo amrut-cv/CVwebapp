@@ -21,3 +21,21 @@ if (empty($_SESSION['user_role'])) {
 
 function current_role(): string { return $_SESSION['user_role'] ?? 'editor'; }
 function is_admin(): bool { return current_role() === 'admin'; }
+
+function has_module_access(string $moduleKey): bool {
+    if (is_admin()) return true;
+    require_once __DIR__ . '/db.php';
+    $stmt = getDB()->prepare(
+        "SELECT 1 FROM module_access ma JOIN users u ON u.id = ma.user_id
+         WHERE u.email = ? AND ma.module_key = ?"
+    );
+    $stmt->execute([$_SESSION['auth_email'], $moduleKey]);
+    return (bool)$stmt->fetch();
+}
+
+function require_module_access(string $moduleKey): void {
+    if (!has_module_access($moduleKey)) {
+        header('Location: /CVwebapp/index.php');
+        exit;
+    }
+}

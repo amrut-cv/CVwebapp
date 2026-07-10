@@ -232,5 +232,34 @@ function getDB(): PDO {
         $seed->execute(['nikhil@corevoice.in',        'Nikhil',     'editor']);
         $seed->execute(['piyush@corevoice.in',        'Piyush',     'editor']);
     }
+
+    // Per-user module access (checkbox matrix in admin/users.php). Admins
+    // bypass this entirely (see has_module_access() in session_guard.php).
+    $pdo->exec("CREATE TABLE IF NOT EXISTS module_access (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        user_id      INT NOT NULL,
+        module_key   VARCHAR(50) NOT NULL,
+        UNIQUE KEY uniq_user_module (user_id, module_key),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Grandfather every existing user into every module the first time this
+    // table is populated, so nothing breaks before access is deliberately
+    // revoked. Users added after this point start with no module access
+    // until an admin grants it.
+    $accessCount = (int)$pdo->query("SELECT COUNT(*) FROM module_access")->fetchColumn();
+    if ($accessCount === 0) {
+        $moduleKeys = array_keys(require __DIR__ . '/modules.php');
+        $userIds = $pdo->query("SELECT id FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        if ($userIds) {
+            $grant = $pdo->prepare("INSERT IGNORE INTO module_access (user_id, module_key) VALUES (?,?)");
+            foreach ($userIds as $uid) {
+                foreach ($moduleKeys as $key) {
+                    $grant->execute([$uid, $key]);
+                }
+            }
+        }
+    }
+
     return $pdo;
 }

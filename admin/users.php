@@ -9,6 +9,13 @@ if (!is_admin()) {
 require __DIR__ . '/../db.php';
 $pdo  = getDB();
 $rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FROM users ORDER BY role, email")->fetchAll();
+
+$modules = require __DIR__ . '/../modules.php';
+$accessRows = $pdo->query("SELECT user_id, module_key FROM module_access")->fetchAll();
+$accessMap = [];
+foreach ($accessRows as $ar) {
+    $accessMap[$ar['user_id']][$ar['module_key']] = true;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,6 +87,13 @@ $rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FRO
 
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--brand); color: #fff; padding: 10px 18px; border-radius: 8px; font-size: .85rem; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999; }
     .toast.show { opacity: 1; }
+
+    .access-section { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+    .access-section h3 { font-size: .9rem; font-weight: 700; margin-bottom: 4px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .access-sub { font-size: .8rem; color: var(--muted); margin-bottom: 16px; }
+    .access-table th.chk, .access-table td.chk { text-align: center; }
+    .access-table input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+    .access-locked { color: var(--muted); font-size: .78rem; }
   </style>
 </head>
 <body>
@@ -147,6 +161,43 @@ $rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FRO
     </div>
     <div class="field-err" id="addErr"></div>
   </div>
+
+  <div class="access-section" style="margin-top:28px">
+    <h3>Module access</h3>
+    <div class="access-sub">Click a checkbox to grant or revoke access instantly &mdash; there's no separate save step.</div>
+    <table class="access-table" id="accessTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <?php foreach ($modules as $label): ?>
+            <th class="chk"><?= htmlspecialchars($label) ?></th>
+          <?php endforeach; ?>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($rows as $u): ?>
+          <tr data-id="<?= (int)$u['id'] ?>">
+            <td>
+              <?= htmlspecialchars($u['name'] ?: $u['email']) ?>
+              <span class="role-badge role-<?= $u['role'] ?>"><?= $u['role'] ?></span><br>
+              <span style="font-size:.72rem;color:var(--muted)"><?= htmlspecialchars($u['email']) ?></span>
+            </td>
+            <?php if ($u['role'] === 'admin'): ?>
+              <td class="access-locked" colspan="<?= count($modules) ?>">Admins always have full access</td>
+            <?php else: ?>
+              <?php foreach ($modules as $key => $label): ?>
+                <td class="chk">
+                  <input type="checkbox"
+                         <?= isset($accessMap[$u['id']][$key]) ? 'checked' : '' ?>
+                         onchange="toggleAccess(this, <?= (int)$u['id'] ?>, '<?= htmlspecialchars($key) ?>')">
+                </td>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <!-- Edit modal -->
@@ -191,6 +242,7 @@ $rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FRO
 <div class="toast" id="toast"></div>
 
 <script>
+var MODULES = <?= json_encode($modules, JSON_UNESCAPED_UNICODE) ?>;
 var editingId = null;
 var pwUserId  = null;
 
@@ -253,6 +305,25 @@ async function addUser() {
         '<button class="btn-del" onclick="deleteUser(' + r.id + ', this.closest(\'tr\'))">Remove</button>' +
       '</div></td>';
     tbody.appendChild(tr);
+
+    var accessBody = document.querySelector('#accessTable tbody');
+    var accessTr = document.createElement('tr');
+    accessTr.dataset.id = r.id;
+    if (role === 'admin') {
+      accessTr.innerHTML =
+        '<td>' + esc(name || email) + ' <span class="role-badge role-admin">admin</span><br>' +
+        '<span style="font-size:.72rem;color:var(--muted)">' + esc(email) + '</span></td>' +
+        '<td class="access-locked" colspan="' + Object.keys(MODULES).length + '">Admins always have full access</td>';
+    } else {
+      var cells = '<td>' + esc(name || email) + ' <span class="role-badge role-' + role + '">' + role + '</span><br>' +
+        '<span style="font-size:.72rem;color:var(--muted)">' + esc(email) + '</span></td>';
+      Object.keys(MODULES).forEach(function(key) {
+        cells += '<td class="chk"><input type="checkbox" onchange="toggleAccess(this, ' + r.id + ', \'' + key + '\')"></td>';
+      });
+      accessTr.innerHTML = cells;
+    }
+    accessBody.appendChild(accessTr);
+
     document.getElementById('addEmail').value = '';
     document.getElementById('addName').value  = '';
     document.getElementById('addRole').value  = 'editor';
@@ -266,8 +337,27 @@ async function addUser() {
 async function deleteUser(id, row) {
   if (!confirm('Remove this user? They will lose access to the app.')) return;
   var r = await api({action: 'delete', id: id});
-  if (r.ok) { row.remove(); toast('Removed'); }
-  else toast(r.error || 'Remove failed');
+  if (r.ok) {
+    row.remove();
+    var accessRow = document.querySelector('#accessTable tr[data-id="' + id + '"]');
+    if (accessRow) accessRow.remove();
+    toast('Removed');
+  } else toast(r.error || 'Remove failed');
+}
+
+async function toggleAccess(checkbox, userId, moduleKey) {
+  var action = checkbox.checked ? 'grant' : 'revoke';
+  var r = await fetch('/CVwebapp/api/module_access.php', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action: action, user_id: userId, module_key: moduleKey})
+  });
+  var j = await r.json();
+  if (j.ok) {
+    toast(action === 'grant' ? 'Access granted' : 'Access revoked');
+  } else {
+    checkbox.checked = !checkbox.checked;
+    toast(j.error || 'Failed');
+  }
 }
 
 async function api(body) {

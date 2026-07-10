@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../session_guard.php';
+require_module_access('core_contacts');
 require_once __DIR__ . '/cc_db.php';
 
 $member = cc_member($_SESSION['auth_email']);

@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/../session_guard.php';
+require_module_access('deal_tracker');
 require __DIR__ . '/../db.php';
 require __DIR__ . '/helpers.php';
 $stages = require __DIR__ . '/stages.php';

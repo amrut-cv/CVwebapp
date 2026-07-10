@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/../session_guard.php';
+require_module_access('contract_builder');
 require __DIR__ . '/../db.php';
 
 $pdo = getDB();
