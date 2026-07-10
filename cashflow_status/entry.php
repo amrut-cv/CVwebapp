@@ -69,9 +69,14 @@ $nav_active = 'cashflow';
     .in-cell{text-align:right;width:150px}
     input.money{width:130px;height:34px;text-align:right;padding:0 10px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.85rem;font-family:inherit;outline:none}
     input.money:focus{border-color:#C9972A}
-    .actions{display:flex;justify-content:flex-end;margin-top:20px}
+    .actions{display:flex;justify-content:space-between;margin-top:20px}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:7px;font-size:.875rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit}
     .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
+    .btn-secondary{background:#fff;border:1.5px solid #d1d5db;color:#374151}
+    .btn-secondary:hover{border-color:#C9972A;color:#C9972A}
+    .last-val{position:relative}
+    .copy-btn{border:none;background:#f3f4f8;color:#6b7280;width:20px;height:20px;border-radius:5px;font-size:.72rem;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
+    .copy-btn:hover{background:#fdf6e8;color:#C9972A}
   </style>
 </head>
 <body>
@@ -105,7 +110,12 @@ $nav_active = 'cashflow';
           <?php foreach ($items as $col => $label): ?>
             <tr>
               <td><?= h($label) ?></td>
-              <td class="last-val"><?= $lastEntry ? cf_digits($lastEntry[$col]) : '—' ?></td>
+              <td class="last-val">
+                <span class="lv-text"><?= $lastEntry ? cf_digits($lastEntry[$col]) : '—' ?></span>
+                <?php if ($lastEntry): ?>
+                  <button type="button" class="copy-btn" onclick="copyRow(this)" title="Copy to today">&#8594;</button>
+                <?php endif ?>
+              </td>
               <td class="in-cell">
                 <input class="money" name="<?= h($col) ?>"
                        value="<?= h(cf_digits($todayEntry[$col] ?? $lastEntry[$col] ?? 0)) ?>">
@@ -115,6 +125,7 @@ $nav_active = 'cashflow';
         <?php endforeach ?>
       </table>
       <div class="actions">
+        <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear all</button>
         <button type="submit" class="btn btn-primary">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Save today's entry
@@ -123,5 +134,16 @@ $nav_active = 'cashflow';
     </form>
   </div>
 </div>
+<script>
+function clearAll() {
+  document.querySelectorAll('input.money').forEach(function(i) { i.value = ''; });
+}
+function copyRow(btn) {
+  var tr = btn.closest('tr');
+  var val = tr.querySelector('.lv-text').textContent.trim();
+  if (val === '—') return;
+  tr.querySelector('.money').value = val;
+}
+</script>
 </body>
 </html>

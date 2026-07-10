@@ -403,6 +403,10 @@ if ($pageLoadId) {
   <div class="card" id="step1">
     <div class="card-title">Who are we working with?</div>
     <div class="card-subtitle">Basic company and signatory details for the agreement.</div>
+    <button type="button" class="btn btn-secondary" style="margin-bottom:16px" onclick="copyProspectQuestions()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy questions for prospect
+    </button>
 
     <div class="field-group">
       <div class="field">
@@ -467,7 +471,7 @@ if ($pageLoadId) {
     </div>
 
     <div class="nav-row">
-      <button class="btn-ghost" onclick="fillSampleData()">&#x26A1; Fill with sample data</button>
+      <button class="btn-ghost" id="sampleDataBtn" style="display:none" onclick="fillSampleData()">&#x26A1; Fill with sample data</button>
       <button class="btn btn-primary" onclick="goTo(2)">Next: Business brief &#x2192;</button>
     </div>
   </div>
@@ -1229,6 +1233,29 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         if (currentDraftId === id) currentDraftId = null;
       }
     } catch(e) { showToast('Delete failed'); }
+  }
+
+  function copyProspectQuestions() {
+    var lines = [
+      'Hi, to get the agreement ready on our end, could you share the following details?',
+      '',
+      '1. Company legal name',
+      '2. CIN / Registration number',
+      '3. GST number',
+      '4. Registered address',
+      '5. Signatory name',
+      '6. Designation',
+      '7. Signatory email',
+      '',
+      'Thanks!'
+    ];
+    var text = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() { showToast('Copied — paste into WhatsApp'); },
+        function() { showToast('Copy failed — select and copy manually'); });
+    } else {
+      showToast('Clipboard not available in this browser');
+    }
   }
 
   function showToast(msg) {
