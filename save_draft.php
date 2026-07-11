@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/session_guard.php';
-require __DIR__ . '/db.php';
+require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
 

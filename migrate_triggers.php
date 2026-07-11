@@ -2,7 +2,7 @@
 // One-time migration: remap old trigger values to new ones in all saved drafts.
 // Run from CLI: php migrate_triggers.php
 // Or via SSH: php /var/www/app.corevoice.in/public_html/CVwebapp/migrate_triggers.php
-require __DIR__ . '/db.php';
+require_once __DIR__ . '/db.php';
 
 $MAP = [
     'Founding team doing marketing themselves'  => ['Founding team doing marketing'],

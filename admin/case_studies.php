@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/../session_guard.php';
-require __DIR__ . '/../db.php';
+require_once __DIR__ . '/../db.php';
 
 $pdo  = getDB();
 $rows = $pdo->query("SELECT id, name, description, sort_order FROM case_studies ORDER BY sort_order, id")->fetchAll();

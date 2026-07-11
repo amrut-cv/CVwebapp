@@ -6,7 +6,7 @@ if (!is_admin()) {
     exit;
 }
 
-require __DIR__ . '/../db.php';
+require_once __DIR__ . '/../db.php';
 $pdo  = getDB();
 $rows = $pdo->query("SELECT id, email, name, role, password_hash, created_at FROM users ORDER BY role, email")->fetchAll();
 

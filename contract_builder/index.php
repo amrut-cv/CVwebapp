@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/../session_guard.php';
 require_module_access('contract_builder');
-require __DIR__ . '/../db.php';
+require_once __DIR__ . '/../db.php';
 
 $pdo = getDB();
 $rows = $pdo->query("SELECT id, list_key, label, sort_order FROM list_items ORDER BY list_key, sort_order, id")->fetchAll();

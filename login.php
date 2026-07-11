@@ -1,7 +1,7 @@
 <?php
 session_start();
 require __DIR__ . '/ses_config.php';
-require __DIR__ . '/db.php';
+require_once __DIR__ . '/db.php';
 
 if (!empty($_SESSION['auth_email'])) {
     header('Location: index.php');

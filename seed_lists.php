@@ -1,6 +1,6 @@
 <?php
 // One-time seeder for list_items. Run once, then delete.
-require __DIR__ . '/db.php';
+require_once __DIR__ . '/db.php';
 $pdo = getDB();
 
 $existing = (int)$pdo->query("SELECT COUNT(*) FROM list_items")->fetchColumn();
