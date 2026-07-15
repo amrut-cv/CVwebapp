@@ -844,6 +844,13 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       </div>
     </div>
 
+    <div class="section-head">Contract clause tone</div>
+    <p class="text-muted" style="margin-bottom:12px;">Controls the &ldquo;Permission to share&rdquo; and IP/methodology clauses in the contract only &mdash; has no effect on the proposal.</p>
+    <div class="radio-group" id="clauseModeGroup">
+      <label class="radio-pill active" onclick="selectPill(this, 'clauseModeGroup')"><input type="radio" name="clauseMode" value="normal" checked /> Normal</label>
+      <label class="radio-pill" onclick="selectPill(this, 'clauseModeGroup')"><input type="radio" name="clauseMode" value="strict" /> Strict</label>
+    </div>
+
     <div class="output-grid">
       <div class="output-card" onclick="selectOutput(this, 'proposal')">
         <div class="out-tag">Send before signing</div>
@@ -1193,7 +1200,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     d.customOpsItems      = [].slice.call(document.querySelectorAll('#opsChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.scopeQty = scopeQty;
     d.engagementType = selectedEng || '';
-    ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses'].forEach(function(name) {
+    ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses','clauseMode'].forEach(function(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
       d[name] = el ? el.value : '';
     });
@@ -1250,6 +1257,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     if (d.retainerTerms) setPill('retainerTerms', d.retainerTerms);
     if (d.milestoneTerms) setPill('milestoneTerms', d.milestoneTerms);
     if (d.fixedTerms)    setPill('fixedTerms', d.fixedTerms);
+    if (d.clauseMode)    setPill('clauseMode', d.clauseMode);
     if (d.expenses)      setPill('expenses', d.expenses);
     var csGrid = document.getElementById('csPickGrid');
     if (csGrid && Array.isArray(d.caseStudyIds)) {
@@ -1464,6 +1472,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('milestonePaymentTerms', radio('milestoneTerms'));
     add('expenses',          radio('expenses'));
     add('paymentNotes',      document.getElementById('paymentNotes').value);
+    add('clauseMode',        radio('clauseMode') || 'normal');
     add('outputType',        selectedOutput);
     var csGrid = document.getElementById('csPickGrid');
     if (csGrid) {

@@ -171,6 +171,17 @@ function scopeQtySuffix(string $item): string {
     return isset($scopeQty[$item]) ? ' — ' . esc($scopeQty[$item]) : '';
 }
 
+/* ─────────────────────────────── contract clause tone (normal / strict) ── */
+$clauseMode = clean('clauseMode') === 'strict' ? 'strict' : 'normal';
+
+$permissionToShareClause = $clauseMode === 'strict'
+    ? 'The Client does not grant permission to the Consultant to share information about this engagement on public forums like social media or news media. The Consultant shall not disclose fees, internal strategy, product roadmaps, financial information, or any other information that would constitute Confidential Information under Annexure C. However, the Consultant may seek permission on a case-to-case basis and such permission may be granted by the Client in written form.'
+    : 'The Client grants permission to the Consultant to share information about this engagement publicly or to relevant parties. Such sharing shall be limited to: (a) naming the Client as a client of the Consultant; (b) describing the nature of the engagement in general terms (e.g. &ldquo;brand and marketing services&rdquo;); and (c) referencing publicly available outcomes such as a launched website or published content. The Consultant shall not disclose fees, internal strategy, product roadmaps, financial information, or any other information that would constitute Confidential Information under Annexure C.';
+
+$ipRetentionClause = $clauseMode === 'strict'
+    ? 'Notwithstanding the above, the Consultant retains ownership of its pre-existing methodologies, frameworks, tools, and general know-how related to general management and marketing that are not specific to the Client&rsquo;s business.'
+    : 'Notwithstanding the above, the Consultant retains ownership of its pre-existing methodologies, frameworks, tools, and general know-how that are not specific to the Client&rsquo;s business. The Consultant may reuse general approaches and learnings in engagements with other clients, provided no Confidential Information of the Client is disclosed.';
+
 /* ─────────────────────────────── fee display ── */
 function feeDisplay(string $feeType, string $currCode, string $monthlyFee, string $retDur,
                     string $totalFee, string $fixedAdv, array $msItems, float $msTotal): string {
@@ -800,7 +811,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
 
     <!-- Clause 5 -->
     <div class="clause">
-      <p class="cl-head"><span class="cl-num">5.</span>&nbsp;&nbsp;<strong>Permission to share:</strong> The Client grants permission to the Consultant to share information about this engagement publicly or to relevant parties. Such sharing shall be limited to: (a) naming the Client as a client of the Consultant; (b) describing the nature of the engagement in general terms (e.g. &ldquo;brand and marketing services&rdquo;); and (c) referencing publicly available outcomes such as a launched website or published content. The Consultant shall not disclose fees, internal strategy, product roadmaps, financial information, or any other information that would constitute Confidential Information under Annexure C.</p>
+      <p class="cl-head"><span class="cl-num">5.</span>&nbsp;&nbsp;<strong>Permission to share:</strong> <?= $permissionToShareClause ?></p>
     </div>
 
     <!-- Clause 6 -->
@@ -828,7 +839,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <p class="cl-sub"><span class="cl-num">8.1.</span>&nbsp;&nbsp;The Parties agree that Client shall have complete and sole ownership over any work product or Services performed by the Consultant under this Agreement.</p>
       <p class="cl-sub"><span class="cl-num">8.2.</span>&nbsp;&nbsp;The Consultant hereby assigns and agrees to assign to Client, without royalty or any other consideration except as expressly set forth herein, all worldwide right, title and interest that the Consultant may have or acquire in and to Client, its successors, assignees, or nominees, the Receiving Party&rsquo;s right, title and interest, if any, in any patents, trade secrets, trademarks, copyrights, or other intellectual property rights or proprietary information embodied in or relating to Consultant&rsquo;s work under this Agreement.</p>
       <p class="cl-sub"><span class="cl-num">8.3.</span>&nbsp;&nbsp;At Client&rsquo;s request, the Consultant hereby agrees to cooperate with Client and do all such actions and execute any documents necessary to give effect to the provisions of this section.</p>
-      <p class="cl-sub"><span class="cl-num">8.4.</span>&nbsp;&nbsp;Notwithstanding the above, the Consultant retains ownership of its pre-existing methodologies, frameworks, tools, and general know-how that are not specific to the Client&rsquo;s business. The Consultant may reuse general approaches and learnings in engagements with other clients, provided no Confidential Information of the Client is disclosed.</p>
+      <p class="cl-sub"><span class="cl-num">8.4.</span>&nbsp;&nbsp;<?= $ipRetentionClause ?></p>
     </div>
 
     <!-- Clause 9 -->
