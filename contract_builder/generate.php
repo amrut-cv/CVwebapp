@@ -148,20 +148,27 @@ $opsScope      = cleanArr('scope_ops');
 $scopeItems    = array_merge($strategyScope, $contentScope, $opsScope);
 
 /* ─────────────────────────────── contract scope display labels ── */
-$scopeContractLabels = [
-    'Positioning & communication'       => 'Positioning &amp; communication — craft market-relative positioning, communication pillars and guides for each stakeholder and context',
-    'CMO office — goals & reporting'    => 'CMO office — goals, budgets &amp; reporting',
-    'Website design'                    => 'Website — new pages and updates (Figma + Webflow + native)',
-    'Social posts — text, image, carousels' => 'Social media content — text, images, carousels',
-    'Reels, shorts & social video'      => 'Short-form video — reels, shorts, social video',
-    'SEO blogs & newsletters'           => 'SEO blogs, newsletters &amp; long-form articles',
-    'Ad creatives — static & video'     => 'Ad creatives — static and video',
-    'Social media management'           => 'Social media management — LinkedIn, Instagram, YouTube, X',
-    'Paid ads — Google, Meta, LinkedIn' => 'Paid ads management — Google Ads, Meta Ads, LinkedIn Ads',
-];
+$scopeContractLabels = require __DIR__ . '/scope_labels.php';
 function scopeContractLabel(string $item): string {
     global $scopeContractLabels;
     return $scopeContractLabels[$item] ?? esc($item);
+}
+
+/* ─────────────────────────────── scope quantities (optional, per item) ── */
+$scopeQty = [];
+$scopeQtyRaw = clean('scope_qty');
+if ($scopeQtyRaw !== '') {
+    $decoded = json_decode($scopeQtyRaw, true);
+    if (is_array($decoded)) {
+        foreach ($decoded as $k => $v) {
+            $v = trim((string)$v);
+            if ($v !== '') $scopeQty[(string)$k] = $v;
+        }
+    }
+}
+function scopeQtySuffix(string $item): string {
+    global $scopeQty;
+    return isset($scopeQty[$item]) ? ' — ' . esc($scopeQty[$item]) : '';
 }
 
 /* ─────────────────────────────── fee display ── */
@@ -644,19 +651,19 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
         <?php if ($strategyScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head strategy">Strategy</div>
-          <ul><?php foreach ($strategyScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
+          <ul><?php foreach ($strategyScope as $i): ?><li><?= esc($i) . scopeQtySuffix($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
         <?php if ($contentScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head content">Content</div>
-          <ul><?php foreach ($contentScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
+          <ul><?php foreach ($contentScope as $i): ?><li><?= esc($i) . scopeQtySuffix($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
         <?php if ($opsScope): ?>
         <div class="scope-cat">
           <div class="scope-cat-head ops">Marketing ops</div>
-          <ul><?php foreach ($opsScope as $i): ?><li><?= esc($i) ?></li><?php endforeach; ?></ul>
+          <ul><?php foreach ($opsScope as $i): ?><li><?= esc($i) . scopeQtySuffix($i) ?></li><?php endforeach; ?></ul>
         </div>
         <?php endif; ?>
       </div>
@@ -913,7 +920,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="ann-cat-head">Strategy</div>
       <ul class="ann-cat-list">
         <?php foreach ($strategyScope as $item): ?>
-          <li><?= scopeContractLabel($item) ?></li>
+          <li><?= scopeContractLabel($item) . scopeQtySuffix($item) ?></li>
         <?php endforeach; ?>
       </ul>
     <?php endif; ?>
@@ -922,7 +929,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="ann-cat-head">Content</div>
       <ul class="ann-cat-list">
         <?php foreach ($contentScope as $item): ?>
-          <li><?= scopeContractLabel($item) ?></li>
+          <li><?= scopeContractLabel($item) . scopeQtySuffix($item) ?></li>
         <?php endforeach; ?>
       </ul>
     <?php endif; ?>
@@ -931,7 +938,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="ann-cat-head">Marketing ops</div>
       <ul class="ann-cat-list">
         <?php foreach ($opsScope as $item): ?>
-          <li><?= scopeContractLabel($item) ?></li>
+          <li><?= scopeContractLabel($item) . scopeQtySuffix($item) ?></li>
         <?php endforeach; ?>
       </ul>
     <?php endif; ?>
