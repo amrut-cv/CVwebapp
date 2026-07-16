@@ -57,3 +57,21 @@ function cf_calc($e) {
         'months_liquid', 'months_total'
     );
 }
+
+// Column membership per cumulative tier — used by the status page to highlight
+// which raw fields feed a given total on hover. Must stay in sync with cf_calc().
+function cf_tier_cols() {
+    $eom_assets          = ['axis_bank', 'rbl_bank', 'receivables_this_month'];
+    $total_liquid_assets = array_merge($eom_assets, ['receivables_next_month']);
+    $total_assets        = array_merge($total_liquid_assets, ['long_term_deposits', 'long_term_assets']);
+
+    $eom_liab          = ['fte_net_pay_actual', 'ftc_net_pay_actual', 'interns_freelancers',
+                           'others_net_pay', 'reimbursements', 'gst_this_month', 'tds_this_month', 'rent_payable'];
+    $total_liquid_liab = array_merge($eom_liab, ['axis_cc', 'yes_cc', 'gst_next_month', 'tds_next_month']);
+    $total_liab        = array_merge($total_liquid_liab, ['long_term_borrowals']);
+
+    return compact(
+        'eom_assets', 'total_liquid_assets', 'total_assets',
+        'eom_liab', 'total_liquid_liab', 'total_liab'
+    );
+}
