@@ -34,7 +34,7 @@ function cf_calc($e) {
 
     $eom_assets          = $g('axis_bank') + $g('rbl_bank') + $g('receivables_this_month');
     $total_liquid_assets = $eom_assets + $g('receivables_next_month');
-    $total_assets        = $total_liquid_assets + $g('long_term_deposits');
+    $total_assets        = $total_liquid_assets + $g('long_term_deposits') + $g('long_term_assets');
 
     $eom_liab          = $g('fte_net_pay_actual') + $g('ftc_net_pay_actual') + $g('interns_freelancers')
                         + $g('others_net_pay') + $g('reimbursements') + $g('gst_this_month')

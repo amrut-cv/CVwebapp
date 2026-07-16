@@ -8,6 +8,7 @@ return [
         'long_term_deposits'      => 'Long-term deposits',
         'receivables_this_month'  => "Receivables this month (expected payment value)",
         'receivables_next_month'  => "Receivables next month (expected payment value)",
+        'long_term_assets'        => 'Long-term assets',
     ],
     'Payroll (paid at EOM)' => [
         'fte_net_pay'             => 'FTE net pay (liability)',
