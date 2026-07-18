@@ -106,9 +106,10 @@
   });
 
   var nodeEls = {};
+  var wiggleEls = {};
   nodes.forEach(function (n) {
     var g = document.createElementNS(svgNS, 'g');
-    g.setAttribute('class', 'ng-node');
+    g.setAttribute('class', 'ng-node' + (n.important ? ' is-important' : ''));
     g.style.transition = 'transform .5s cubic-bezier(.2,.7,.3,1), opacity .4s ease';
 
     var wiggle = document.createElementNS(svgNS, 'g');
@@ -137,6 +138,7 @@
     });
     nodesLayer.appendChild(g);
     nodeEls[n.id] = g;
+    wiggleEls[n.id] = wiggle;
   });
 
   var mode = 'ego';
@@ -179,6 +181,7 @@
       g.style.opacity = opacity;
       g.classList.toggle('is-center', isCenter);
       g.querySelector('text').style.opacity = (isCenter || isNeighbor) ? 1 : 0;
+      wiggleEls[n.id].classList.toggle('is-still', isCenter);
     });
 
     edges.forEach(function (edge, idx) {

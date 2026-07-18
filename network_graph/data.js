@@ -7,11 +7,13 @@
  * Shape:
  *   categories   — one entry per node "type", used for legend + default color.
  *                  Add/remove/rename freely; graph.js reads whatever is here.
- *   nodes        — { id, label, type, color? }
+ *   nodes        — { id, label, type, color?, important? }
  *                    - id: unique string, referenced by edges
  *                    - label: text shown under the node
  *                    - type: a key from `categories` above
  *                    - color: optional per-node override (skips category color)
+ *                    - important: optional boolean; true gives the node a
+ *                      thicker border to call it out as more critical
  *   edges        — [idA, idB, label?] pairs, undirected (order doesn't matter,
  *                  duplicates and self-edges are ignored automatically). The
  *                  optional 3rd item is a short label shown on the edge, but
@@ -29,9 +31,9 @@ var NETWORK_DATA = {
     person:   { label: 'Person',   color: '#D4537E' }
   },
   nodes: [
-    { id: 'auth-service',      label: 'Auth service',       type: 'module' },
+    { id: 'auth-service',      label: 'Auth service',       type: 'module', important: true },
     { id: 'billing-service',   label: 'Billing service',    type: 'module' },
-    { id: 'contract-builder',  label: 'Contract builder',   type: 'module' },
+    { id: 'contract-builder',  label: 'Contract builder',   type: 'module', important: true },
     { id: 'onboarding-flow',   label: 'Onboarding flow',    type: 'workflow' },
     { id: 'renewal-flow',      label: 'Renewal flow',       type: 'workflow' },
     { id: 'support-triage',    label: 'Support triage',     type: 'workflow' },
