@@ -6,4 +6,5 @@ return [
     'cashflow_status'  => 'Cashflow Status',
     'deal_tracker'     => 'Deal Tracker',
     'guest_tracker'    => 'Guest Tracker',
+    'network_graph'    => 'Network Graph',
 ];

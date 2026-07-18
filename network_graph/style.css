@@ -1,0 +1,27 @@
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
+.page{padding:36px 40px;max-width:1200px}
+.page-header{display:flex;align-items:center;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef}
+.page-header .icon-badge{width:42px;height:42px;border-radius:11px;background:#1a1a2e;color:#C9972A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.page-header h1{font-family:Georgia,serif;font-size:1.65rem;font-weight:700;line-height:1.15}
+.page-header h1 span{color:#C9972A}
+.sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
+
+.ng-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ng-controls-left{display:flex;gap:8px}
+.ng-btn{padding:8px 16px;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;background:#fff;border:1.5px solid #d1d5db;color:#374151}
+.ng-btn:hover{border-color:#C9972A;color:#C9972A}
+.ng-btn.active{border-color:#1a1a2e;color:#1a1a2e;background:#f3f4f8}
+.ng-status{font-size:.82rem;color:#6b7280}
+.ng-status .ng-center-label{font-weight:700;color:#1a1a2e}
+
+.ng-legend{display:flex;align-items:center;gap:16px;font-size:.78rem;color:#6b7280;margin-bottom:10px;flex-wrap:wrap}
+.ng-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.ng-hint{margin-left:auto;color:#9ca3af}
+
+.ng-svg{width:100%;height:auto;display:block;background:#fff;border:1px solid #e2e5ef;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.ng-node{cursor:pointer}
+.ng-node circle{stroke:#fff;stroke-width:1.5px;transition:stroke .15s ease}
+.ng-node:hover circle{stroke:#C9972A;stroke-width:2.5px}
+.ng-node text{font-size:11px;fill:#6b7280;text-anchor:middle;pointer-events:none;transition:opacity .3s ease}
+.ng-node.is-center text{font-size:13px;fill:#1a1a2e;font-weight:700}
