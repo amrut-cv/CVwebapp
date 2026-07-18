@@ -12,8 +12,11 @@
  *                    - label: text shown under the node
  *                    - type: a key from `categories` above
  *                    - color: optional per-node override (skips category color)
- *   edges        — [idA, idB] pairs, undirected (order doesn't matter,
- *                  duplicates and self-edges are ignored automatically)
+ *   edges        — [idA, idB, label?] pairs, undirected (order doesn't matter,
+ *                  duplicates and self-edges are ignored automatically). The
+ *                  optional 3rd item is a short label shown on the edge, but
+ *                  only while it's connected to whichever node is centered
+ *                  (kept hidden otherwise to avoid clutter).
  *   initialCenter — optional node id to start centered on (defaults to nodes[0])
  *
  * This file replaces the placeholder mock — swap in your real ~50 workflows /
@@ -38,21 +41,21 @@ var NETWORK_DATA = {
     { id: 'ops-lead',          label: 'Ops lead',           type: 'person' }
   ],
   edges: [
-    ['auth-service', 'onboarding-flow'],
+    ['auth-service', 'onboarding-flow', 'gates signup'],
     ['auth-service', 'billing-service'],
-    ['billing-service', 'renewal-flow'],
+    ['billing-service', 'renewal-flow', 'charges renewal'],
     ['billing-service', 'contract-builder'],
-    ['contract-builder', 'onboarding-flow'],
-    ['contract-builder', 'sales-lead'],
+    ['contract-builder', 'onboarding-flow', 'generates first contract'],
+    ['contract-builder', 'sales-lead', 'owns templates'],
     ['onboarding-flow', 'sales-lead'],
     ['onboarding-flow', 'amruta'],
     ['renewal-flow', 'sales-lead'],
     ['renewal-flow', 'ops-lead'],
-    ['support-triage', 'ops-lead'],
-    ['support-triage', 'eng-lead'],
+    ['support-triage', 'ops-lead', 'escalates to'],
+    ['support-triage', 'eng-lead', 'escalates to'],
     ['support-triage', 'auth-service'],
-    ['eng-lead', 'auth-service'],
-    ['eng-lead', 'contract-builder'],
+    ['eng-lead', 'auth-service', 'maintains'],
+    ['eng-lead', 'contract-builder', 'maintains'],
     ['amruta', 'sales-lead'],
     ['amruta', 'eng-lead'],
     ['ops-lead', 'amruta']

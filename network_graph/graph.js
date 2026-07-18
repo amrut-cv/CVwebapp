@@ -35,12 +35,12 @@
   var edgeSeen = {};
   var edges = [];
   (NETWORK_DATA.edges || []).forEach(function (pair) {
-    var a = pair[0], b = pair[1];
+    var a = pair[0], b = pair[1], label = pair[2] || '';
     if (!nodesById[a] || !nodesById[b] || a === b) return;
     var key = [a, b].sort().join('~');
     if (edgeSeen[key]) return;
     edgeSeen[key] = true;
-    edges.push([a, b]);
+    edges.push([a, b, label]);
   });
 
   var adj = {};
@@ -88,11 +88,21 @@
   svg.appendChild(nodesLayer);
   container.appendChild(svg);
 
-  var edgeEls = edges.map(function () {
+  var edgeEls = edges.map(function (edge) {
     var line = document.createElementNS(svgNS, 'line');
     line.style.transition = 'opacity .4s ease, stroke .2s ease';
     edgesLayer.appendChild(line);
-    return line;
+
+    var label = null;
+    if (edge[2]) {
+      label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('class', 'ng-edge-label');
+      label.setAttribute('text-anchor', 'middle');
+      label.style.transition = 'opacity .4s ease';
+      label.textContent = edge[2];
+      edgesLayer.appendChild(label);
+    }
+    return { line: line, label: label };
   });
 
   var nodeEls = {};
@@ -166,7 +176,8 @@
     });
 
     edges.forEach(function (edge, idx) {
-      var line = edgeEls[idx];
+      var line = edgeEls[idx].line;
+      var label = edgeEls[idx].label;
       var touches = edge[0] === centerId || edge[1] === centerId;
       var a = positions[edge[0]];
       var b = positions[edge[1]];
@@ -178,6 +189,12 @@
       else line.style.opacity = touches ? 0.85 : 0.06;
       line.setAttribute('stroke', touches ? '#5f5e5a' : '#b4b2a9');
       line.setAttribute('stroke-width', touches ? 2 : 1);
+
+      if (label) {
+        label.setAttribute('x', (a.x + b.x) / 2);
+        label.setAttribute('y', (a.y + b.y) / 2 - 5);
+        label.style.opacity = touches ? 1 : 0;
+      }
     });
 
     controls.querySelector('.ng-center-label').textContent = nodesById[centerId].label;

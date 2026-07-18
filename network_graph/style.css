@@ -25,3 +25,4 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2
 .ng-node:hover circle{stroke:#C9972A;stroke-width:2.5px}
 .ng-node text{font-size:11px;fill:#6b7280;text-anchor:middle;pointer-events:none;transition:opacity .3s ease}
 .ng-node.is-center text{font-size:13px;fill:#1a1a2e;font-weight:700}
+.ng-edge-label{font-size:10.5px;fill:#374151;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}
