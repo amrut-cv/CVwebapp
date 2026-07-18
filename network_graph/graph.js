@@ -194,9 +194,13 @@
       line.setAttribute('y1', a.y);
       line.setAttribute('x2', b.x);
       line.setAttribute('y2', b.y);
-      if (mode === 'ego') line.style.opacity = touches ? 0.85 : 0;
-      else line.style.opacity = touches ? 0.85 : 0.06;
-      line.setAttribute('stroke', touches ? '#5f5e5a' : '#b4b2a9');
+      if (mode === 'ego') {
+        line.style.opacity = touches ? 0.85 : 0;
+        line.setAttribute('stroke', touches ? '#5f5e5a' : '#b4b2a9');
+      } else {
+        line.style.opacity = touches ? 0.9 : 0.45;
+        line.setAttribute('stroke', touches ? '#5f5e5a' : '#8f8d86');
+      }
       line.setAttribute('stroke-width', touches ? 2 : 1);
 
       if (label) {
