@@ -111,6 +111,11 @@
     g.setAttribute('class', 'ng-node');
     g.style.transition = 'transform .5s cubic-bezier(.2,.7,.3,1), opacity .4s ease';
 
+    var wiggle = document.createElementNS(svgNS, 'g');
+    wiggle.setAttribute('class', 'ng-wiggle');
+    wiggle.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + 's';
+    wiggle.style.animationDelay = (-Math.random() * 6).toFixed(2) + 's';
+
     var circle = document.createElementNS(svgNS, 'circle');
     circle.setAttribute('cx', 0);
     circle.setAttribute('cy', 0);
@@ -123,8 +128,9 @@
     text.setAttribute('y', NODE_R + 14);
     text.textContent = n.label;
 
-    g.appendChild(circle);
-    g.appendChild(text);
+    wiggle.appendChild(circle);
+    wiggle.appendChild(text);
+    g.appendChild(wiggle);
     g.addEventListener('click', function () {
       centerId = n.id;
       render();
