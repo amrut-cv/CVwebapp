@@ -191,8 +191,13 @@
       line.setAttribute('stroke-width', touches ? 2 : 1);
 
       if (label) {
-        label.setAttribute('x', (a.x + b.x) / 2);
-        label.setAttribute('y', (a.y + b.y) / 2 - 5);
+        var midX = (a.x + b.x) / 2;
+        var midY = (a.y + b.y) / 2;
+        var angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+        if (angle > 90 || angle < -90) angle += 180;
+        label.setAttribute('x', midX);
+        label.setAttribute('y', midY - 5);
+        label.setAttribute('transform', 'rotate(' + angle + ' ' + midX + ' ' + midY + ')');
         label.style.opacity = touches ? 1 : 0;
       }
     });
