@@ -45,15 +45,14 @@ switch ($action) {
         $key = et_unique_key($pdo, et_slug($label));
         $order = (int)$pdo->query("SELECT COALESCE(MAX(sort_order),0)+10 FROM engagement_types")->fetchColumn();
         $stmt = $pdo->prepare(
-            "INSERT INTO engagement_types (type_key, label, category, duration_tag, description, rationale, sort_order)
-             VALUES (?,?,?,?,?,?,?)"
+            "INSERT INTO engagement_types (type_key, label, category, duration_tag, description, sort_order)
+             VALUES (?,?,?,?,?,?)"
         );
         $stmt->execute([
             $key, $label,
             trim($body['category'] ?? ''),
             trim($body['duration_tag'] ?? '') ?: null,
             trim($body['description'] ?? ''),
-            trim($body['rationale'] ?? ''),
             $order,
         ]);
         echo json_encode(['id' => (int)$pdo->lastInsertId(), 'type_key' => $key, 'sort_order' => $order]);
@@ -64,7 +63,7 @@ switch ($action) {
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
         $stmt = $pdo->prepare(
             "UPDATE engagement_types
-             SET label=?, category=?, duration_tag=?, description=?, rationale=?
+             SET label=?, category=?, duration_tag=?, description=?
              WHERE id=?"
         );
         $stmt->execute([
@@ -72,7 +71,6 @@ switch ($action) {
             trim($body['category'] ?? ''),
             trim($body['duration_tag'] ?? '') ?: null,
             trim($body['description'] ?? ''),
-            trim($body['rationale'] ?? ''),
             $id,
         ]);
         echo json_encode(['ok' => true]);

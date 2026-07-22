@@ -302,8 +302,6 @@ function makeEngRow(et) {
     </div>
     <label class="eng-textarea-label">Description (shown when picking the type, and in the generated proposal/contract)</label>
     <textarea class="eng-field eng-textarea" data-f="description" oninput="engToggleSave(this)">${esc(et.description)}</textarea>
-    <label class="eng-textarea-label">Rationale (internal reference only &mdash; not shown in the proposal)</label>
-    <textarea class="eng-field eng-textarea" data-f="rationale" oninput="engToggleSave(this)">${esc(et.rationale)}</textarea>
     <div class="eng-actions">
       <span class="eng-key">key: ${esc(et.type_key)}</span>
       <div style="display:flex;gap:8px">
@@ -356,9 +354,9 @@ async function deleteEngType(id, btn) {
 }
 
 async function addEngType() {
-  const r = await api2({action: 'add', label: 'New engagement type', category: '', duration_tag: '', description: '', rationale: ''});
+  const r = await api2({action: 'add', label: 'New engagement type', category: '', duration_tag: '', description: ''});
   if (r.id) {
-    const et = {id: r.id, type_key: r.type_key, label: 'New engagement type', category: '', duration_tag: '', description: '', rationale: '', sort_order: r.sort_order};
+    const et = {id: r.id, type_key: r.type_key, label: 'New engagement type', category: '', duration_tag: '', description: '', sort_order: r.sort_order};
     ENG_TYPES.push(et);
     document.getElementById('engList').appendChild(makeEngRow(et));
     toast('Added');

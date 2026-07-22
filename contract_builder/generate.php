@@ -132,7 +132,7 @@ $msTotal = array_sum(array_map(fn($i) => (float)($i['amount'] ?: 0), $msItems));
 
 /* ─────────────────────────────── engagement ── */
 $engLabels = []; $engDescs = [];
-$engTypeRows = getDB()->query("SELECT type_key, label, description FROM engagement_types")->fetchAll();
+$engTypeRows = getDB()->query("SELECT type_key, label, description, category FROM engagement_types ORDER BY sort_order, id")->fetchAll();
 foreach ($engTypeRows as $et) {
     $engLabels[$et['type_key']] = $et['label'];
     $engDescs[$et['type_key']]  = $et['description'];
@@ -147,6 +147,14 @@ foreach ($engTypes as $key) {
 }
 // Kept for the annexure's single-line summary and any other single-value use.
 $engLabel = implode(', ', array_column($selectedEngTypes, 'label'));
+
+// All 8 types grouped by category, for the "here's the full menu" checkbox
+// overview shown above the selected type's recommendation card(s).
+$engCategoryLabels = ['Retainership' => 'Retainer', 'Project' => 'Project', 'Custom' => 'Others'];
+$engByCategory = ['Retainership' => [], 'Project' => [], 'Custom' => []];
+foreach ($engTypeRows as $et) {
+    $engByCategory[$et['category']][] = $et;
+}
 
 /* ─────────────────────────────── scope groups ── */
 $strategyScope = cleanArr('scope_strategy');
@@ -406,6 +414,28 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     }
     .rec-name     { font-size: 1.12rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
     .rec-desc     { font-size: .9rem; color: #4a4a6a; line-height: 1.7; margin-bottom: 20px; }
+    .eng-chk-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 24px;
+      border: 1px solid #e8e8f0; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px;
+    }
+    .eng-chk-col-head {
+      font-family: 'Segoe UI', sans-serif; font-size: .66rem; font-weight: 700;
+      letter-spacing: .08em; color: #9ca3af; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .eng-chk-item {
+      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 9px;
+      font-family: 'Segoe UI', sans-serif; font-size: .82rem; color: #4a4a6a; line-height: 1.35;
+    }
+    .eng-chk-item.sel { color: #1a1a2e; font-weight: 700; }
+    .eng-chk-box {
+      flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px;
+      border: 1.5px solid #c7c9d4; border-radius: 3px; position: relative;
+    }
+    .eng-chk-box.sel { background: #1a1a2e; border-color: #1a1a2e; }
+    .eng-chk-box.sel::after {
+      content: ''; position: absolute; left: 3px; top: 0; width: 4px; height: 8px;
+      border-right: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(45deg);
+    }
     .scope-obj    { color: #3a3a5e; font-size: .93rem; margin-bottom: 24px; line-height: 1.75; }
     .scope-categories { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; margin-bottom: 20px; }
     .scope-cat-head {
@@ -647,6 +677,20 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     <div class="prop-section">
       <div class="sec-label">Our recommendation</div>
       <div class="sec-title">What we&rsquo;d suggest, and why</div>
+      <div class="eng-chk-grid">
+        <?php foreach ($engByCategory as $cat => $items): ?>
+          <div>
+            <div class="eng-chk-col-head"><?= esc($engCategoryLabels[$cat]) ?></div>
+            <?php foreach ($items as $et):
+              $isSel = in_array($et['type_key'], $engTypes, true);
+            ?>
+              <div class="eng-chk-item<?= $isSel ? ' sel' : '' ?>">
+                <span class="eng-chk-box<?= $isSel ? ' sel' : '' ?>"></span><?= esc($et['label']) ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
       <?php foreach ($selectedEngTypes as $i => $et): ?>
       <div class="rec-card" <?= $i > 0 ? 'style="margin-top:14px"' : '' ?>>
         <div class="rec-badge"><?= esc(strtoupper($et['label'])) ?></div>
