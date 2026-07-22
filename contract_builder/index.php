@@ -15,6 +15,7 @@ $lists = [];
 foreach ($rows as $r) {
     $lists[$r['list_key']][] = $r;
 }
+$scopeContractLabels = require __DIR__ . '/scope_labels.php';
 
 // Determine view-only at page-load time (PHP) when ?id= is present
 $pageViewOnly    = false;
@@ -247,6 +248,23 @@ if ($pageLoadId) {
     .scope-add-btn { padding: 8px 14px; background: var(--white); border: 1.5px solid var(--border); border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--text); white-space: nowrap; }
     .scope-add-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+    /* Scope review (step 5) */
+    .scope-qty-cat { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin: 18px 0 8px; }
+    .scope-qty-cat:first-child { margin-top: 0; }
+    .scope-qty-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .scope-qty-label { flex: 1; font-size: .87rem; color: var(--text); }
+    .scope-qty-input { width: 160px; border: 1.5px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: .82rem; outline: none; font-family: inherit; color: var(--text); background: white; }
+    .scope-qty-input:focus { border-color: var(--accent); }
+    .scope-qty-empty { font-size: .87rem; color: var(--muted); font-style: italic; }
+    .scope-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+    .scope-preview-col-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); margin-bottom: 8px; }
+    .scope-preview-box { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; background: #fafafa; font-size: .85rem; color: var(--text); }
+    .scope-preview-box .sp-cat { font-weight: 700; font-size: .8rem; margin: 12px 0 4px; }
+    .scope-preview-box .sp-cat:first-child { margin-top: 0; }
+    .scope-preview-box ul { margin: 0; padding-left: 1.3em; }
+    .scope-preview-box li { margin-bottom: 4px; line-height: 1.5; }
+    @media (max-width: 720px) { .scope-preview-grid { grid-template-columns: 1fr; } }
+
     /* Quill rich text editor */
     .rte-wrap .ql-toolbar.ql-snow { border: 1.5px solid var(--border); border-radius: 7px 7px 0 0; padding: 6px 10px; background: #fafafa; }
     .rte-wrap .ql-container.ql-snow { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 7px 7px; font-size: .9rem; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -396,8 +414,9 @@ if ($pageLoadId) {
     <div class="step-item"        data-step="2" onclick="goTo(2)"><div class="step-circle">2</div><div class="step-label">Business brief</div></div>
     <div class="step-item"        data-step="3" onclick="goTo(3)"><div class="step-circle">3</div><div class="step-label">Engagement type</div></div>
     <div class="step-item"        data-step="4" onclick="goTo(4)"><div class="step-circle">4</div><div class="step-label">Scope of work</div></div>
-    <div class="step-item"        data-step="5" onclick="goTo(5)"><div class="step-circle">5</div><div class="step-label">Fee &amp; payment</div></div>
-    <div class="step-item"        data-step="6" onclick="goTo(6)"><div class="step-circle">6</div><div class="step-label">Generate</div></div>
+    <div class="step-item"        data-step="5" onclick="goTo(5)"><div class="step-circle">5</div><div class="step-label">Review scope</div></div>
+    <div class="step-item"        data-step="6" onclick="goTo(6)"><div class="step-circle">6</div><div class="step-label">Fee &amp; payment</div></div>
+    <div class="step-item"        data-step="7" onclick="goTo(7)"><div class="step-circle">7</div><div class="step-label">Generate</div></div>
   </div>
 
   <!-- STEP 1: Client Details -->
@@ -624,12 +643,36 @@ if ($pageLoadId) {
 
     <div class="nav-row">
       <button class="btn btn-secondary" onclick="goTo(3)">&#x2190; Back</button>
-      <button class="btn btn-primary" onclick="goTo(5)">Next: Fee &amp; payment &#x2192;</button>
+      <button class="btn btn-primary" onclick="goTo(5)">Next: Review scope &#x2192;</button>
     </div>
   </div>
 
-  <!-- STEP 5: Fee & Payment -->
+  <!-- STEP 5: Review scope -->
   <div class="card hidden" id="step5">
+    <div class="card-title">Review scope</div>
+    <div class="card-subtitle">Confirm what's in scope and add quantities where useful. This is exactly how it will appear in the Proposal and in Annexure A of the contract.</div>
+
+    <div id="scopeQtyList"></div>
+
+    <div class="scope-preview-grid">
+      <div>
+        <div class="scope-preview-col-title">Preview &mdash; Proposal</div>
+        <div class="scope-preview-box" id="scopePreviewProposal"></div>
+      </div>
+      <div>
+        <div class="scope-preview-col-title">Preview &mdash; Annexure A (Contract)</div>
+        <div class="scope-preview-box" id="scopePreviewAnnex"></div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="goTo(4)">&#x2190; Back</button>
+      <button class="btn btn-primary" onclick="goTo(6)">Next: Fee &amp; payment &#x2192;</button>
+    </div>
+  </div>
+
+  <!-- STEP 6: Fee & Payment -->
+  <div class="card hidden" id="step6">
     <div class="card-title">Fee &amp; payment</div>
     <div class="card-subtitle">This will populate Annexure B.</div>
 
@@ -758,13 +801,13 @@ if ($pageLoadId) {
     </div>
 
     <div class="nav-row">
-      <button class="btn btn-secondary" onclick="goTo(4)">&#x2190; Back</button>
-      <button class="btn btn-primary" onclick="goTo(6)">Next: Generate &#x2192;</button>
+      <button class="btn btn-secondary" onclick="goTo(5)">&#x2190; Back</button>
+      <button class="btn btn-primary" onclick="goTo(7)">Next: Generate &#x2192;</button>
     </div>
   </div>
 
-  <!-- STEP 6: Generate -->
-  <div class="card hidden" id="step6">
+  <!-- STEP 7: Generate -->
+  <div class="card hidden" id="step7">
     <div class="card-title">Generate document</div>
     <div class="card-subtitle">Choose what you'd like to produce. Both use the same inputs you've just filled in.</div>
 
@@ -799,6 +842,13 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         <input type="text" id="senderTitle" placeholder="Sender title" />
         <input type="email" id="senderEmail" placeholder="Sender email" />
       </div>
+    </div>
+
+    <div class="section-head">Contract clause tone</div>
+    <p class="text-muted" style="margin-bottom:12px;">Controls the &ldquo;Permission to share&rdquo; and IP/methodology clauses in the contract only &mdash; has no effect on the proposal.</p>
+    <div class="radio-group" id="clauseModeGroup">
+      <label class="radio-pill active" onclick="selectPill(this, 'clauseModeGroup')"><input type="radio" name="clauseMode" value="normal" checked /> Normal</label>
+      <label class="radio-pill" onclick="selectPill(this, 'clauseModeGroup')"><input type="radio" name="clauseMode" value="strict" /> Strict</label>
     </div>
 
     <div class="output-grid">
@@ -836,7 +886,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     </div>
 
     <div class="nav-row">
-      <button class="btn btn-secondary" onclick="goTo(5)">&#x2190; Back to fee</button>
+      <button class="btn btn-secondary" onclick="goTo(6)">&#x2190; Back to fee</button>
       <div></div>
     </div>
   </div>
@@ -850,6 +900,94 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   var currentStep   = 1;
   var selectedEng    = null;
   var selectedOutput = null;
+  var scopeQty       = {};
+  var SCOPE_CONTRACT_LABELS = <?= json_encode($scopeContractLabels) ?>;
+
+  function escHtml(s) {
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : s;
+    return d.innerHTML;
+  }
+
+  function scopeContractLabelHtml(item) {
+    return SCOPE_CONTRACT_LABELS[item] || escHtml(item);
+  }
+
+  function getScopeSelections() {
+    function vals(chipsId) {
+      return [].slice.call(document.querySelectorAll('#' + chipsId + ' .scope-chip.selected')).map(function(c) { return c.dataset.value; });
+    }
+    return {
+      strategy: vals('strategyChips'),
+      content:  vals('contentChips'),
+      ops:      vals('opsChips')
+    };
+  }
+
+  function renderScopeReview() {
+    var sel = getScopeSelections();
+    var listEl = document.getElementById('scopeQtyList');
+    var cats = [['strategy', 'Strategy'], ['content', 'Content'], ['ops', 'Marketing ops']];
+    listEl.innerHTML = '';
+    var any = false;
+    cats.forEach(function(pair) {
+      var items = sel[pair[0]];
+      if (!items.length) return;
+      any = true;
+      var catHead = document.createElement('div');
+      catHead.className = 'scope-qty-cat';
+      catHead.textContent = pair[1];
+      listEl.appendChild(catHead);
+      items.forEach(function(item) {
+        var row = document.createElement('div');
+        row.className = 'scope-qty-row';
+        var label = document.createElement('span');
+        label.className = 'scope-qty-label';
+        label.textContent = item;
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'scope-qty-input';
+        input.dataset.item = item;
+        input.placeholder = 'e.g. 8/month';
+        input.value = scopeQty[item] || '';
+        input.addEventListener('input', function() { onScopeQtyInput(input); });
+        row.appendChild(label);
+        row.appendChild(input);
+        listEl.appendChild(row);
+      });
+    });
+    if (!any) {
+      listEl.innerHTML = '<div class="scope-qty-empty">No scope items selected yet — go back to Scope of work to add some.</div>';
+    }
+    renderScopePreviews();
+  }
+
+  function onScopeQtyInput(input) {
+    var item = input.dataset.item;
+    var val = input.value.trim();
+    if (val) scopeQty[item] = val; else delete scopeQty[item];
+    renderScopePreviews();
+    silentSave();
+  }
+
+  function renderScopePreviews() {
+    var sel = getScopeSelections();
+    var cats = [['strategy', 'Strategy'], ['content', 'Content'], ['ops', 'Marketing ops']];
+    function qtySuffix(item) {
+      return scopeQty[item] ? ' &mdash; ' + escHtml(scopeQty[item]) : '';
+    }
+    var proposalHtml = '', annexHtml = '';
+    cats.forEach(function(pair) {
+      var items = sel[pair[0]];
+      if (!items.length) return;
+      proposalHtml += '<div class="sp-cat">' + pair[1] + '</div><ul>' +
+        items.map(function(i) { return '<li>' + escHtml(i) + qtySuffix(i) + '</li>'; }).join('') + '</ul>';
+      annexHtml += '<div class="sp-cat">' + pair[1] + '</div><ul>' +
+        items.map(function(i) { return '<li>' + scopeContractLabelHtml(i) + qtySuffix(i) + '</li>'; }).join('') + '</ul>';
+    });
+    document.getElementById('scopePreviewProposal').innerHTML = proposalHtml || '<span class="scope-qty-empty">Nothing selected yet.</span>';
+    document.getElementById('scopePreviewAnnex').innerHTML    = annexHtml    || '<span class="scope-qty-empty">Nothing selected yet.</span>';
+  }
 
   function goTo(step) {
     document.getElementById('step' + currentStep).classList.add('hidden');
@@ -864,7 +1002,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     ensureRTE(step);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     silentSave();
-    if (step === 6) loadShares();
+    if (step === 5) renderScopeReview();
+    if (step === 7) loadShares();
   }
 
   function selectEng(card) {
@@ -1059,8 +1198,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     d.customStrategyItems = [].slice.call(document.querySelectorAll('#strategyChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.customContentItems  = [].slice.call(document.querySelectorAll('#contentChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.customOpsItems      = [].slice.call(document.querySelectorAll('#opsChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
+    d.scopeQty = scopeQty;
     d.engagementType = selectedEng || '';
-    ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses'].forEach(function(name) {
+    ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses','clauseMode'].forEach(function(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
       d[name] = el ? el.value : '';
     });
@@ -1110,12 +1250,14 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
       (d[key] || []).forEach(function(val) { if (val) addScopeItem(chipsId, section, {value: val, focus: function(){}}); });
     });
+    scopeQty = d.scopeQty || {};
     if (d.currency)      setPill('currency', d.currency);
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
     if (d.cadence)       setPill('cadence', d.cadence);
     if (d.retainerTerms) setPill('retainerTerms', d.retainerTerms);
     if (d.milestoneTerms) setPill('milestoneTerms', d.milestoneTerms);
     if (d.fixedTerms)    setPill('fixedTerms', d.fixedTerms);
+    if (d.clauseMode)    setPill('clauseMode', d.clauseMode);
     if (d.expenses)      setPill('expenses', d.expenses);
     var csGrid = document.getElementById('csPickGrid');
     if (csGrid && Array.isArray(d.caseStudyIds)) {
@@ -1308,6 +1450,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.querySelectorAll('#strategyChips .scope-chip.selected').forEach(function(chip) { add('scope_strategy[]', chip.dataset.value); });
     document.querySelectorAll('#contentChips .scope-chip.selected').forEach(function(chip) { add('scope_content[]', chip.dataset.value); });
     document.querySelectorAll('#opsChips .scope-chip.selected').forEach(function(chip) { add('scope_ops[]', chip.dataset.value); });
+    add('scope_qty', JSON.stringify(scopeQty));
     add('cadence',           radio('cadence'));
     add('currency',          radio('currency') || 'INR');
     add('feeType',           radio('feeType'));
@@ -1329,6 +1472,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('milestonePaymentTerms', radio('milestoneTerms'));
     add('expenses',          radio('expenses'));
     add('paymentNotes',      document.getElementById('paymentNotes').value);
+    add('clauseMode',        radio('clauseMode') || 'normal');
     add('outputType',        selectedOutput);
     var csGrid = document.getElementById('csPickGrid');
     if (csGrid) {

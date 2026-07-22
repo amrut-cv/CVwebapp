@@ -68,6 +68,7 @@ function getDB(): PDO {
         long_term_deposits      DECIMAL(14,2) NOT NULL DEFAULT 0,
         receivables_this_month  DECIMAL(14,2) NOT NULL DEFAULT 0,
         receivables_next_month  DECIMAL(14,2) NOT NULL DEFAULT 0,
+        long_term_assets        DECIMAL(14,2) NOT NULL DEFAULT 0,
         fte_net_pay             DECIMAL(14,2) NOT NULL DEFAULT 0,
         fte_net_pay_actual      DECIMAL(14,2) NOT NULL DEFAULT 0,
         ftc_net_pay             DECIMAL(14,2) NOT NULL DEFAULT 0,
@@ -190,6 +191,11 @@ function getDB(): PDO {
     // Add archived flag to deals (migration — safe to run repeatedly)
     try {
         $pdo->exec("ALTER TABLE deals ADD COLUMN archived TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (PDOException $e) { /* column already exists */ }
+
+    // Add long_term_assets column to cashflow_entries (migration — safe to run repeatedly)
+    try {
+        $pdo->exec("ALTER TABLE cashflow_entries ADD COLUMN long_term_assets DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER receivables_next_month");
     } catch (PDOException $e) { /* column already exists */ }
 
     // Many-to-many links between deals and contracts (a deal can share several

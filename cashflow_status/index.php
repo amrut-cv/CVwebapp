@@ -23,6 +23,7 @@ function trend_html($now, $before) {
          . ($up ? '&#9650; ' : '&#9660; ') . cf_inr(abs($delta)) . '</span>';
 }
 
+$tierCols = cf_tier_cols();
 $nav_active = 'cashflow';
 ?>
 <!DOCTYPE html>
@@ -34,7 +35,7 @@ $nav_active = 'cashflow';
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
-    .page{padding:36px 40px;max-width:900px}
+    .page{padding:36px 40px;max-width:1200px}
     .page-header{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef;flex-wrap:wrap}
     .page-header .title-group{display:flex;align-items:center;gap:14px}
     .page-header .icon-badge{width:42px;height:42px;border-radius:11px;background:#1a1a2e;color:#C9972A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -55,16 +56,17 @@ $nav_active = 'cashflow';
     .sum-table td.muted{color:#9ca3af}
     .trend{font-size:.76rem;font-weight:600;display:inline-block;margin-top:4px}
     .trend.up{color:#16a34a}.trend.down{color:#dc2626}.trend.flat{color:#9ca3af}
-    .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .breakdown{display:grid;grid-template-columns:repeat(3, 1fr);gap:20px}
+    @media (max-width: 900px){.breakdown{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:22px 26px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
     .card h2{font-size:1rem;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f1f0e8}
-    .sec{display:inline-block;background:#f3f4f8;color:#1a1a2e;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding:5px 12px;border-radius:6px;margin:16px 0 6px}
-    .sec:first-of-type{margin-top:0}
-    .row{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem;border-top:1px solid #f1f0e8}
+    .row{display:flex;justify-content:space-between;padding:5px 0;font-size:.85rem;border-top:1px solid #f1f0e8;border-radius:4px;transition:background .15s}
     .row:first-of-type{border-top:none}
-    .row.total{font-weight:700;border-top:1.5px solid #e2e5ef;margin-top:4px}
     .row .k{color:#6b7280}
-    .row.total .k{color:#1a1a2e}
+    .row.row-highlight{background:#e6f7ec}
+    .row.row-highlight .k,.row.row-highlight>span:last-child{color:#15803d}
+    .tier-num{cursor:default;border-radius:6px;transition:background .15s}
+    .tier-num:hover{background:#e6f7ec}
     .empty{text-align:center;padding:64px 20px;color:#9ca3af}
     .empty h2{font-size:1.1rem;margin-bottom:12px;color:#6b7280}
   </style>
@@ -113,15 +115,15 @@ $nav_active = 'cashflow';
           </tr>
           <tr>
             <td>Assets</td>
-            <td><?= cf_inr($c['eom_assets']) ?></td>
-            <td><?= cf_inr($c['total_liquid_assets']) ?></td>
-            <td><?= cf_inr($c['total_assets']) ?></td>
+            <td class="tier-num" data-tier="eom_assets"><?= cf_inr($c['eom_assets']) ?></td>
+            <td class="tier-num" data-tier="total_liquid_assets"><?= cf_inr($c['total_liquid_assets']) ?></td>
+            <td class="tier-num" data-tier="total_assets"><?= cf_inr($c['total_assets']) ?></td>
           </tr>
           <tr>
             <td>Liabilities</td>
-            <td><?= cf_inr($c['eom_liab']) ?></td>
-            <td><?= cf_inr($c['total_liquid_liab']) ?></td>
-            <td><?= cf_inr($c['total_liab']) ?></td>
+            <td class="tier-num" data-tier="eom_liab"><?= cf_inr($c['eom_liab']) ?></td>
+            <td class="tier-num" data-tier="total_liquid_liab"><?= cf_inr($c['total_liquid_liab']) ?></td>
+            <td class="tier-num" data-tier="total_liab"><?= cf_inr($c['total_liab']) ?></td>
           </tr>
           <tr class="sum-total">
             <td>Position</td>
@@ -151,29 +153,33 @@ $nav_active = 'cashflow';
         <div class="card">
           <h2>Assets</h2>
           <?php foreach ($fields['Assets'] as $col => $label): ?>
-            <div class="row"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
+            <div class="row" data-col="<?= h($col) ?>"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
           <?php endforeach ?>
-          <div class="row total"><span class="k">EOM liquid assets</span><span><?= cf_inr($c['eom_assets']) ?></span></div>
-          <div class="row total"><span class="k">Total liquid assets</span><span><?= cf_inr($c['total_liquid_assets']) ?></span></div>
-          <div class="row total"><span class="k">Total assets</span><span><?= cf_inr($c['total_assets']) ?></span></div>
         </div>
         <div class="card">
-          <h2>Liabilities</h2>
-          <div class="sec">Payroll (paid at EOM)</div>
+          <h2>EOM liabilities</h2>
           <?php foreach ($fields['Payroll (paid at EOM)'] as $col => $label): ?>
-            <div class="row"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
+            <div class="row" data-col="<?= h($col) ?>"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
           <?php endforeach ?>
-          <div class="sec">Other liabilities</div>
+        </div>
+        <div class="card">
+          <h2>Other liabilities</h2>
           <?php foreach ($fields['Other liabilities'] as $col => $label): ?>
-            <div class="row"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
+            <div class="row" data-col="<?= h($col) ?>"><span class="k"><?= h($label) ?></span><span><?= cf_inr($latest[$col]) ?></span></div>
           <?php endforeach ?>
-          <div class="row total"><span class="k">EOM liquid liabilities</span><span><?= cf_inr($c['eom_liab']) ?></span></div>
-          <div class="row total"><span class="k">Total liquid liabilities</span><span><?= cf_inr($c['total_liquid_liab']) ?></span></div>
-          <div class="row total"><span class="k">Total liabilities</span><span><?= cf_inr($c['total_liab']) ?></span></div>
         </div>
       </div>
     <?php endif ?>
   </div>
 </div>
+<script>
+var TIER_COLS = <?= json_encode($tierCols) ?>;
+document.querySelectorAll('.tier-num').forEach(function(cell) {
+  var cols = TIER_COLS[cell.dataset.tier] || [];
+  var rows = cols.map(function(col) { return document.querySelector('.row[data-col="' + col + '"]'); }).filter(Boolean);
+  cell.addEventListener('mouseenter', function() { rows.forEach(function(r) { r.classList.add('row-highlight'); }); });
+  cell.addEventListener('mouseleave', function() { rows.forEach(function(r) { r.classList.remove('row-highlight'); }); });
+});
+</script>
 </body>
 </html>
