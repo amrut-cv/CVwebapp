@@ -75,7 +75,8 @@ $agreeDate   = clean('agreementDate');
 $bizDesc     = clean('bizDescription');
 $clientSaid  = clean('clientSaid');
 $triggers    = cleanArr('triggers');
-$engType     = clean('engagementType');
+$engTypes    = cleanArr('engagementTypes');
+if (!$engTypes && clean('engagementType')) $engTypes = [clean('engagementType')]; // old single-select drafts
 $duration    = clean('duration');
 $effDate     = clean('effectiveDate');
 $objective   = clean('objective');
@@ -136,8 +137,16 @@ foreach ($engTypeRows as $et) {
     $engLabels[$et['type_key']] = $et['label'];
     $engDescs[$et['type_key']]  = $et['description'];
 }
-$engLabel = $engLabels[$engType] ?? ucwords(str_replace('-', ' ', $engType));
-$engDesc  = $engDescs[$engType]  ?? '';
+$selectedEngTypes = [];
+foreach ($engTypes as $key) {
+    $selectedEngTypes[] = [
+        'key'   => $key,
+        'label' => $engLabels[$key] ?? ucwords(str_replace('-', ' ', $key)),
+        'desc'  => $engDescs[$key]  ?? '',
+    ];
+}
+// Kept for the annexure's single-line summary and any other single-value use.
+$engLabel = implode(', ', array_column($selectedEngTypes, 'label'));
 
 /* ─────────────────────────────── scope groups ── */
 $strategyScope = cleanArr('scope_strategy');
@@ -634,15 +643,17 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     </div>
     <?php endif; ?>
 
-    <?php if ($engType): ?>
+    <?php if ($selectedEngTypes): ?>
     <div class="prop-section">
       <div class="sec-label">Our recommendation</div>
       <div class="sec-title">What we&rsquo;d suggest, and why</div>
-      <div class="rec-card">
-        <div class="rec-badge"><?= esc(strtoupper($engLabel)) ?></div>
-        <div class="rec-name"><?= esc($engLabel) ?></div>
-        <?php if ($engDesc): ?><div class="rec-desc" style="margin-bottom:0"><?= esc($engDesc) ?></div><?php endif; ?>
+      <?php foreach ($selectedEngTypes as $i => $et): ?>
+      <div class="rec-card" <?= $i > 0 ? 'style="margin-top:14px"' : '' ?>>
+        <div class="rec-badge"><?= esc(strtoupper($et['label'])) ?></div>
+        <div class="rec-name"><?= esc($et['label']) ?></div>
+        <?php if ($et['desc']): ?><div class="rec-desc" style="margin-bottom:0"><?= esc($et['desc']) ?></div><?php endif; ?>
       </div>
+      <?php endforeach; ?>
     </div>
     <?php endif; ?>
 

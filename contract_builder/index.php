@@ -547,10 +547,11 @@ if ($pageLoadId) {
   <!-- STEP 3: Engagement Type -->
   <div class="card hidden" id="step3">
     <div class="card-title">Select the type of engagement.</div>
+    <div class="card-subtitle">Pick one, or combine up to two: 1 retainership + 1 project, or 2 projects. Custom scope must stand alone.</div>
 
     <div class="eng-grid">
       <?php foreach ($engagementTypes as $et): ?>
-        <div class="eng-card" data-eng="<?= htmlspecialchars($et['type_key']) ?>" onclick="selectEng(this)">
+        <div class="eng-card" data-eng="<?= htmlspecialchars($et['type_key']) ?>" data-category="<?= htmlspecialchars($et['category']) ?>" onclick="selectEng(this)">
           <div class="eng-badges">
             <span class="badge"><?= htmlspecialchars($et['category']) ?></span>
             <?php if ($et['duration_tag']): ?><span class="badge"><?= htmlspecialchars($et['duration_tag']) ?></span><?php endif ?>
@@ -898,7 +899,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
 <script src="/CVwebapp/assets/quill.min.js"></script>
 <script>
   var currentStep   = 1;
-  var selectedEng    = null;
+  var selectedEngs   = new Set();
+  var ENG_BLOCKED_PAIRS = [['new-gtm', 'gtm-relaunch']];
   var selectedOutput = null;
   var scopeQty       = {};
   var SCOPE_CONTRACT_LABELS = <?= json_encode($scopeContractLabels) ?>;
@@ -1006,10 +1008,76 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     if (step === 7) loadShares();
   }
 
+  function engCategoryOf(key) {
+    var card = document.querySelector('.eng-card[data-eng="' + key + '"]');
+    return card ? card.dataset.category : '';
+  }
+
+  function engBlockedPair(keyA, keyB) {
+    return ENG_BLOCKED_PAIRS.some(function(pair) {
+      return pair.indexOf(keyA) !== -1 && pair.indexOf(keyB) !== -1;
+    });
+  }
+
+  function clearEngSelection() {
+    document.querySelectorAll('.eng-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+    selectedEngs.clear();
+  }
+
   function selectEng(card) {
-    document.querySelectorAll('.eng-card').forEach(function(c) { c.classList.remove('selected'); });
-    card.classList.add('selected');
-    selectedEng = card.dataset.eng;
+    var key = card.dataset.eng;
+    var cat = card.dataset.category;
+
+    if (card.classList.contains('selected')) {
+      if (selectedEngs.size === 1) { showToast('At least one engagement type must stay selected'); return; }
+      card.classList.remove('selected');
+      selectedEngs.delete(key);
+      return;
+    }
+
+    if (cat === 'Custom') {
+      clearEngSelection();
+      card.classList.add('selected');
+      selectedEngs.add(key);
+      return;
+    }
+
+    if (selectedEngs.size && Array.from(selectedEngs).some(function(k) { return engCategoryOf(k) === 'Custom'; })) {
+      clearEngSelection();
+    }
+
+    if (selectedEngs.size === 0) {
+      card.classList.add('selected');
+      selectedEngs.add(key);
+      return;
+    }
+
+    if (selectedEngs.size === 1) {
+      var existingKey = Array.from(selectedEngs)[0];
+      var existingCat = engCategoryOf(existingKey);
+
+      if (engBlockedPair(existingKey, key)) {
+        showToast('New product GTM and GTM relaunch cannot be combined');
+        return;
+      }
+      if (existingCat === 'Retainership' && cat === 'Retainership') {
+        showToast('Only one retainership type can be selected at a time');
+        return;
+      }
+      var validCombo = (existingCat === 'Retainership' && cat === 'Project') ||
+                        (existingCat === 'Project' && cat === 'Retainership') ||
+                        (existingCat === 'Project' && cat === 'Project');
+      if (!validCombo) {
+        showToast('That combination is not allowed');
+        return;
+      }
+
+      card.classList.add('selected');
+      selectedEngs.add(key);
+      return;
+    }
+
+    showToast('You can select at most 2 engagement types — deselect one first');
   }
 
   function selectOutput(card, type) {
@@ -1199,7 +1267,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     d.customContentItems  = [].slice.call(document.querySelectorAll('#contentChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.customOpsItems      = [].slice.call(document.querySelectorAll('#opsChips .scope-chip.custom')).map(function(e) { return e.dataset.value; });
     d.scopeQty = scopeQty;
-    d.engagementType = selectedEng || '';
+    d.engagementTypes = Array.from(selectedEngs);
     ['currency','feeType','cadence','retainerTerms','fixedTerms','milestoneTerms','expenses','clauseMode'].forEach(function(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
       d[name] = el ? el.value : '';
@@ -1236,9 +1304,14 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       });
       (d['customBrief_' + sec] || []).forEach(function(val) { if (val) addScopeItem(chipsId, sec, {value: val, focus: function(){}}); });
     });
-    if (d.engagementType) {
-      var card = document.querySelector('[data-eng="' + d.engagementType + '"]');
-      if (card) selectEng(card);
+    var restoreEngTypes = (d.engagementTypes && d.engagementTypes.length) ? d.engagementTypes
+                        : (d.engagementType ? [d.engagementType] : []);
+    if (restoreEngTypes.length) {
+      clearEngSelection();
+      restoreEngTypes.forEach(function(key) {
+        var card = document.querySelector('.eng-card[data-eng="' + key + '"]');
+        if (card) selectEng(card);
+      });
     }
     setRTE('clientSaid', d.clientSaid || '');
     setRTE('objective',  d.objective  || '');
@@ -1442,7 +1515,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       if (!container) return;
       container.querySelectorAll('.scope-chip.selected').forEach(function(chip) { add('triggers[]', chip.dataset.value); });
     });
-    add('engagementType', selectedEng || '');
+    Array.from(selectedEngs).forEach(function(key) { add('engagementTypes[]', key); });
     add('duration',       document.getElementById('duration').value);
     add('effectiveDate',  document.getElementById('effectiveDate').value);
     add('objective',      document.getElementById('objective').value);
