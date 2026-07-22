@@ -130,16 +130,14 @@ if ($msCompDesc !== '' || $msCompAmt !== '') $msItems[] = ['label' => 'Completio
 $msTotal = array_sum(array_map(fn($i) => (float)($i['amount'] ?: 0), $msItems));
 
 /* ─────────────────────────────── engagement ── */
-$engLabels = []; $engDescs = []; $engRationaleMap = [];
-$engTypeRows = getDB()->query("SELECT type_key, label, doc_description, rationale FROM engagement_types")->fetchAll();
+$engLabels = []; $engDescs = [];
+$engTypeRows = getDB()->query("SELECT type_key, label, description FROM engagement_types")->fetchAll();
 foreach ($engTypeRows as $et) {
-    $engLabels[$et['type_key']]       = $et['label'];
-    $engDescs[$et['type_key']]        = $et['doc_description'];
-    $engRationaleMap[$et['type_key']] = $et['rationale'];
+    $engLabels[$et['type_key']] = $et['label'];
+    $engDescs[$et['type_key']]  = $et['description'];
 }
-$engLabel     = $engLabels[$engType]         ?? ucwords(str_replace('-', ' ', $engType));
-$engDesc      = $engDescs[$engType]          ?? '';
-$engRationale = $engRationaleMap[$engType]   ?? '';
+$engLabel = $engLabels[$engType] ?? ucwords(str_replace('-', ' ', $engType));
+$engDesc  = $engDescs[$engType]  ?? '';
 
 /* ─────────────────────────────── scope groups ── */
 $strategyScope = cleanArr('scope_strategy');
@@ -381,8 +379,6 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     }
     .rec-name     { font-size: 1.12rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
     .rec-desc     { font-size: .9rem; color: #4a4a6a; line-height: 1.7; margin-bottom: 20px; }
-    .rec-divider  { border: none; border-top: 1px solid #e8e8f0; margin: 0 0 20px; }
-    .rec-rationale{ font-style: italic; color: #5a5a7a; font-size: .88rem; line-height: 1.78; }
     .scope-obj    { color: #3a3a5e; font-size: .93rem; margin-bottom: 24px; line-height: 1.75; }
     .scope-categories { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 24px; margin-bottom: 20px; }
     .scope-cat-head {
@@ -627,9 +623,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
       <div class="rec-card">
         <div class="rec-badge"><?= esc(strtoupper($engLabel)) ?></div>
         <div class="rec-name"><?= esc($engLabel) ?></div>
-        <?php if ($engDesc):      ?><div class="rec-desc"><?= esc($engDesc) ?></div><?php endif; ?>
-        <hr class="rec-divider" />
-        <?php if ($engRationale): ?><div class="rec-rationale"><?= esc($engRationale) ?></div><?php endif; ?>
+        <?php if ($engDesc): ?><div class="rec-desc" style="margin-bottom:0"><?= esc($engDesc) ?></div><?php endif; ?>
       </div>
     </div>
     <?php endif; ?>

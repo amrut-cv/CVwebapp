@@ -300,11 +300,9 @@ function makeEngRow(et) {
       <input class="eng-field eng-category-input" data-f="category" value="${esc(et.category)}" oninput="engToggleSave(this)" placeholder="Category (e.g. Retainership)" />
       <input class="eng-field eng-duration-input" data-f="duration_tag" value="${esc(et.duration_tag || '')}" oninput="engToggleSave(this)" placeholder="Duration tag (optional)" />
     </div>
-    <label class="eng-textarea-label">Card description (shown when picking the type)</label>
-    <textarea class="eng-field eng-textarea" data-f="card_description" oninput="engToggleSave(this)">${esc(et.card_description)}</textarea>
-    <label class="eng-textarea-label">Document description (used in generated proposal/contract)</label>
-    <textarea class="eng-field eng-textarea" data-f="doc_description" oninput="engToggleSave(this)">${esc(et.doc_description)}</textarea>
-    <label class="eng-textarea-label">Rationale (why we recommend this type, used in generated proposal)</label>
+    <label class="eng-textarea-label">Description (shown when picking the type, and in the generated proposal/contract)</label>
+    <textarea class="eng-field eng-textarea" data-f="description" oninput="engToggleSave(this)">${esc(et.description)}</textarea>
+    <label class="eng-textarea-label">Rationale (internal reference only &mdash; not shown in the proposal)</label>
     <textarea class="eng-field eng-textarea" data-f="rationale" oninput="engToggleSave(this)">${esc(et.rationale)}</textarea>
     <div class="eng-actions">
       <span class="eng-key">key: ${esc(et.type_key)}</span>
@@ -358,9 +356,9 @@ async function deleteEngType(id, btn) {
 }
 
 async function addEngType() {
-  const r = await api2({action: 'add', label: 'New engagement type', category: '', duration_tag: '', card_description: '', doc_description: '', rationale: ''});
+  const r = await api2({action: 'add', label: 'New engagement type', category: '', duration_tag: '', description: '', rationale: ''});
   if (r.id) {
-    const et = {id: r.id, type_key: r.type_key, label: 'New engagement type', category: '', duration_tag: '', card_description: '', doc_description: '', rationale: '', sort_order: r.sort_order};
+    const et = {id: r.id, type_key: r.type_key, label: 'New engagement type', category: '', duration_tag: '', description: '', rationale: '', sort_order: r.sort_order};
     ENG_TYPES.push(et);
     document.getElementById('engList').appendChild(makeEngRow(et));
     toast('Added');

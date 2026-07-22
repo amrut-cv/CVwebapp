@@ -537,7 +537,7 @@ if ($pageLoadId) {
             <?php if ($et['duration_tag']): ?><span class="badge"><?= htmlspecialchars($et['duration_tag']) ?></span><?php endif ?>
           </div>
           <div class="eng-title"><?= htmlspecialchars($et['label']) ?></div>
-          <div class="eng-desc"><?= htmlspecialchars($et['card_description']) ?></div>
+          <div class="eng-desc"><?= htmlspecialchars($et['description']) ?></div>
         </div>
       <?php endforeach ?>
     </div>
