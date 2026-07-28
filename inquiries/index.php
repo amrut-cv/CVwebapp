@@ -177,14 +177,18 @@ $nav_active = 'inquiries';
                 <span><?= count($byStage[$label]) ?></span>
               </div>
               <div class="col-cards" data-stage="<?= h($label) ?>"
+                   <?php if ($activePath !== 'hire'): ?>
                    ondragover="event.preventDefault();this.classList.add('drag-over')"
                    ondragleave="this.classList.remove('drag-over')"
-                   ondrop="onDropCard(event, this)">
+                   ondrop="onDropCard(event, this)"
+                   <?php endif ?>>
                 <?php foreach ($byStage[$label] as $r): ?>
-                  <div class="iq-card" draggable="true" data-id="<?= (int)$r['id'] ?>"
-                       ondragstart="onDragStart(event, this)" ondragend="this.classList.remove('dragging')"
+                  <div class="iq-card" <?= $activePath !== 'hire' ? 'draggable="true"' : '' ?> data-id="<?= (int)$r['id'] ?>"
+                       <?php if ($activePath !== 'hire'): ?>ondragstart="onDragStart(event, this)" ondragend="this.classList.remove('dragging')"<?php endif ?>
                        onclick="openModal(<?= (int)$r['id'] ?>)">
+                    <?php if ($activePath !== 'hire' || $r['eff_stage'] === 'New'): ?>
                     <button class="junk-quick" title="Mark as junk" onclick="event.stopPropagation();quickJunk(<?= (int)$r['id'] ?>, this)">&times;</button>
+                    <?php endif ?>
                     <div class="iname"><?= h($r['name']) ?></div>
                     <div class="iline"><?= h(iq_card_line($r, $activePath)) ?></div>
                     <div class="itags">
@@ -245,12 +249,24 @@ function openModal(id) {
   ).join('');
 
   let actionsHtml = '<button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>';
-  if (ACTIVE_PATH === 'hire' && !r.converted_deal_id) {
-    actionsHtml = '<button type="button" class="btn btn-primary" onclick="pushToDeal(' + r.id + ')">Push to Deals</button>' + actionsHtml;
+  if (ACTIVE_PATH === 'hire') {
+    if (r.eff_stage === 'New') {
+      actionsHtml = '<button type="button" class="btn btn-secondary" onclick="quickJunk(' + r.id + ')">Mark as junk</button>' +
+                    '<button type="button" class="btn btn-primary" onclick="pushToDeal(' + r.id + ')">Push to Deals</button>' + actionsHtml;
+    }
   }
   if (r.converted_deal_id) {
     actionsHtml = '<a href="../deal_tracker/" class="btn btn-secondary" target="_blank">View in Deal Tracker</a>' + actionsHtml;
   }
+
+  // Clients (hire) has no free-form stage control — New is the only stage
+  // you can move out of, via the dedicated Push to Deals / Mark as junk
+  // actions above. Once Pushed or Junk, stage is locked.
+  const showStageField = ACTIVE_PATH !== 'hire';
+  const ownerFieldHtml = '<div class="field"><label>Owner</label><select id="fOwner">' + ownerOptions + '</select></div>';
+  const stageFieldHtml = showStageField
+    ? '<div class="field"><label>Stage</label><select id="fStage" onchange="changeStage(' + r.id + ')"></select></div>'
+    : '';
 
   document.getElementById('modalBox').innerHTML =
     '<div class="modal-title">' + esc(r.name) + '</div>' +
@@ -258,10 +274,7 @@ function openModal(id) {
       ' &middot; submitted ' + esc(new Date(r.created_at).toDateString()) + '</div>' +
     (r.company ? '<div class="detail-grid"><div class="full"><div class="k">Company</div><div class="v">' + esc(r.company) + '</div></div></div>' : '') +
     '<div class="detail-grid">' + detailHtml + '</div>' +
-    '<div class="frow">' +
-      '<div class="field"><label>Owner</label><select id="fOwner">' + ownerOptions + '</select></div>' +
-      '<div class="field"><label>Stage</label><select id="fStage"></select></div>' +
-    '</div>' +
+    '<div class="frow"' + (showStageField ? '' : ' style="grid-template-columns:1fr"') + '>' + ownerFieldHtml + stageFieldHtml + '</div>' +
     '<div class="frow" style="grid-template-columns:1fr">' +
       '<div class="field"><label>Internal notes</label><textarea id="fNotes">' + esc(r.tracking_notes || '') + '</textarea></div>' +
     '</div>' +
@@ -274,14 +287,22 @@ function openModal(id) {
     '</div>';
 
   const stageSel = document.getElementById('fStage');
-  (window.STAGE_LIST || []).forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    if (s === r.eff_stage) opt.selected = true;
-    stageSel.appendChild(opt);
-  });
+  if (stageSel) {
+    (window.STAGE_LIST || []).forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      if (s === r.eff_stage) opt.selected = true;
+      stageSel.appendChild(opt);
+    });
+  }
 
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+async function changeStage(id) {
+  const stage = document.getElementById('fStage').value;
+  await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'move_stage', submission_id: id, stage})});
+  location.reload();
 }
 
 function closeModal() {
@@ -290,10 +311,8 @@ function closeModal() {
 
 async function saveDetails(id) {
   const owner = document.getElementById('fOwner').value;
-  const stage = document.getElementById('fStage').value;
   const notes = document.getElementById('fNotes').value;
   await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'update', submission_id: id, owner, notes})});
-  await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action: 'move_stage', submission_id: id, stage})});
   location.reload();
 }
 
