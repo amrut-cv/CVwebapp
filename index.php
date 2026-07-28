@@ -108,6 +108,14 @@ $nav_active = 'home';
       </div>
       <div class="card-arrow">→</div>
     </a>
+
+    <a href="/CVwebapp/inquiries/" class="feature-card" style="margin-top:16px">
+      <div class="card-text">
+        <h2>Inquiries</h2>
+        <p>Triage contact-form submissions from corevoice.in.</p>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
   </div>
 </div>
 </body>

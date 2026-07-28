@@ -230,6 +230,23 @@ function getDB(): PDO {
         INDEX idx_guests_stage (stage)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Workflow state for contact_form_submissions, which lives in this same
+    // database but is owned/written by the separate CV4-website codebase.
+    // No FOREIGN KEY to that table (or to deals) — deliberately decoupled so
+    // schema changes on either side never break the other.
+    $pdo->exec("CREATE TABLE IF NOT EXISTS inquiry_tracking (
+        id                INT AUTO_INCREMENT PRIMARY KEY,
+        submission_id     INT NOT NULL,
+        stage             VARCHAR(40) NOT NULL DEFAULT 'New',
+        owner             VARCHAR(255) NULL,
+        notes             TEXT NULL,
+        converted_deal_id INT NULL,
+        archived          TINYINT(1) NOT NULL DEFAULT 0,
+        created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_submission (submission_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed known users if table is empty
     $count = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
     if ($count === 0) {
