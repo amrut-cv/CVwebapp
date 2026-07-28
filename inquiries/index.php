@@ -119,7 +119,9 @@ $nav_active = 'inquiries';
     .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:16px;font-size:.85rem}
     .detail-grid .full{grid-column:1/-1}
     .detail-grid .k{color:#9ca3af;font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
-    .detail-grid .v{color:#1a1a2e;white-space:pre-wrap}
+    .detail-grid .v{color:#1a1a2e;white-space:pre-wrap;word-break:break-word}
+    .detail-grid .v a{color:#92400e;text-decoration:none}
+    .detail-grid .v a:hover{text-decoration:underline}
     .frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
     .field label{font-size:.78rem;color:#6b7280;display:block;margin-bottom:5px;font-weight:600}
     .field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.85rem;font-family:inherit;outline:none}
@@ -219,6 +221,10 @@ const FIELD_LABELS = {
 };
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+function escAttr(s) { return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function toHref(url) { return /^https?:\/\//i.test(url) ? url : 'https://' + url; }
+
+const LINK_FIELDS = ['linkedin', 'website', 'resume_link', 'portfolio_link', 'video_link'];
 
 function openModal(id) {
   const r = SUBMISSIONS.find(x => x.id === id);
@@ -227,8 +233,11 @@ function openModal(id) {
   let detailHtml = '';
   fields.forEach(([col, label]) => {
     if (!r[col]) return;
+    const valueHtml = LINK_FIELDS.includes(col)
+      ? '<a href="' + escAttr(toHref(r[col])) + '" target="_blank" rel="noopener noreferrer">' + esc(r[col]) + '</a>'
+      : esc(r[col]);
     detailHtml += '<div class="' + (col === 'problem' || col === 'message' || col === 'extra' ? 'full' : '') + '">' +
-      '<div class="k">' + esc(label) + '</div><div class="v">' + esc(r[col]) + '</div></div>';
+      '<div class="k">' + esc(label) + '</div><div class="v">' + valueHtml + '</div></div>';
   });
 
   const ownerOptions = ['<option value="">— Unassigned —</option>'].concat(
