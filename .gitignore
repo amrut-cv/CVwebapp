@@ -1,2 +1,4 @@
 db_config.php
 ses_secrets.php
+drive_secrets.php
+google_service_account.json

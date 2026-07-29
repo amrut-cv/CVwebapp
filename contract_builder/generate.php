@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../session_guard.php';
+require_once __DIR__ . '/../session_guard.php';
 require_once __DIR__ . '/../db.php';
 // generate.php — CoreVoice document renderer (Proposal & Contract)
 

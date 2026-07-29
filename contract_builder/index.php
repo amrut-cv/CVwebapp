@@ -302,6 +302,13 @@ if ($pageLoadId) {
     .output-card .out-desc { font-size: .8rem; color: var(--muted); line-height: 1.45; margin-bottom: 14px; }
     .output-card .out-btn  { display: inline-block; padding: 9px 18px; background: var(--accent); color: white; border-radius: 7px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
     .output-card.selected .out-btn { background: var(--brand); }
+    .output-card .out-btn-secondary { display: inline-block; margin-left: 8px; padding: 9px 18px; background: transparent; color: var(--brand); border: 1.5px solid var(--border); border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .output-card .out-btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .output-card .out-btn-secondary:disabled { opacity: .6; cursor: default; }
+    .output-card .drive-result { margin-top: 10px; font-size: .8rem; color: var(--muted); }
+    .output-card .drive-result a { color: var(--accent); font-weight: 600; text-decoration: none; }
+    .output-card .drive-result a:hover { text-decoration: underline; }
+    .output-card .drive-result.error { color: var(--accent); }
 
     /* Radio pills */
     .radio-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -858,12 +865,16 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         <div class="out-title">Proposal</div>
         <div class="out-desc">Warm, conversational. Personal note, recommended engagement, scope, fee, and next steps. No legal language.</div>
         <button class="out-btn" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'proposal'); generateDocument()">Generate proposal &#x2192;</button>
+        <button class="out-btn-secondary" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'proposal'); saveToDrive('proposal', this)">Save to Drive</button>
+        <div class="drive-result hidden" id="driveResult-proposal"></div>
       </div>
       <div class="output-card" onclick="selectOutput(this, 'contract')">
         <div class="out-tag">Ready to sign</div>
         <div class="out-title">Contract</div>
         <div class="out-desc">Full legal agreement with all clauses, Annexure A scope, Annexure B fee terms, and Annexure C NDA.</div>
         <button class="out-btn" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'contract'); generateDocument()">Generate contract &#x2192;</button>
+        <button class="out-btn-secondary" onclick="event.stopPropagation(); selectOutput(this.closest('.output-card'), 'contract'); saveToDrive('contract', this)">Save to Drive</button>
+        <div class="drive-result hidden" id="driveResult-contract"></div>
       </div>
     </div>
 
@@ -1481,19 +1492,9 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     setTimeout(function() { t.classList.remove('show'); }, 2200);
   }
 
-  function generateDocument() {
-    if (!selectedOutput) { alert('Please select a document type — Proposal or Contract.'); return; }
-    syncRTE();
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/CVwebapp/contract_builder/generate.php';
-    form.target = '_blank';
-
-    function add(name, value) {
-      var input = document.createElement('input');
-      input.type = 'hidden'; input.name = name; input.value = value || '';
-      form.appendChild(input);
-    }
+  function buildContractFields(outputType) {
+    var fields = [];
+    function add(name, value) { fields.push([name, value || '']); }
     function radio(name) {
       var el = document.querySelector('input[name="' + name + '"]:checked');
       return el ? el.value : '';
@@ -1546,7 +1547,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('expenses',          radio('expenses'));
     add('paymentNotes',      document.getElementById('paymentNotes').value);
     add('clauseMode',        radio('clauseMode') || 'normal');
-    add('outputType',        selectedOutput);
+    add('outputType',        outputType);
     var csGrid = document.getElementById('csPickGrid');
     if (csGrid) {
       csGrid.querySelectorAll('.cs-pick-card.selected').forEach(function(c) { add('case_study_ids[]', c.dataset.id); });
@@ -1556,9 +1557,59 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     add('senderTitle',       document.getElementById('senderTitle').value);
     add('senderEmail',       document.getElementById('senderEmail').value);
 
+    return fields;
+  }
+
+  function generateDocument() {
+    if (!selectedOutput) { alert('Please select a document type — Proposal or Contract.'); return; }
+    syncRTE();
+    var fields = buildContractFields(selectedOutput);
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/CVwebapp/contract_builder/generate.php';
+    form.target = '_blank';
+    fields.forEach(function(pair) {
+      var input = document.createElement('input');
+      input.type = 'hidden'; input.name = pair[0]; input.value = pair[1];
+      form.appendChild(input);
+    });
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
+  }
+
+  async function saveToDrive(outputType, btn) {
+    syncRTE();
+    var fields = buildContractFields(outputType);
+    var params = new URLSearchParams();
+    fields.forEach(function(pair) { params.append(pair[0], pair[1]); });
+
+    var resultEl = document.getElementById('driveResult-' + outputType);
+    var origLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    if (resultEl) { resultEl.classList.add('hidden'); resultEl.classList.remove('error'); }
+
+    try {
+      var res = await fetch('/CVwebapp/contract_builder/save_to_drive.php', { method: 'POST', body: params });
+      var data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+      if (resultEl) {
+        resultEl.innerHTML = 'Saved to Drive — <a href="' + data.webViewLink + '" target="_blank" rel="noopener">open file</a>';
+        resultEl.classList.remove('hidden');
+      }
+      showToast('Saved to Drive');
+    } catch (e) {
+      if (resultEl) {
+        resultEl.textContent = 'Could not save to Drive: ' + e.message;
+        resultEl.classList.remove('hidden');
+        resultEl.classList.add('error');
+      }
+      showToast('Save to Drive failed');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+    }
   }
 
   /* Rich text editors (lazy) */
