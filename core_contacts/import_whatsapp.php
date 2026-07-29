@@ -50,6 +50,7 @@ function name_similarity(string $a, string $b): float {
 
 // ── Step 2: save ──────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'save') {
+    csrf_verify();
     $rows      = json_decode($_POST['rows_json'] ?? '[]', true);
     $saved     = 0;
     $skipped   = 0;
@@ -283,6 +284,7 @@ $nav_active = 'contacts_personal';
 
       <form method="POST" enctype="multipart/form-data">
         <input type="hidden" name="step" value="upload"/>
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
         <div class="card">
           <div style="margin-bottom:20px">
             <label class="field-label" for="group_name">Group name <span style="font-weight:400;text-transform:none">(used as relationship origin)</span></label>
@@ -319,6 +321,7 @@ $nav_active = 'contacts_personal';
       <form method="POST">
         <input type="hidden" name="step" value="save"/>
         <input type="hidden" name="rows_json" value="<?= h(json_encode($preview)) ?>"/>
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
 
         <div class="review-bar">
           <div class="tab-bar">

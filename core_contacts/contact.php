@@ -47,6 +47,7 @@ $tags = $tags->fetchAll(PDO::FETCH_COLUMN);
 
 // Handle share action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    csrf_verify();
     if ($_POST['action'] === 'share' && $row['space'] === 'personal') {
         // Create cluster if not yet present (it should be, but guard)
         $db->prepare("UPDATE contacts SET space='shared' WHERE contact_id=?")
@@ -143,6 +144,7 @@ $nav_active = 'contacts_personal';
         <?php if ($row['space'] === 'personal'): ?>
           <form method="POST" style="display:contents">
             <input type="hidden" name="action" value="share"/>
+            <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
             <button type="submit" class="btn btn-success">Share with team →</button>
           </form>
         <?php endif ?>

@@ -10,6 +10,7 @@ $search = trim($_GET['q'] ?? '');
 
 // Handle adopt
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'adopt') {
+    csrf_verify();
     $cluster_id = $_POST['cluster_id'] ?? '';
 
     // Check not already owned
@@ -217,6 +218,7 @@ $nav_active = 'contacts_team';
               <form method="POST">
                 <input type="hidden" name="action" value="adopt"/>
                 <input type="hidden" name="cluster_id" value="<?= h($cl['cluster_id']) ?>"/>
+                <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
                 <button type="submit" class="adopt-btn adopt-btn-new">+ Add to my contacts</button>
               </form>
             <?php endif ?>

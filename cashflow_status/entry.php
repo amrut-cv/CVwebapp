@@ -9,6 +9,7 @@ $db = getDB();
 $today = date('Y-m-d');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $cols = [];
     $vals = [];
     foreach ($fields as $items) {
@@ -100,6 +101,7 @@ $nav_active = 'cashflow';
       <?php endif ?>
     </p>
     <form method="POST" class="card">
+      <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
       <table>
         <tr>
           <th>Field</th>

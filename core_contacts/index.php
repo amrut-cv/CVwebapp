@@ -14,6 +14,7 @@ $show_junk = isset($_GET['junk']);
 // ── AJAX: junk a single contact ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'junk_one') {
     header('Content-Type: application/json');
+    csrf_verify();
     $cid = $_POST['contact_id'] ?? '';
     $stmt = $db->prepare("UPDATE contacts SET is_junk=1 WHERE contact_id=? AND owner_member_id=?");
     $ok = $stmt->execute([$cid, $member['member_id']]) && $stmt->rowCount() > 0;
@@ -24,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'junk_
 // ── AJAX: permanently delete from junk ───────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_one') {
     header('Content-Type: application/json');
+    csrf_verify();
     $cid = $_POST['contact_id'] ?? '';
     $db->prepare("DELETE FROM duplicate_links WHERE contact_id_a=? OR contact_id_b=?")->execute([$cid, $cid]);
     $stmt = $db->prepare("DELETE FROM contacts WHERE contact_id=? AND owner_member_id=? AND is_junk=1");
@@ -70,6 +72,7 @@ $nav_active = 'contacts_personal';
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="csrf-token" content="<?= h(csrf_token()) ?>"/>
   <title>CoreContacts — Personal Space</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -209,6 +212,7 @@ function junkCard(btn, contactId, isDelete) {
   const fd = new FormData();
   fd.append('action', action);
   fd.append('contact_id', contactId);
+  fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
   fetch('index.php', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {

@@ -85,6 +85,7 @@ function parse_google_csv(string $tmp_path): array {
 
 // ── Step 2: save ──────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'save') {
+    csrf_verify();
     $rows    = json_decode($_POST['rows_json'] ?? '[]', true);
     $saved   = 0;
     $skipped = 0;
@@ -269,6 +270,7 @@ $nav_active = 'contacts_personal';
 
       <form method="POST" enctype="multipart/form-data">
         <input type="hidden" name="step" value="upload"/>
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
         <div class="card">
           <div class="upload-area" id="drop-zone">
             <label for="csv-input">
@@ -293,6 +295,7 @@ $nav_active = 'contacts_personal';
       <form method="POST">
         <input type="hidden" name="step" value="save"/>
         <input type="hidden" name="rows_json" value="<?= h(json_encode($preview)) ?>"/>
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
 
         <div class="review-bar">
           <span class="count"><?= count($preview) ?> contacts found</span>

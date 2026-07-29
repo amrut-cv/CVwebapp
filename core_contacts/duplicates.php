@@ -13,6 +13,7 @@ function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES|ENT_HTML5, 'UTF-
 // ── AJAX actions (merge / dismiss) ───────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
+    csrf_verify();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'dismiss') {
@@ -72,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 // ── SCAN ─────────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'scan') {
+    csrf_verify();
     // Clear existing pending pairs for this member
     $db->prepare("DELETE dl FROM duplicate_links dl
         JOIN contacts ca ON ca.contact_id = dl.contact_id_a
@@ -222,6 +224,7 @@ $nav_active = 'contacts_dupes';
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="csrf-token" content="<?= h(csrf_token()) ?>"/>
   <title>CoreContacts — Duplicates</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -274,6 +277,7 @@ $nav_active = 'contacts_dupes';
       <h1>Core<span>Contacts</span> — Duplicates</h1>
       <form method="POST">
         <input type="hidden" name="action" value="scan"/>
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
         <button type="submit" class="btn btn-primary">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           Scan for duplicates
@@ -374,6 +378,7 @@ function doAction(btn, action, linkId, winnerId, loserId) {
 
   const body = new URLSearchParams({ ajax: '1', action, link_id: linkId });
   if (action === 'merge') { body.append('winner_id', winnerId); body.append('loser_id', loserId); }
+  body.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
 
   fetch('duplicates.php', { method: 'POST', body })
     .then(r => r.json())

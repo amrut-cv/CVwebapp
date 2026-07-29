@@ -46,6 +46,7 @@ $insts      = cc_institutions();
 $errors     = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $full_name       = trim($_POST['full_name'] ?? '');
     $email           = trim($_POST['email'] ?? '');
     $phone           = trim($_POST['phone'] ?? '');
@@ -212,6 +213,7 @@ $nav_active = 'contacts_personal';
     <?php endif ?>
 
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
       <div class="section">
         <div class="section-title">Basic Info</div>
         <div class="field-row full">
