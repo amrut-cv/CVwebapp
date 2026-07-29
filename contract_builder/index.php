@@ -1336,7 +1336,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var key = 'custom' + section.charAt(0).toUpperCase() + section.slice(1) + 'Items';
       (d[key] || []).forEach(function(val) { if (val) addScopeItem(chipsId, section, {value: val, focus: function(){}}); });
     });
-    scopeQty = d.scopeQty || {};
+    scopeQty = (d.scopeQty && !Array.isArray(d.scopeQty)) ? d.scopeQty : {};
     if (d.currency)      setPill('currency', d.currency);
     if (d.feeType)     { setPill('feeType', d.feeType); showFeeFields(d.feeType); }
     if (d.cadence)       setPill('cadence', d.cadence);
