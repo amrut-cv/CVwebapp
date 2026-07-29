@@ -975,12 +975,14 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     renderScopePreviews();
   }
 
+  var _scopeQtySaveTimer = null;
   function onScopeQtyInput(input) {
     var item = input.dataset.item;
     var val = input.value.trim();
     if (val) scopeQty[item] = val; else delete scopeQty[item];
     renderScopePreviews();
-    silentSave();
+    clearTimeout(_scopeQtySaveTimer);
+    _scopeQtySaveTimer = setTimeout(silentSave, 600);
   }
 
   function renderScopePreviews() {
