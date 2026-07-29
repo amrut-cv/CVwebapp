@@ -14,30 +14,37 @@ $method = $_POST['method'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim($_POST['email'] ?? ''));
 
-    $stmt = getDB()->prepare("SELECT email, role, password_hash FROM users WHERE email = ?");
+    $stmt = getDB()->prepare("SELECT email, role, password_hash, last_otp_sent_at FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
     if (!$user) {
         $error = 'That email is not authorised.';
     } elseif ($method === 'otp') {
-        // OTP path
-        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $_SESSION['otp_email']   = $email;
-        $_SESSION['otp_code']    = $otp;
-        $_SESSION['otp_expires'] = time() + 300;
-        $_SESSION['otp_role']    = $user['role'];
-
-        $sent = ses_send(
-            $email,
-            'Your CoreVoice sign-in code',
-            "Your one-time sign-in code is: {$otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, ignore this email."
-        );
-        if ($sent) {
-            header('Location: verify.php');
-            exit;
+        $secondsSinceLast = $user['last_otp_sent_at'] ? time() - strtotime($user['last_otp_sent_at']) : null;
+        if ($secondsSinceLast !== null && $secondsSinceLast < 30) {
+            $error = 'Please wait a few seconds before requesting another code.';
         } else {
-            $error = 'Failed to send email. Please try again.';
+            // OTP path
+            $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $_SESSION['otp_email']    = $email;
+            $_SESSION['otp_code']     = $otp;
+            $_SESSION['otp_expires']  = time() + 300;
+            $_SESSION['otp_role']     = $user['role'];
+            $_SESSION['otp_attempts'] = 0;
+
+            $sent = ses_send(
+                $email,
+                'Your CoreVoice sign-in code',
+                "Your one-time sign-in code is: {$otp}\n\nThis code expires in 5 minutes.\n\nIf you didn't request this, ignore this email."
+            );
+            if ($sent) {
+                getDB()->prepare("UPDATE users SET last_otp_sent_at = NOW() WHERE email = ?")->execute([$email]);
+                header('Location: verify.php');
+                exit;
+            } else {
+                $error = 'Failed to send email. Please try again.';
+            }
         }
     } else {
         // Password path

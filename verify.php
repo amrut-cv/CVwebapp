@@ -23,6 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!hash_equals($_SESSION['otp_code'], $entered)) {
+        $_SESSION['otp_attempts'] = ($_SESSION['otp_attempts'] ?? 0) + 1;
+        if ($_SESSION['otp_attempts'] >= 5) {
+            session_unset();
+            header('Location: login.php?expired=1');
+            exit;
+        }
         $error = 'Incorrect code. Please try again.';
     } else {
         $email = $_SESSION['otp_email'];
