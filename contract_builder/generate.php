@@ -600,6 +600,7 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .bank-table { width: 100%; border-collapse: collapse; font-size: .87rem; margin-top: 10px; }
     .bank-table td { padding: 8px 12px; border: 1px solid #e2e8f0; vertical-align: top; }
     .bank-table td:first-child { width: 38%; font-weight: 600; color: #6b7280; background: #f9fafb; white-space: nowrap; }
+    .bank-table .bank-subhead td { background: #eef0f5; color: #1a1a2e; font-weight: 700; text-transform: uppercase; font-size: .74rem; letter-spacing: .05em; }
 
     /* Annexure C NDA */
     .nda-preamble { font-size: .87rem; line-height: 1.78; margin-bottom: 20px; }
@@ -1062,9 +1063,18 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
         <tr><td>Incorporation date</td><td>04 Jan 2023</td></tr>
         <tr><td>CIN</td><td>U74999KA2023PTC169895</td></tr>
         <tr><td>PAN</td><td>AAKCC8142N</td></tr>
+        <tr><td>MSME Registration</td><td>UDYAM-KR-03-0410654</td></tr>
         <tr><td>GST</td><td>29AAKCC8142N1Z0</td></tr>
-        <tr><td>Bank account no.</td><td>4090019050053</td></tr>
-        <tr><td>Bank IFSC</td><td>RATN0000091</td></tr>
+        <tr class="bank-subhead"><td colspan="2">For Indian payments</td></tr>
+        <tr><td>Bank Name</td><td>RBL Bank</td></tr>
+        <tr><td>Account No</td><td>409001905053</td></tr>
+        <tr><td>IFSC Code</td><td>RATN0000091</td></tr>
+        <tr class="bank-subhead"><td colspan="2">For Foreign Inward Payments</td></tr>
+        <tr><td>Bank Name</td><td>Axis Bank</td></tr>
+        <tr><td>Account number</td><td>921020040081373</td></tr>
+        <tr><td>IFSC</td><td>UTIB0003199</td></tr>
+        <tr><td>AD code</td><td>6360181-8400009</td></tr>
+        <tr><td>Swift code</td><td>AXISINBB194</td></tr>
       </tbody>
     </table>
 
