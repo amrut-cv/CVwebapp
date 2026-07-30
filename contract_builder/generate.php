@@ -281,12 +281,14 @@ function renderSigBlock(string $sn, string $st, string $se,
     $o .= '<p class="sig-intro">Agreed and accepted:</p>';
     $o .= '<div class="sig-grid">';
     $o .= '<div class="sig-block">';
+    $o .= '<div class="sig-space"></div>';
     if ($sn) $o .= '<div class="sig-name">'   . esc($sn) . '</div>';
     if ($st) $o .= '<div class="sig-detail">'  . esc($st) . '</div>';
     $o .= '<div class="sig-detail">Corebook Consulting Pvt. Ltd.</div>';
     if ($se) $o .= '<div class="sig-detail">'  . esc($se) . '</div>';
     $o .= '</div>';
     $o .= '<div class="sig-block">';
+    $o .= '<div class="sig-space"></div>';
     if ($cn) $o .= '<div class="sig-name">'   . esc($cn) . '</div>';
     if ($clientLine) $o .= '<div class="sig-detail">' . esc(implode(', ', $clientLine)) . '</div>';
     if ($ce) $o .= '<div class="sig-detail">'  . esc($ce) . '</div>';
@@ -547,6 +549,8 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     .sig-intro { font-size: .87rem; color: #3a3a5e; margin: 32px 0 20px; }
     .sig-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
     .sig-block { font-size: .87rem; line-height: 1.75; }
+    .sig-block .sig-space { height: 56px; border-bottom: 1px solid #c7c9d4; margin-bottom: 8px; }
+    .sig-grid { break-inside: avoid; page-break-inside: avoid; }
     .sig-block .sig-name    { font-weight: 700; font-size: .9rem; }
     .sig-block .sig-detail  { color: #4a4a6a; }
 
@@ -942,12 +946,14 @@ $pageTitle = ($isProposal ? 'CoreVoice Proposal' : 'CoreVoice Contract') . ' —
     <p class="sig-intro">The agreement is electronically executed. Signatories:</p>
     <div class="sig-grid">
       <div class="sig-block">
+        <div class="sig-space"></div>
         <?php if ($senderName):  ?><div class="sig-name"><?= esc($senderName) ?></div><?php endif; ?>
         <?php if ($senderTitle): ?><div class="sig-detail"><?= esc($senderTitle) ?></div><?php endif; ?>
         <div class="sig-detail">Corebook Consulting Pvt. Ltd.</div>
         <?php if ($senderEmail): ?><div class="sig-detail"><?= esc($senderEmail) ?></div><?php endif; ?>
       </div>
       <div class="sig-block">
+        <div class="sig-space"></div>
         <?php if ($sigName):  ?><div class="sig-name"><?= esc($sigName) ?></div><?php endif; ?>
         <?php
           $clientSigLine = array_filter([$sigTitle, $co]);
