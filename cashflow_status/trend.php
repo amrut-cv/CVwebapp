@@ -219,7 +219,10 @@ function renderChart(svgId, tooltipId, legendId, series, points, valueFmt) {
   const ticks = niceTicks(dataMin, dataMax, 5);
   const yMin = ticks[0], yMax = ticks[ticks.length - 1];
 
-  const xFor = i => padL + (points.length === 1 ? plotW / 2 : (i / (points.length - 1)) * plotW);
+  const times = points.map(p => new Date(p.date + 'T00:00:00').getTime());
+  const tMin = times[0], tMax = times[times.length - 1];
+  const tSpan = tMax - tMin || 1;
+  const xFor = i => padL + (points.length === 1 ? plotW / 2 : ((times[i] - tMin) / tSpan) * plotW);
   const yFor = v => padT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
 
   while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -288,11 +291,10 @@ function renderChart(svgId, tooltipId, legendId, series, points, valueFmt) {
   const crosshair = svgEl('line', { x1: 0, x2: 0, y1: padT, y2: padT + plotH, class: 'crosshair' });
   svg.appendChild(crosshair);
   const tooltip = document.getElementById(tooltipId);
-  const colW = points.length > 1 ? plotW / (points.length - 1) : plotW;
 
   points.forEach((p, i) => {
-    const x0 = i === 0 ? padL : xFor(i) - colW / 2;
-    const x1 = i === points.length - 1 ? W - padR : xFor(i) + colW / 2;
+    const x0 = i === 0 ? padL : (xFor(i - 1) + xFor(i)) / 2;
+    const x1 = i === points.length - 1 ? W - padR : (xFor(i) + xFor(i + 1)) / 2;
     const hit = svgEl('rect', { x: x0, y: padT, width: Math.max(1, x1 - x0), height: plotH, class: 'hit-col' });
     hit.addEventListener('pointerenter', () => showTooltip(i));
     hit.addEventListener('pointermove', () => showTooltip(i));
