@@ -33,6 +33,8 @@ $nav_active = 'cashflow';
     .sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit}
     .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
+    .btn-ghost{background:#fff;border:1.5px solid #d1d5db;color:#374151}
+    .btn-ghost:hover{border-color:#C9972A;color:#C9972A}
     .sum-card{margin-bottom:24px}
     .sum-table{width:100%;border-collapse:collapse;font-size:.9rem}
     .sum-table th{text-align:right;font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.03em;padding:4px 0;font-weight:700}
@@ -69,10 +71,16 @@ $nav_active = 'cashflow';
         </div>
         <h1>Cashflow <span>status</span></h1>
       </div>
-      <a href="entry.php" class="btn btn-primary">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add / update entry
-      </a>
+      <div style="display:flex;gap:10px">
+        <a href="trend.php" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Trend
+        </a>
+        <a href="entry.php" class="btn btn-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add / update entry
+        </a>
+      </div>
     </div>
 
     <?php if (!$latest): ?>
