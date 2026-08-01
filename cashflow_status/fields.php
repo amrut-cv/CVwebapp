@@ -16,7 +16,7 @@ return [
         'ftc_net_pay'             => 'FTC net pay (liability)',
         'ftc_net_pay_actual'      => "FTC net pay (expected actual payment value)",
         'interns_freelancers'     => "Interns + freelancers (expected actual payment value)",
-        'others_net_pay'          => 'Others net pay',
+        'others_net_pay'          => 'Est other expenses',
         'reimbursements'          => 'Est. reimbursements',
     ],
     'Other liabilities' => [

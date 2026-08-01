@@ -6,22 +6,11 @@ require __DIR__ . '/helpers.php';
 $fields = require __DIR__ . '/fields.php';
 $db = getDB();
 
-$rows   = $db->query("SELECT * FROM cashflow_entries ORDER BY entry_date DESC LIMIT 2")->fetchAll();
+$rows   = $db->query("SELECT * FROM cashflow_entries ORDER BY entry_date DESC LIMIT 1")->fetchAll();
 $latest = $rows[0] ?? null;
-$prev   = $rows[1] ?? null;
 $c      = cf_calc($latest);
-$cp     = cf_calc($prev);
 
 function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8'); }
-
-function trend_html($now, $before) {
-    if ($now === null || $before === null) return '';
-    $delta = $now - $before;
-    if (abs($delta) < 0.5) return '<span class="trend flat">no change</span>';
-    $up  = $delta > 0;
-    return '<span class="trend ' . ($up ? 'up' : 'down') . '">'
-         . ($up ? '&#9650; ' : '&#9660; ') . cf_inr(abs($delta)) . '</span>';
-}
 
 $tierCols = cf_tier_cols();
 $nav_active = 'cashflow';
@@ -54,8 +43,6 @@ $nav_active = 'cashflow';
     .sum-table tr.sum-total td{font-weight:700;border-top:1.5px solid #e2e5ef;padding-top:12px;padding-bottom:12px}
     .sum-table tr.sum-total td:first-child{color:#1a1a2e}
     .sum-table td.muted{color:#9ca3af}
-    .trend{font-size:.76rem;font-weight:600;display:inline-block;margin-top:4px}
-    .trend.up{color:#16a34a}.trend.down{color:#dc2626}.trend.flat{color:#9ca3af}
     .breakdown{display:grid;grid-template-columns:repeat(3, 1fr);gap:20px}
     @media (max-width: 900px){.breakdown{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:22px 26px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
@@ -100,9 +87,6 @@ $nav_active = 'cashflow';
       <p class="sub">
         As of <?= h(date('j M Y', strtotime($latest['entry_date']))) ?>
         <?= $daysAgo > 0 ? '(' . $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' ago)' : '(today)' ?>
-        <?php if ($prev): ?>
-          &middot; compared to <?= h(date('j M Y', strtotime($prev['entry_date']))) ?>
-        <?php endif ?>
       </p>
 
       <div class="card sum-card">
@@ -127,18 +111,9 @@ $nav_active = 'cashflow';
           </tr>
           <tr class="sum-total">
             <td>Position</td>
-            <td>
-              <div><?= cf_inr($c['eom_position']) ?></div>
-              <?= trend_html($c['eom_position'], $cp['eom_position'] ?? null) ?>
-            </td>
-            <td>
-              <div><?= cf_inr($c['total_liquid_position']) ?></div>
-              <?= trend_html($c['total_liquid_position'], $cp['total_liquid_position'] ?? null) ?>
-            </td>
-            <td>
-              <div><?= cf_inr($c['total_position']) ?></div>
-              <?= trend_html($c['total_position'], $cp['total_position'] ?? null) ?>
-            </td>
+            <td><?= cf_inr($c['eom_position']) ?></td>
+            <td><?= cf_inr($c['total_liquid_position']) ?></td>
+            <td><?= cf_inr($c['total_position']) ?></td>
           </tr>
           <tr>
             <td>Months of cash (salary only)</td>
