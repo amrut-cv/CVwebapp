@@ -309,6 +309,7 @@ if ($pageLoadId) {
     .output-card .drive-result a { color: var(--accent); font-weight: 600; text-decoration: none; }
     .output-card .drive-result a:hover { text-decoration: underline; }
     .output-card .drive-result.error { color: var(--accent); }
+    .output-card .drive-result .drive-result-note { display: block; margin-top: 2px; font-size: .75rem; opacity: .8; }
 
     /* Radio pills */
     .radio-group { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -1589,7 +1590,8 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     var el = document.getElementById('driveResult-' + outputType);
     if (!el) return;
     if (url) {
-      el.innerHTML = 'Saved to Drive — <a href="' + url + '" target="_blank" rel="noopener">open file</a>';
+      el.innerHTML = 'Saved to Drive — <a href="' + url + '" target="_blank" rel="noopener">open file</a>'
+        + '<span class="drive-result-note">Saving to Drive again will overwrite this same file (the URL stays the same).</span>';
       el.classList.remove('hidden');
       el.classList.remove('error');
     } else {
