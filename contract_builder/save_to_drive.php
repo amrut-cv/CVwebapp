@@ -39,9 +39,18 @@ try {
     $nameParts = array_filter([$co ?: 'Client', $engLabel ?: null, $docLabel, $dateStr]);
     $filename = preg_replace('/\s+/', ' ', implode(' - ', $nameParts)) . '.pdf';
 
-    $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_FOLDER_ID);
+    $existingFileId = trim((string)($_POST['driveFileId'] ?? ''));
+    if ($existingFileId) {
+        try {
+            $file = drive_update_pdf($existingFileId, $pdfPath, $filename);
+        } catch (DriveFileNotFoundException $e) {
+            $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_FOLDER_ID);
+        }
+    } else {
+        $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_FOLDER_ID);
+    }
 
-    echo json_encode(['ok' => true, 'webViewLink' => $file['webViewLink'] ?? null, 'filename' => $filename]);
+    echo json_encode(['ok' => true, 'webViewLink' => $file['webViewLink'] ?? null, 'fileId' => $file['id'] ?? null, 'filename' => $filename]);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => $e->getMessage()]);

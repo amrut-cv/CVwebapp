@@ -72,6 +72,8 @@ if ($action === 'load') {
 
     $stmt = $pdo->prepare(
         "SELECT c.id, c.client_name AS name, c.status, c.data, c.updated_at, c.owner_email,
+                c.drive_url_proposal, c.drive_url_contract,
+                c.drive_file_id_proposal, c.drive_file_id_contract,
                 CASE WHEN c.owner_email = ? THEN 'owner' ELSE cs.permission END AS my_permission
          FROM contracts c
          LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
@@ -83,6 +85,30 @@ if ($action === 'load') {
     if (!$r) { http_response_code(404); echo json_encode(['error' => 'Not found']); exit; }
     $r['data'] = json_decode($r['data'], true);
     echo json_encode(['ok' => true, 'contract' => $r]);
+    exit;
+}
+
+if ($action === 'save_drive_url') {
+    $id         = (int)($body['id'] ?? 0);
+    $outputType = ($body['output_type'] ?? '') === 'contract' ? 'contract' : 'proposal';
+    $url        = trim((string)($body['url'] ?? ''));
+    $fileId     = trim((string)($body['file_id'] ?? ''));
+
+    if (!$id || !$url) { http_response_code(400); echo json_encode(['error' => 'Missing fields']); exit; }
+
+    $check = $pdo->prepare(
+        "SELECT c.id FROM contracts c
+         LEFT JOIN contract_shares cs ON cs.contract_id = c.id AND cs.shared_with_email = ?
+         WHERE c.id = ? AND (c.owner_email = ? OR cs.permission = 'edit')"
+    );
+    $check->execute([$email, $id, $email]);
+    if (!$check->fetch()) { http_response_code(403); echo json_encode(['error' => 'Forbidden']); exit; }
+
+    $urlCol  = $outputType === 'contract' ? 'drive_url_contract' : 'drive_url_proposal';
+    $fileCol = $outputType === 'contract' ? 'drive_file_id_contract' : 'drive_file_id_proposal';
+    $pdo->prepare("UPDATE contracts SET $urlCol = ?, $fileCol = ? WHERE id = ?")
+        ->execute([$url, $fileId ?: null, $id]);
+    echo json_encode(['ok' => true]);
     exit;
 }
 

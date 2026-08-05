@@ -41,6 +41,22 @@ function getDB(): PDO {
         updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_contracts_owner (owner_email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Persist "Save to Drive" links so they survive reloads (migration — safe to run repeatedly).
+    try {
+        $pdo->exec("ALTER TABLE contracts ADD COLUMN drive_url_proposal VARCHAR(500) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+    try {
+        $pdo->exec("ALTER TABLE contracts ADD COLUMN drive_url_contract VARCHAR(500) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+    // Drive file ids let re-saving update the same file in place instead of
+    // creating a duplicate (migration — safe to run repeatedly).
+    try {
+        $pdo->exec("ALTER TABLE contracts ADD COLUMN drive_file_id_proposal VARCHAR(100) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+    try {
+        $pdo->exec("ALTER TABLE contracts ADD COLUMN drive_file_id_contract VARCHAR(100) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id         INT AUTO_INCREMENT PRIMARY KEY,
         email      VARCHAR(255) NOT NULL,

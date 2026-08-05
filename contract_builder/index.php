@@ -1229,6 +1229,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
   /* Draft save / load */
   var _urlId = parseInt(new URLSearchParams(window.location.search).get('id')) || null;
   var currentDraftId  = _urlId;
+  var driveFileIds = { proposal: null, contract: null };
   var _restoringDraft = false;
   var _viewOnly       = <?= $pageViewOnly ? 'true' : 'false' ?>;
 
@@ -1441,6 +1442,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       _restoringDraft = true;
       restoreFormData(json.contract.data);
       _restoringDraft = false;
+      showDriveResult('proposal', json.contract.drive_url_proposal);
+      showDriveResult('contract', json.contract.drive_url_contract);
+      driveFileIds.proposal = json.contract.drive_file_id_proposal || null;
+      driveFileIds.contract = json.contract.drive_file_id_contract || null;
       closeDraftsPanel();
       showToast('Loaded');
     } catch(e) { showToast('Failed to load'); }
@@ -1580,11 +1585,25 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
     document.body.removeChild(form);
   }
 
+  function showDriveResult(outputType, url) {
+    var el = document.getElementById('driveResult-' + outputType);
+    if (!el) return;
+    if (url) {
+      el.innerHTML = 'Saved to Drive — <a href="' + url + '" target="_blank" rel="noopener">open file</a>';
+      el.classList.remove('hidden');
+      el.classList.remove('error');
+    } else {
+      el.classList.add('hidden');
+    }
+  }
+
   async function saveToDrive(outputType, btn) {
     syncRTE();
+    if (!currentDraftId) { await silentSave(); }
     var fields = buildContractFields(outputType);
     var params = new URLSearchParams();
     fields.forEach(function(pair) { params.append(pair[0], pair[1]); });
+    if (driveFileIds[outputType]) { params.append('driveFileId', driveFileIds[outputType]); }
 
     var resultEl = document.getElementById('driveResult-' + outputType);
     var origLabel = btn.textContent;
@@ -1596,9 +1615,13 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
       var res = await fetch('/CVwebapp/contract_builder/save_to_drive.php', { method: 'POST', body: params });
       var data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
-      if (resultEl) {
-        resultEl.innerHTML = 'Saved to Drive — <a href="' + data.webViewLink + '" target="_blank" rel="noopener">open file</a>';
-        resultEl.classList.remove('hidden');
+      showDriveResult(outputType, data.webViewLink);
+      driveFileIds[outputType] = data.fileId || null;
+      if (currentDraftId) {
+        fetch('/CVwebapp/api/contracts.php', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({action: 'save_drive_url', id: currentDraftId, output_type: outputType, url: data.webViewLink, file_id: data.fileId})
+        }).catch(function(){});
       }
       showToast('Saved to Drive');
     } catch (e) {
@@ -1684,6 +1707,10 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
           _restoringDraft = true;
           restoreFormData(json.contract.data);
           _restoringDraft = false;
+          showDriveResult('proposal', json.contract.drive_url_proposal);
+          showDriveResult('contract', json.contract.drive_url_contract);
+          driveFileIds.proposal = json.contract.drive_file_id_proposal || null;
+          driveFileIds.contract = json.contract.drive_file_id_contract || null;
         } else {
           history.replaceState({}, '', window.location.pathname);
           currentDraftId = null;

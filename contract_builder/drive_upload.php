@@ -90,3 +90,55 @@ function drive_upload_pdf(string $localPdfPath, string $filename, string $folder
     }
     return $data;
 }
+
+// Thrown when an update targets a file id that no longer exists in Drive
+// (deleted/moved out from under us) — callers should fall back to a fresh upload.
+class DriveFileNotFoundException extends RuntimeException {}
+
+// Overwrites an existing Drive file's content and name in place (same file id,
+// same webViewLink) so re-saving a contract doesn't pile up duplicate files.
+// Returns ['id' => ..., 'webViewLink' => ...].
+function drive_update_pdf(string $fileId, string $localPdfPath, string $filename): array {
+    $accessToken = drive_get_access_token();
+
+    $metadata = json_encode(['name' => $filename]);
+    $boundary = 'cvdrive' . bin2hex(random_bytes(8));
+    $pdfData = file_get_contents($localPdfPath);
+    if ($pdfData === false) throw new RuntimeException('Could not read generated PDF at ' . $localPdfPath);
+
+    $body = "--$boundary\r\n"
+        . "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+        . $metadata . "\r\n"
+        . "--$boundary\r\n"
+        . "Content-Type: application/pdf\r\n\r\n"
+        . $pdfData . "\r\n"
+        . "--$boundary--";
+
+    $url = 'https://www.googleapis.com/upload/drive/v3/files/' . rawurlencode($fileId)
+        . '?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink';
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => 'PATCH',
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: multipart/related; boundary=' . $boundary,
+        ],
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 60,
+    ]);
+    $resp = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($status === 404) {
+        throw new DriveFileNotFoundException('Drive file not found: ' . $fileId);
+    }
+
+    $data = json_decode((string)$resp, true);
+    if ($status !== 200 || empty($data['id'])) {
+        throw new RuntimeException('Drive update failed: ' . $resp);
+    }
+    return $data;
+}
