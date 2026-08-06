@@ -72,6 +72,10 @@ $nav_active = 'cashflow';
         <h1>Cashflow <span>status</span></h1>
       </div>
       <div style="display:flex;gap:10px">
+        <a href="entries.php" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          All entries
+        </a>
         <a href="trend.php" class="btn btn-ghost">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Trend

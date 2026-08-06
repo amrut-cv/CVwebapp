@@ -6,10 +6,33 @@ require __DIR__ . '/helpers.php';
 $fields = require __DIR__ . '/fields.php';
 $db = getDB();
 
+function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8'); }
+function cf_valid_date($s) { return is_string($s) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $s); }
+
 $today = date('Y-m-d');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_verify();
+    $action     = $_POST['action'] ?? 'save';
+    $targetDate = cf_valid_date($_POST['date'] ?? '') ? $_POST['date'] : $today;
+
+    $statusStmt = $db->prepare("SELECT status FROM cashflow_entries WHERE entry_date = ?");
+    $statusStmt->execute([$targetDate]);
+    $existingStatus = $statusStmt->fetchColumn();
+
+    // Locked entries can't be edited, completed-again, or deleted — enforced
+    // here regardless of what the UI shows, in case of a direct POST.
+    if ($existingStatus === 'complete') {
+        header('Location: entry.php?date=' . urlencode($targetDate));
+        exit;
+    }
+
+    if ($action === 'delete') {
+        $db->prepare("DELETE FROM cashflow_entries WHERE entry_date = ?")->execute([$targetDate]);
+        header('Location: entries.php');
+        exit;
+    }
+
     $cols = [];
     $vals = [];
     foreach ($fields as $items) {
@@ -18,29 +41,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $vals[] = (float)str_replace(',', '', $_POST[$col] ?? 0);
         }
     }
+    $status = $action === 'complete' ? 'complete' : 'draft';
     $colList         = implode(',', $cols);
     $placeholderList = implode(',', array_fill(0, count($cols), '?'));
     $updateList      = implode(',', array_map(fn($c) => "$c = VALUES($c)", $cols));
     $stmt = $db->prepare(
-        "INSERT INTO cashflow_entries (entry_date, $colList, filled_by_email) VALUES (?, $placeholderList, ?)
-         ON DUPLICATE KEY UPDATE $updateList, filled_by_email = VALUES(filled_by_email)"
+        "INSERT INTO cashflow_entries (entry_date, $colList, filled_by_email, status) VALUES (?, $placeholderList, ?, ?)
+         ON DUPLICATE KEY UPDATE $updateList, filled_by_email = VALUES(filled_by_email), status = VALUES(status)"
     );
-    $stmt->execute([$today, ...$vals, $_SESSION['auth_email']]);
-    header('Location: index.php');
+    $stmt->execute([$targetDate, ...$vals, $_SESSION['auth_email'], $status]);
+    header('Location: entry.php?date=' . urlencode($targetDate));
     exit;
 }
 
-$todayStmt = $db->prepare("SELECT * FROM cashflow_entries WHERE entry_date = ?");
-$todayStmt->execute([$today]);
-$todayEntry = $todayStmt->fetch();
+$date = cf_valid_date($_GET['date'] ?? '') ? $_GET['date'] : $today;
+$isToday = $date === $today;
+
+$entryStmt = $db->prepare("SELECT * FROM cashflow_entries WHERE entry_date = ?");
+$entryStmt->execute([$date]);
+$entry = $entryStmt->fetch();
+$isLocked = $entry && $entry['status'] === 'complete';
 
 $lastStmt = $db->prepare("SELECT * FROM cashflow_entries WHERE entry_date < ? ORDER BY entry_date DESC LIMIT 1");
-$lastStmt->execute([$today]);
+$lastStmt->execute([$date]);
 $lastEntry = $lastStmt->fetch();
 
-$daysAgo = $lastEntry ? (int)((strtotime($today) - strtotime($lastEntry['entry_date'])) / 86400) : null;
-
-function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_HTML5, 'UTF-8'); }
+$daysAgo = $lastEntry ? (int)((strtotime($date) - strtotime($lastEntry['entry_date'])) / 86400) : null;
 
 $nav_active = 'cashflow';
 ?>
@@ -54,11 +80,17 @@ $nav_active = 'cashflow';
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fc;color:#1a1a2e}
     .page{padding:36px 40px;max-width:760px}
-    .page-header{display:flex;align-items:center;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef}
+    .page-header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:20px;margin-bottom:4px;border-bottom:1px solid #e2e5ef;flex-wrap:wrap}
+    .page-header .title-group{display:flex;align-items:center;gap:14px}
     .page-header .icon-badge{width:42px;height:42px;border-radius:11px;background:#1a1a2e;color:#C9972A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .page-header h1{font-family:Georgia,serif;font-size:1.65rem;font-weight:700;line-height:1.15}
     .page-header h1 span{color:#C9972A}
-    .sub{font-size:.82rem;color:#6b7280;margin:16px 0 24px}
+    .sub{font-size:.82rem;color:#6b7280;margin:16px 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .badge{display:inline-block;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:20px}
+    .badge-complete{background:#e6f7ec;color:#15803d}
+    .badge-draft{background:#fdf6e8;color:#a5720f}
+    .jump{font-size:.82rem;color:#6b7280;margin:0 0 20px;display:flex;align-items:center;gap:8px}
+    .jump input[type=date]{border:1.5px solid #d1d5db;border-radius:7px;padding:6px 8px;font-size:.82rem;font-family:inherit}
     .card{background:#fff;border:1px solid #e2e5ef;border-radius:12px;padding:24px 28px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
     .sec-cell{padding:20px 0 10px;border-top:none}
     .sec{display:inline-block;background:#f3f4f8;color:#1a1a2e;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:5px 12px;border-radius:6px}
@@ -71,14 +103,23 @@ $nav_active = 'cashflow';
     .in-cell{text-align:right;width:150px}
     input.money{width:130px;height:34px;text-align:right;padding:0 10px;border:1.5px solid #d1d5db;border-radius:7px;font-size:.85rem;font-family:inherit;outline:none}
     input.money:focus{border-color:#C9972A}
-    .actions{display:flex;justify-content:space-between;margin-top:20px}
+    .actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;flex-wrap:wrap}
+    .actions-left{display:flex;gap:10px;flex-wrap:wrap}
+    .actions-right{display:flex;gap:10px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:7px;font-size:.875rem;font-weight:600;cursor:pointer;text-decoration:none;border:none;font-family:inherit}
     .btn-primary{background:#1a1a2e;color:#fff}.btn-primary:hover{background:#2d2d4e}
     .btn-secondary{background:#fff;border:1.5px solid #d1d5db;color:#374151}
     .btn-secondary:hover{border-color:#C9972A;color:#C9972A}
+    .btn-complete{background:#15803d;color:#fff}.btn-complete:hover{background:#166534}
+    .btn-danger{background:#fff;border:1.5px solid #fca5a5;color:#b91c1c}
+    .btn-danger:hover{background:#fef2f2}
     .last-val{position:relative}
     .copy-btn{border:none;background:#f3f4f8;color:#6b7280;width:20px;height:20px;border-radius:5px;font-size:.72rem;line-height:1;cursor:pointer;margin-left:6px;vertical-align:middle}
     .copy-btn:hover{background:#fdf6e8;color:#C9972A}
+    .locked-note{background:#fdf6e8;border:1px solid #f0e0b8;color:#7a5a10;border-radius:9px;padding:14px 18px;font-size:.85rem;margin-bottom:20px}
+    .val-row{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid #f1f0e8;font-size:.85rem}
+    .val-row:first-of-type{border-top:none}
+    .val-row .k{color:#6b7280}
   </style>
 </head>
 <body>
@@ -86,27 +127,51 @@ $nav_active = 'cashflow';
   <?php require __DIR__ . '/../nav.php'; ?>
   <div class="page">
     <div class="page-header">
-      <div class="icon-badge">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="title-group">
+        <div class="icon-badge">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h1>Cashflow <span>entry</span></h1>
       </div>
-      <h1>Cashflow <span>entry</span></h1>
+      <a href="entries.php" class="btn btn-secondary">All entries</a>
     </div>
     <p class="sub">
-      Entry for <?= h(date('j M Y', strtotime($today))) ?>
+      Entry for <?= h(date('j M Y', strtotime($date))) ?><?= $isToday ? ' (today)' : '' ?>
+      <?php if ($entry): ?>
+        <span class="badge badge-<?= $entry['status'] ?>"><?= $entry['status'] === 'complete' ? 'Complete' : 'Draft' ?></span>
+      <?php endif ?>
       <?php if ($lastEntry): ?>
         &middot; last filled <?= h(date('j M Y', strtotime($lastEntry['entry_date']))) ?>
-        (<?= $daysAgo === 0 ? 'today' : $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' ago' ?>)
+        (<?= $daysAgo === 0 ? 'same day' : $daysAgo . ' day' . ($daysAgo === 1 ? '' : 's') . ' before' ?>)
       <?php else: ?>
         &middot; no previous entries yet
       <?php endif ?>
     </p>
+    <div class="jump">
+      Jump to date:
+      <input type="date" id="jumpDate" value="<?= h($date) ?>">
+      <button type="button" class="btn btn-secondary" onclick="jumpToDate()">Go</button>
+    </div>
+
+    <?php if ($isLocked): ?>
+      <div class="locked-note">This entry is marked <strong>complete</strong> and is locked — it can no longer be edited or deleted.</div>
+      <div class="card">
+        <?php foreach ($fields as $section => $items): ?>
+          <div class="sec-cell"><span class="sec"><?= h($section) ?></span></div>
+          <?php foreach ($items as $col => $label): ?>
+            <div class="val-row"><span class="k"><?= h($label) ?></span><span><?= cf_inr($entry[$col]) ?></span></div>
+          <?php endforeach ?>
+        <?php endforeach ?>
+      </div>
+    <?php else: ?>
     <form method="POST" class="card">
       <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
+      <input type="hidden" name="date" value="<?= h($date) ?>"/>
       <table>
         <tr>
           <th>Field</th>
           <th class="last-val"><?= $lastEntry ? h(date('j M', strtotime($lastEntry['entry_date']))) : 'Last filled' ?></th>
-          <th class="in-cell">Today</th>
+          <th class="in-cell"><?= $isToday ? 'Today' : h(date('j M', strtotime($date))) ?></th>
         </tr>
         <?php foreach ($fields as $section => $items): ?>
           <tr><td colspan="3" class="sec-cell"><span class="sec"><?= h($section) ?></span></td></tr>
@@ -116,25 +181,43 @@ $nav_active = 'cashflow';
               <td class="last-val">
                 <span class="lv-text"><?= $lastEntry ? cf_digits($lastEntry[$col]) : '—' ?></span>
                 <?php if ($lastEntry): ?>
-                  <button type="button" class="copy-btn" onclick="copyRow(this)" title="Copy to today">&#8594;</button>
+                  <button type="button" class="copy-btn" onclick="copyRow(this)" title="Copy to entry">&#8594;</button>
                 <?php endif ?>
               </td>
               <td class="in-cell">
                 <input class="money" name="<?= h($col) ?>"
-                       value="<?= h(cf_digits($todayEntry[$col] ?? $lastEntry[$col] ?? 0)) ?>">
+                       value="<?= h(cf_digits($entry[$col] ?? $lastEntry[$col] ?? 0)) ?>">
               </td>
             </tr>
           <?php endforeach ?>
         <?php endforeach ?>
       </table>
       <div class="actions">
-        <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear all</button>
-        <button type="submit" class="btn btn-primary">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Save today's entry
-        </button>
+        <div class="actions-left">
+          <button type="button" class="btn btn-secondary" onclick="clearAll()">Clear all</button>
+        </div>
+        <div class="actions-right">
+          <button type="submit" name="action" value="save" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Save entry
+          </button>
+          <button type="submit" name="action" value="complete" class="btn btn-complete"
+                  onclick="return confirm('Mark this entry complete and lock it? It cannot be edited or deleted afterward.')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            Mark complete &amp; lock
+          </button>
+        </div>
       </div>
     </form>
+    <?php if ($entry): ?>
+      <form method="POST" style="margin-top:14px" onsubmit="return confirm('Delete this entry entirely? This cannot be undone.')">
+        <input type="hidden" name="csrf_token" value="<?= h(csrf_token()) ?>"/>
+        <input type="hidden" name="date" value="<?= h($date) ?>"/>
+        <input type="hidden" name="action" value="delete"/>
+        <button type="submit" class="btn btn-danger">Delete this entry</button>
+      </form>
+    <?php endif ?>
+    <?php endif ?>
   </div>
 </div>
 <script>
@@ -146,6 +229,10 @@ function copyRow(btn) {
   var val = tr.querySelector('.lv-text').textContent.trim();
   if (val === '—') return;
   tr.querySelector('.money').value = val;
+}
+function jumpToDate() {
+  var v = document.getElementById('jumpDate').value;
+  if (v) location = 'entry.php?date=' + encodeURIComponent(v);
 }
 </script>
 </body>

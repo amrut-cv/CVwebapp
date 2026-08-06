@@ -211,6 +211,13 @@ function getDB(): PDO {
         $pdo->exec("ALTER TABLE cashflow_entries ADD COLUMN long_term_assets DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER receivables_next_month");
     } catch (PDOException $e) { /* column already exists */ }
 
+    // Draft/complete flag so past entries can be reopened for edit/delete until
+    // deliberately locked (migration — safe to run repeatedly). Defaults to
+    // 'draft' so existing rows stay editable — nothing is locked retroactively.
+    try {
+        $pdo->exec("ALTER TABLE cashflow_entries ADD COLUMN status ENUM('draft','complete') NOT NULL DEFAULT 'draft'");
+    } catch (PDOException $e) { /* column already exists */ }
+
     // Many-to-many links between deals and contracts (a deal can share several
     // contracts with the same client, e.g. proposal + signed contract)
     $pdo->exec("CREATE TABLE IF NOT EXISTS deal_contracts (
