@@ -230,6 +230,32 @@ function toHref(url) { return /^https?:\/\//i.test(url) ? url : 'https://' + url
 
 const LINK_FIELDS = ['linkedin', 'website', 'resume_link', 'portfolio_link', 'video_link'];
 
+// One muted .modal-sub line per touch: UTM bits, referrer host, landing
+// page, and when it happened. touch_at comes back from MySQL as a plain
+// 'Y-m-d H:i:s' string in UTC (see backend/contact_submit.php's touchAt())
+// with no timezone marker, so it's re-tagged as UTC before parsing --
+// otherwise the browser would read it as local time and skew the display.
+function iqTouchLine(r, prefix, label) {
+  const utmBits = [r[prefix + '_utm_source'], r[prefix + '_utm_medium'], r[prefix + '_utm_campaign'], r[prefix + '_utm_content'], r[prefix + '_utm_term']].filter(Boolean);
+  const parts = [];
+  if (utmBits.length) parts.push(utmBits.join(' / '));
+  if (r[prefix + '_referrer']) {
+    let host = r[prefix + '_referrer'];
+    try { host = new URL(r[prefix + '_referrer']).hostname; } catch (e) { /* not a full URL -- show as-is */ }
+    parts.push('via ' + host);
+  }
+  if (r[prefix + '_landing_page']) parts.push('landed on ' + r[prefix + '_landing_page']);
+  if (r[prefix + '_touch_at']) {
+    const d = new Date(r[prefix + '_touch_at'].replace(' ', 'T') + 'Z');
+    if (!isNaN(d.getTime())) parts.push(d.toLocaleString());
+  }
+  if (!parts.length) return '';
+  return '<div class="modal-sub">' + esc(label) + ': ' + esc(parts.join(' · ')) + '</div>';
+}
+function iqAttributionHtml(r) {
+  return iqTouchLine(r, 'first', 'First touch') + iqTouchLine(r, 'last', 'Last touch');
+}
+
 function openModal(id) {
   const r = SUBMISSIONS.find(x => x.id === id);
   if (!r) return;
@@ -284,7 +310,8 @@ function openModal(id) {
         '<button type="button" class="btn btn-secondary" onclick="saveDetails(' + r.id + ')">Save</button>' +
         actionsHtml +
       '</div>' +
-    '</div>';
+    '</div>' +
+    iqAttributionHtml(r);
 
   const stageSel = document.getElementById('fStage');
   if (stageSel) {
