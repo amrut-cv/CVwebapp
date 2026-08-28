@@ -42,14 +42,14 @@ try {
         throw new RuntimeException('PDF rendering failed: ' . $output);
     }
 
-    $filename = preg_replace('/\s+/', ' ', trim(($guest['guest_name'] ?: 'Guest') . ' - Guest Guide')) . '.pdf';
+    $filename = preg_replace('/\s+/', ' ', trim('Stories That Founders Tell - Guide and Consent - ' . ($guest['guest_name'] ?: 'Guest'))) . '.pdf';
 
     $existingFileId = trim((string)($_POST['driveFileId'] ?? ''));
     if ($existingFileId) {
         try {
             $file = drive_update_pdf($existingFileId, $pdfPath, $filename);
         } catch (DriveFileNotFoundException $e) {
-            $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_FOLDER_ID);
+            $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_GUEST_GUIDE_FOLDER_ID);
         }
     } else {
         $file = drive_upload_pdf($pdfPath, $filename, GOOGLE_DRIVE_GUEST_GUIDE_FOLDER_ID);
