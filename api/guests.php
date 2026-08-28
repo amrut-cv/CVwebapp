@@ -15,7 +15,6 @@ function guests_payload(array $body): array {
         trim($body['phone'] ?? '') ?: null,
         trim($body['social_link'] ?? '') ?: null,
         in_array($body['source'] ?? '', ['Referral', 'Cold outreach', 'Inbound']) ? $body['source'] : 'Cold outreach',
-        trim($body['episode_topic'] ?? '') ?: null,
         trim($body['recording_date'] ?? '') ?: null,
         !empty($body['recording_date_confirmed']) ? 1 : 0,
         trim($body['release_date'] ?? '') ?: null,
@@ -44,10 +43,10 @@ switch ($action) {
         if (!$name) { http_response_code(400); echo json_encode(['error' => 'Guest name required']); exit; }
         $stmt = $pdo->prepare(
             "INSERT INTO guests
-             (guest_name, company_title, bio, email, phone, social_link, source, episode_topic,
+             (guest_name, company_title, bio, email, phone, social_link, source,
               recording_date, recording_date_confirmed, release_date, release_date_confirmed,
               episode_link, notes, stage)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         );
         $stmt->execute(guests_payload($body));
         echo json_encode(['id' => (int)$pdo->lastInsertId()]);
@@ -58,7 +57,7 @@ switch ($action) {
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }
         $stmt = $pdo->prepare(
             "UPDATE guests SET
-                guest_name=?, company_title=?, bio=?, email=?, phone=?, social_link=?, source=?, episode_topic=?,
+                guest_name=?, company_title=?, bio=?, email=?, phone=?, social_link=?, source=?,
                 recording_date=?, recording_date_confirmed=?, release_date=?, release_date_confirmed=?,
                 episode_link=?, notes=?, stage=?
              WHERE id=?"

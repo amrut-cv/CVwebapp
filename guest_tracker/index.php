@@ -218,12 +218,6 @@ $nav_active = 'guests';
           </select>
         </div>
       </div>
-      <div class="frow full">
-        <div class="field">
-          <label>Episode topic</label>
-          <textarea id="fTopic" placeholder="What the episode will cover"></textarea>
-        </div>
-      </div>
       <div class="frow">
         <div class="field">
           <label>Recording date</label>
@@ -323,7 +317,6 @@ function openEditModal(id) {
   document.getElementById('fPhone').value = g.phone || '';
   document.getElementById('fSocial').value = g.social_link || '';
   document.getElementById('fSource').value = g.source || 'Cold outreach';
-  document.getElementById('fTopic').value = g.episode_topic || '';
   document.getElementById('fRecDate').value = g.recording_date || '';
   document.getElementById('fRecConfirmed').checked = !!g.recording_date_confirmed;
   document.getElementById('fRelDate').value = g.release_date || '';
@@ -409,7 +402,6 @@ async function saveGuest() {
     phone: document.getElementById('fPhone').value.trim(),
     social_link: document.getElementById('fSocial').value.trim(),
     source: document.getElementById('fSource').value,
-    episode_topic: document.getElementById('fTopic').value.trim(),
     recording_date: document.getElementById('fRecDate').value,
     recording_date_confirmed: document.getElementById('fRecConfirmed').checked,
     release_date: document.getElementById('fRelDate').value,

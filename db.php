@@ -239,7 +239,6 @@ function getDB(): PDO {
         phone                    VARCHAR(50) NULL,
         social_link              VARCHAR(255) NULL,
         source                   ENUM('Referral','Cold outreach','Inbound') NOT NULL DEFAULT 'Cold outreach',
-        episode_topic            TEXT NULL,
         recording_date           DATE NULL,
         recording_date_confirmed TINYINT(1) NOT NULL DEFAULT 0,
         release_date             DATE NULL,
@@ -261,6 +260,12 @@ function getDB(): PDO {
     try {
         $pdo->exec("ALTER TABLE guests ADD COLUMN drive_file_id_guide VARCHAR(100) NULL DEFAULT NULL");
     } catch (PDOException $e) { /* column already exists */ }
+
+    // Dropped in favor of the guide's own field-free format (migration —
+    // safe to run repeatedly).
+    try {
+        $pdo->exec("ALTER TABLE guests DROP COLUMN episode_topic");
+    } catch (PDOException $e) { /* already dropped */ }
 
     // Workflow state for contact_form_submissions, which lives in this same
     // database but is owned/written by the separate CV4-website codebase.
