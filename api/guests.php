@@ -83,6 +83,16 @@ switch ($action) {
         echo json_encode(['ok' => true]);
         break;
 
+    case 'save_drive_url':
+        $id     = (int)($body['id'] ?? 0);
+        $url    = trim((string)($body['url'] ?? ''));
+        $fileId = trim((string)($body['file_id'] ?? ''));
+        if (!$id || !$url) { http_response_code(400); echo json_encode(['error' => 'Missing fields']); exit; }
+        $pdo->prepare("UPDATE guests SET drive_url_guide=?, drive_file_id_guide=? WHERE id=?")
+            ->execute([$url, $fileId ?: null, $id]);
+        echo json_encode(['ok' => true]);
+        break;
+
     case 'delete':
         $id = (int)($body['id'] ?? 0);
         if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }

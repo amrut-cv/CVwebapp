@@ -253,6 +253,15 @@ function getDB(): PDO {
         INDEX idx_guests_stage (stage)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Persist Guest Guide Save-to-Drive links, same update-in-place pattern
+    // as contracts (migration — safe to run repeatedly).
+    try {
+        $pdo->exec("ALTER TABLE guests ADD COLUMN drive_url_guide VARCHAR(500) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+    try {
+        $pdo->exec("ALTER TABLE guests ADD COLUMN drive_file_id_guide VARCHAR(100) NULL DEFAULT NULL");
+    } catch (PDOException $e) { /* column already exists */ }
+
     // Workflow state for contact_form_submissions, which lives in this same
     // database but is owned/written by the separate CV4-website codebase.
     // No FOREIGN KEY to that table (or to deals) — deliberately decoupled so

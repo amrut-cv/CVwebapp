@@ -90,6 +90,13 @@ $nav_active = 'guests';
     .field-check{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.82rem;color:#374151}
     .field-check input{width:auto}
     .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .guide-box{background:#f7f8fc;border:1px solid #e2e5ef;border-radius:8px;padding:14px 16px}
+    .hidden{display:none}
+    .drive-result{font-size:.8rem;color:#6b7280;margin-top:10px}
+    .drive-result a{color:#C9972A;font-weight:600;text-decoration:none}
+    .drive-result a:hover{text-decoration:underline}
+    .drive-result.error{color:#b91c1c}
+    .drive-result .drive-result-note{display:block;margin-top:2px;font-size:.75rem;opacity:.8}
   </style>
 </head>
 <body>
@@ -252,6 +259,21 @@ $nav_active = 'guests';
         </div>
       </div>
 
+      <div class="frow full" id="guideSection" style="display:none">
+        <div class="field">
+          <label>Guest guide</label>
+          <div class="guide-box">
+            <div style="display:flex;gap:10px">
+              <button type="button" class="btn btn-primary" onclick="generateGuestGuide()">
+                Generate Guest Guide &#8594;
+              </button>
+              <button type="button" class="btn btn-secondary" id="guideDriveBtn" onclick="saveGuideToDrive(this)">Save to Drive</button>
+            </div>
+            <div class="drive-result hidden" id="guideDriveResult"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <div style="display:flex;gap:10px">
           <button type="button" class="btn btn-danger" id="deleteBtn" onclick="deleteGuest()" style="display:none">Delete</button>
@@ -273,6 +295,8 @@ const API = '/CVwebapp/api/guests.php';
 function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
+var currentGuideDriveFileId = null;
+
 function openAddModal(stage) {
   document.getElementById('guestForm').reset();
   document.getElementById('fId').value = '';
@@ -281,6 +305,9 @@ function openAddModal(stage) {
   document.getElementById('deleteBtn').style.display = 'none';
   document.getElementById('archiveBtn').style.display = 'none';
   document.getElementById('fArchived').value = '0';
+  document.getElementById('guideSection').style.display = 'none';
+  currentGuideDriveFileId = null;
+  showGuideDriveResult(null);
   openModal();
 }
 
@@ -309,7 +336,65 @@ function openEditModal(id) {
   const archiveBtn = document.getElementById('archiveBtn');
   archiveBtn.style.display = '';
   archiveBtn.textContent = g.archived ? 'Unarchive' : 'Archive';
+  document.getElementById('guideSection').style.display = '';
+  currentGuideDriveFileId = g.drive_file_id_guide || null;
+  showGuideDriveResult(g.drive_url_guide || null);
   openModal();
+}
+
+function generateGuestGuide() {
+  const id = document.getElementById('fId').value;
+  if (!id) { alert('Save the guest first'); return; }
+  window.open('generate_guide.php?id=' + id, '_blank');
+}
+
+function showGuideDriveResult(url) {
+  const el = document.getElementById('guideDriveResult');
+  if (url) {
+    el.innerHTML = 'Saved to Drive — <a href="' + url + '" target="_blank" rel="noopener">open file</a>'
+      + '<span class="drive-result-note">Saving to Drive again will overwrite this same file (the URL stays the same).</span>';
+    el.classList.remove('hidden');
+    el.classList.remove('error');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+async function saveGuideToDrive(btn) {
+  const id = document.getElementById('fId').value;
+  if (!id) { alert('Save the guest first'); return; }
+  const origLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  const resultEl = document.getElementById('guideDriveResult');
+  resultEl.classList.add('hidden');
+  resultEl.classList.remove('error');
+
+  try {
+    const params = new URLSearchParams();
+    params.append('guest_id', id);
+    if (currentGuideDriveFileId) params.append('driveFileId', currentGuideDriveFileId);
+    const res = await fetch('save_guide_to_drive.php', { method: 'POST', body: params });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Upload failed');
+
+    showGuideDriveResult(data.webViewLink);
+    currentGuideDriveFileId = data.fileId || null;
+
+    await fetch(API, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'save_drive_url', id, url: data.webViewLink, file_id: data.fileId})
+    });
+    const g = GUESTS.find(x => String(x.id) === String(id));
+    if (g) { g.drive_url_guide = data.webViewLink; g.drive_file_id_guide = data.fileId; }
+  } catch (e) {
+    resultEl.textContent = 'Could not save to Drive: ' + e.message;
+    resultEl.classList.remove('hidden');
+    resultEl.classList.add('error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origLabel;
+  }
 }
 
 async function saveGuest() {
