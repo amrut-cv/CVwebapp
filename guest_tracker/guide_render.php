@@ -115,7 +115,7 @@ function render_guest_guide(array $g): string {
 
 <div class="page">
   <h1>Guest Guide and Consent Form for <em>Stories That Founders Tell</em></h1>
-  <p class="lead">This document is a reference document for prospective and confirmed guests of Stories That Founders Tell, produced by CoreVoice.</p>
+  <p class="lead">This document is a reference document for prospective and confirmed guests of Stories That Founders Tell, produced by CoreVoice, and the consent form for the same.</p>
 
   <?php if ($name || $company || $email): ?>
   <div class="guest-box">
@@ -128,7 +128,7 @@ function render_guest_guide(array $g): string {
 
   <h2>1. Who Are We?</h2>
   <p>Stories That Founders Tell is produced by CoreVoice. We are a deep-tech focussed full-service marketing services firm based out of Bangalore.</p>
-  <p><strong>Hosted by:</strong> Amrut (Amrutash Misra), promoter, CoreVoice; and ex-host of IIT Madras' Best Place to Build podcast.</p>
+  <p><strong>Hosted by:</strong> Amrut (Amrutash Misra), promoter, CoreVoice; and ex-host of IIT Madras' Best Place to Build podcast. A few notable founders who were guests on the Build podcast: <a href="https://youtu.be/cA_eaDEU_A0?si=6OkgQRj8TanWBXST" target="_blank" rel="noopener">Tarun Mehta</a> (Ather), <a href="https://youtu.be/R4VnJvXfAM4?si=krzcdDiUIc88ltpW" target="_blank" rel="noopener">Shashwath T R</a> (Mindgrove), <a href="https://youtu.be/RTPIdfrqMv8?si=BWjwfXrcyTRdOOC5" target="_blank" rel="noopener">Arun Vinayak</a> (Exponent Energy), <a href="https://youtu.be/36Yr-Sjt3II?si=PNesyHWJ5Y3GHjL6" target="_blank" rel="noopener">Neel Gala</a> (InCore), <a href="https://youtu.be/rmdjGO7ykxk?si=0zI_EfjUibdRDILV" target="_blank" rel="noopener">Srinath Ravichandran</a> (Agnikul), <a href="https://youtu.be/I4dbLyaL9Gw?si=-nvzGedfxP1e_jgN" target="_blank" rel="noopener">Manu Iyer</a> (Bluehill Capital), <a href="https://youtu.be/TgCPoJNoZEE?si=e3q9qY6I2aG_d24q" target="_blank" rel="noopener">Rajiv Srivatsa</a> (Urban Ladder, Antler), <a href="https://youtu.be/-Enjrka_wpc?si=H_tc_QfGPc8oybjA" target="_blank" rel="noopener">Tanmai Gopal</a> (Hasura) &#8230;</p>
 
   <h2>2. What Is the Podcast About?</h2>
   <p>We have conceived of this podcast based on our learnings with the Best Place to Build podcast experience. We produced over 50 episodes and grew it from 0 &#8594; 75k subscribers and a few million views. A few things worked really well, and a few things bombed completely.</p>
