@@ -63,7 +63,11 @@ function iq_card_line($row, $path) {
     }
     if ($path === 'corefounders') {
         $bits = array_filter([$row['company'] ?? '', $row['role'] ?? '']);
-        return implode(' · ', $bits) ?: ucfirst($row['sub_reason'] ?? '');
+        $line = implode(' · ', $bits) ?: ucfirst($row['sub_reason'] ?? '');
+        if (isset($row['qualification_points']) && $row['qualification_points'] !== null) {
+            $line .= ' · ' . $row['qualification_points'] . ' pts';
+        }
+        return $line;
     }
     return ucfirst($row['sub_reason'] ?? '');
 }
@@ -225,7 +229,9 @@ const FIELD_LABELS = {
          ['website','Website'],['sector','Sector'],['stage','Funding stage'],['needs','Needs'],['problem','Problem'],['notes','Their notes']],
   join: [['linkedin','LinkedIn'],['mobile','Mobile'],['job_role','Role applied for'],['expertise','Expertise'],
          ['availability','Availability'],['resume_link','Resume'],['portfolio_link','Portfolio'],['video_link','Video intro'],['extra','Extra']],
-  corefounders: [['mobile','Mobile'],['role','Role'],['linkedin','LinkedIn'],['heard','Heard about CoreFounders via']],
+  corefounders: [['mobile','Mobile'],['role','Role'],['linkedin','LinkedIn'],['heard','Heard about CoreFounders via'],
+                 ['qualification_years','Years as founder'],['qualification_revenue_cr','Revenue (₹Cr)'],
+                 ['qualification_funding_cr','Funding raised (₹Cr)'],['qualification_points','Qualification points']],
   hi:   [['message','Message']]
 };
 
