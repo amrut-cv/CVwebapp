@@ -5,9 +5,10 @@
 // path => tab label, in display order.
 function iq_path_tabs(): array {
     return [
-        'hire' => 'Clients',
-        'join' => 'Talent',
-        'hi'   => 'Others',
+        'hire'         => 'Clients',
+        'join'         => 'Talent',
+        'corefounders' => 'CoreFounders',
+        'hi'           => 'Others',
     ];
 }
 

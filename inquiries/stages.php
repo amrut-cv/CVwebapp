@@ -22,4 +22,12 @@ return [
         ['label' => 'Closed',  'tone' => 'warning'],
         ['label' => 'Junk',    'tone' => 'danger'],
     ],
+    'corefounders' => [
+        ['label' => 'New',        'tone' => 'neutral'],
+        ['label' => 'Review',     'tone' => 'neutral'],
+        ['label' => 'Approved',   'tone' => 'success'],
+        ['label' => 'Waitlisted', 'tone' => 'warning'],
+        ['label' => 'Rejected',   'tone' => 'danger'],
+        ['label' => 'Junk',       'tone' => 'danger'],
+    ],
 ];

@@ -61,6 +61,10 @@ function iq_card_line($row, $path) {
     if ($path === 'join') {
         return $row['job_role'] ?: ($row['expertise'] ?: ucfirst($row['sub_reason']));
     }
+    if ($path === 'corefounders') {
+        $bits = array_filter([$row['company'] ?? '', $row['role'] ?? '']);
+        return implode(' · ', $bits) ?: ucfirst($row['sub_reason'] ?? '');
+    }
     return ucfirst($row['sub_reason'] ?? '');
 }
 
@@ -221,6 +225,7 @@ const FIELD_LABELS = {
          ['website','Website'],['sector','Sector'],['stage','Funding stage'],['needs','Needs'],['problem','Problem'],['notes','Their notes']],
   join: [['linkedin','LinkedIn'],['mobile','Mobile'],['job_role','Role applied for'],['expertise','Expertise'],
          ['availability','Availability'],['resume_link','Resume'],['portfolio_link','Portfolio'],['video_link','Video intro'],['extra','Extra']],
+  corefounders: [['mobile','Mobile'],['role','Role'],['linkedin','LinkedIn'],['heard','Heard about CoreFounders via']],
   hi:   [['message','Message']]
 };
 
