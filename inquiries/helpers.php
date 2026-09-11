@@ -8,6 +8,7 @@ function iq_path_tabs(): array {
         'hire'         => 'Clients',
         'join'         => 'Talent',
         'corefounders' => 'CoreFounders',
+        'studio'       => 'Studio',
         'hi'           => 'Others',
     ];
 }

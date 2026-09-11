@@ -30,4 +30,11 @@ return [
         ['label' => 'Rejected',   'tone' => 'danger'],
         ['label' => 'Junk',       'tone' => 'danger'],
     ],
+    'studio' => [
+        ['label' => 'New',       'tone' => 'neutral'],
+        ['label' => 'Confirmed', 'tone' => 'neutral'],
+        ['label' => 'Completed', 'tone' => 'success'],
+        ['label' => 'Cancelled', 'tone' => 'danger'],
+        ['label' => 'Junk',      'tone' => 'danger'],
+    ],
 ];
