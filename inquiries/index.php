@@ -70,6 +70,9 @@ function iq_card_line($row, $path) {
         if (isset($row['qualification_points']) && $row['qualification_points'] !== null) {
             $line .= ' · ' . $row['qualification_points'] . ' pts';
         }
+        if (!empty($row['notes'])) {
+            $line .= ' · vouched';
+        }
         return $line;
     }
     return ucfirst($row['sub_reason'] ?? '');
@@ -234,7 +237,8 @@ const FIELD_LABELS = {
          ['availability','Availability'],['resume_link','Resume'],['portfolio_link','Portfolio'],['video_link','Video intro'],['extra','Extra']],
   corefounders: [['mobile','Mobile'],['role','Role'],['linkedin','LinkedIn'],['heard','Heard about CoreFounders via'],
                  ['qualification_years','Years as founder'],['qualification_revenue_cr','Revenue (₹Cr)'],
-                 ['qualification_funding_cr','Funding raised (₹Cr)'],['qualification_points','Qualification points']],
+                 ['qualification_funding_cr','Funding raised (₹Cr)'],['qualification_points','Qualification points'],
+                 ['notes','Vouch (referral/backing)']],
   studio: [['role','Role'],['linkedin','LinkedIn'],['heard','Heard about us'],['heard_detail','Heard detail'],
            ['problem','What they want to shoot'],['notes','Their notes']],
   hi:   [['message','Message']]
