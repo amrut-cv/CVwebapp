@@ -39,7 +39,7 @@ function cf_calc($e) {
     $eom_liab          = $g('fte_net_pay_actual') + $g('ftc_net_pay_actual') + $g('interns_freelancers')
                         + $g('others_net_pay') + $g('reimbursements') + $g('gst_this_month')
                         + $g('tds_this_month') + $g('rent_payable');
-    $total_liquid_liab = $eom_liab + $g('axis_cc') + $g('yes_cc') + $g('gst_next_month') + $g('tds_next_month');
+    $total_liquid_liab = $eom_liab + $g('axis_cc') + $g('yes_cc') + $g('axis_cc_nikhil') + $g('gst_next_month') + $g('tds_next_month');
     $total_liab        = $total_liquid_liab + $g('long_term_borrowals');
 
     $eom_position          = $eom_assets - $eom_liab;
@@ -67,7 +67,7 @@ function cf_tier_cols() {
 
     $eom_liab          = ['fte_net_pay_actual', 'ftc_net_pay_actual', 'interns_freelancers',
                            'others_net_pay', 'reimbursements', 'gst_this_month', 'tds_this_month', 'rent_payable'];
-    $total_liquid_liab = array_merge($eom_liab, ['axis_cc', 'yes_cc', 'gst_next_month', 'tds_next_month']);
+    $total_liquid_liab = array_merge($eom_liab, ['axis_cc', 'yes_cc', 'axis_cc_nikhil', 'gst_next_month', 'tds_next_month']);
     $total_liab        = array_merge($total_liquid_liab, ['long_term_borrowals']);
 
     return compact(

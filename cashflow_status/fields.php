@@ -20,8 +20,9 @@ return [
         'reimbursements'          => 'Est. reimbursements',
     ],
     'Other liabilities' => [
-        'axis_cc'                 => 'Axis CC 2880',
-        'yes_cc'                  => 'Yes CC 5220',
+        'axis_cc'                 => 'Axis CC 2880 (Amrut)',
+        'yes_cc'                  => 'Yes CC 5220 (Amrut)',
+        'axis_cc_nikhil'          => 'Axis CC 5235 (Nikhil)',
         'long_term_borrowals'     => 'Long-term borrowals',
         'gst_this_month'          => 'GST payable this month',
         'gst_next_month'          => 'GST payable next month',

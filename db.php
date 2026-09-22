@@ -94,6 +94,7 @@ function getDB(): PDO {
         reimbursements          DECIMAL(14,2) NOT NULL DEFAULT 0,
         axis_cc                 DECIMAL(14,2) NOT NULL DEFAULT 0,
         yes_cc                  DECIMAL(14,2) NOT NULL DEFAULT 0,
+        axis_cc_nikhil          DECIMAL(14,2) NOT NULL DEFAULT 0,
         long_term_borrowals     DECIMAL(14,2) NOT NULL DEFAULT 0,
         gst_this_month          DECIMAL(14,2) NOT NULL DEFAULT 0,
         gst_next_month          DECIMAL(14,2) NOT NULL DEFAULT 0,
@@ -209,6 +210,12 @@ function getDB(): PDO {
     // Add long_term_assets column to cashflow_entries (migration — safe to run repeatedly)
     try {
         $pdo->exec("ALTER TABLE cashflow_entries ADD COLUMN long_term_assets DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER receivables_next_month");
+    } catch (PDOException $e) { /* column already exists */ }
+
+    // Add Nikhil's Axis CC alongside Amrut's existing cards (migration —
+    // safe to run repeatedly). Defaults to 0 for existing rows.
+    try {
+        $pdo->exec("ALTER TABLE cashflow_entries ADD COLUMN axis_cc_nikhil DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER yes_cc");
     } catch (PDOException $e) { /* column already exists */ }
 
     // Draft/complete flag so past entries can be reopened for edit/delete until
