@@ -709,7 +709,10 @@ if ($pageLoadId) {
           <select id="retainerDuration">
             <option value="">Select</option>
             <option>3 months</option>
+            <option>4 months</option>
+            <option>5 months</option>
             <option>6 months</option>
+            <option>9 months</option>
             <option>12 months</option>
             <option>Ongoing</option>
           </select>
