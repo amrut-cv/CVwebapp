@@ -12,44 +12,26 @@
     var n = d.months.length;
     var s = d.settings || {};
 
-    var exGst = zeros(n), gst = zeros(n), tds = zeros(n), collection = zeros(n), received = zeros(n);
+    var exGst = zeros(n), gst = zeros(n), tds = zeros(n), collection = zeros(n);
 
-    var outstandingStart = 0;
     (d.invoices || []).forEach(function (inv) {
       var m = MODES[inv.mode] || MODES.indian;
       var gp = m.gst / 100;
       var tp = m.tds / 100;
-      var k = 1 + gp - tp;
-      var next = inv.collect === 'next';
       for (var i = 0; i < n; i++) {
         var a = num((inv.amounts || [])[i]);
         if (!a) continue;
         exGst[i] += a;
         gst[i] += a * gp;
         tds[i] += a * tp;
-        collection[i] += a * k;
-        var j = next ? i + 1 : i;
-        if (j < n) received[j] += a * k;
-      }
-      // Next-month payers: assume the invoice just before the window matched
-      // the first month, so that month still sees last month's cash arrive.
-      if (next && num((inv.amounts || [])[0])) {
-        var c0 = num(inv.amounts[0]) * k;
-        received[0] += c0;
-        outstandingStart += c0;
+        collection[i] += a * (1 + gp - tp);
       }
     });
-
-    var outstanding = zeros(n), prev = outstandingStart;
-    for (var i = 0; i < n; i++) {
-      prev = prev + collection[i] - received[i];
-      outstanding[i] = prev;
-    }
 
     var credit = Math.max(0, Math.min(1, num(s.gstInputCreditPct) / 100));
     var gstAuto = zeros(n), gstPaid = zeros(n);
     var ov = d.gstOverride || [];
-    for (i = 0; i < n; i++) {
+    for (var i = 0; i < n; i++) {
       var base = i === 0 ? num(s.priorMonthGst) : gst[i - 1];
       gstAuto[i] = base * (1 - credit);
       gstPaid[i] = (ov[i] === null || ov[i] === undefined || ov[i] === '') ? gstAuto[i] : num(ov[i]);
@@ -90,7 +72,7 @@
     for (i = 0; i < n; i++) {
       nonPayroll[i] = consultants[i] + rent[i] + other[i] + gstPaid[i] + buffer[i];
       total[i] = payroll[i] + nonPayroll[i];
-      net[i] = received[i] - total[i];
+      net[i] = collection[i] - total[i];
       opening[i] = o;
       closing[i] = o + net[i];
       o = closing[i];
@@ -112,7 +94,7 @@
 
     return {
       months: d.months,
-      inv: { exGst: exGst, gst: gst, total: total_gst, tds: tds, collection: collection, received: received, outstanding: outstanding },
+      inv: { exGst: exGst, gst: gst, total: total_gst, tds: tds, collection: collection },
       out: { payroll: payroll, consultants: consultants, rent: rent, other: other, gst: gstPaid, buffer: buffer, total: total, nonPayroll: nonPayroll, costs: costs },
       profit: profit,
       payrollByGroup: byGroup,

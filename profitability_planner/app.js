@@ -86,8 +86,7 @@
     });
     d.invoices.forEach(function (row) {
       row.mode = row.mode === 'export' ? 'export' : 'indian';
-      row.collect = row.collect === 'next' ? 'next' : 'this';
-      delete row.prob; delete row.gstPct; delete row.tdsPct; delete row.lagDays; delete row.invoiceDay;
+      delete row.collect; delete row.prob; delete row.gstPct; delete row.tdsPct; delete row.lagDays; delete row.invoiceDay;
     });
     d.gstOverride = d.gstOverride || [];
     while (d.gstOverride.length < n) d.gstOverride.push(null);
@@ -124,9 +123,7 @@
     'inv.gst': 'GST charged on those invoices: 18% for Indian clients, none for export clients.',
     'inv.total': 'Invoice value including GST. This is what clients are billed.',
     'inv.tds': 'TDS that Indian clients deduct and deposit with the government instead of paying you (10%). It reduces the cash that reaches your bank.',
-    'inv.collection': 'What this month\'s invoices will bring in: total + GST \u2212 TDS. When the cash actually lands is shown in the next two rows.',
-    'inv.received': 'Cash that actually reaches your bank this month. Clients marked next month pay a month after you invoice them.',
-    'inv.outstanding': 'Billed but not yet received at the end of the month.',
+    'inv.collection': 'What this month\'s invoices bring into the bank: total + GST \u2212 TDS. The planner assumes clients pay in the month you invoice them.',
     'out.payroll': 'Gross monthly pay for everyone on the Salaries tab, after any crisis-mode cuts.',
     'out.consultants': 'External consultant payments from the Rent and expenses tab.',
     'out.rent': 'Seats, podcast studio and day-passes from the Rent and expenses tab.',
@@ -135,15 +132,15 @@
     'out.buffer': 'A cushion for costs that usually run over plan. Set it on the Rent and expenses tab.',
     'out.total': 'Everything that leaves the bank this month: payroll, consultants, rent, other expenses, GST paid and the buffer.',
     'out.costs': 'Payroll + consultants + rent + other expenses + overrun buffer. GST is left out because it passes through to the government.',
-    'profit': 'Invoices raised (ex-GST) minus costs. This is profit on what you bill, not on when cash arrives, so late payments don\'t change it.',
-    'net': 'Cash received in the bank minus everything paid out this month.',
+    'profit': 'Invoices raised (ex-GST) minus costs. GST and TDS are left out.',
+    'net': 'Collection minus everything paid out this month.',
     'opening': 'Cash at the start of each month. The first month is the number you typed.',
     'closing': 'Opening cash plus net for the month. Red means the account is overdrawn.',
     'coverage': 'Closing cash divided by that month\'s payroll: how many months of salaries the cash would cover.',
     'out.nonPayroll': 'Consultants, rent, other expenses, GST paid and the buffer added together.'
   };
   var GTIPS = {
-    invoicing: 'Invoices you raise in each month. The cash side, with timing, is further down this block.',
+    invoicing: 'Invoices you raise each month and the cash they bring in.',
     paid: 'Money leaving the bank each month.',
     profit: 'How the business does on billing and costs, ignoring GST and cash timing.',
     cash: 'How the bank balance moves month to month.'
@@ -203,7 +200,6 @@
     }).join('');
   }
   var MODE_OPTS = [['indian', 'India'], ['export', 'Export']];
-  var COLLECT_OPTS = [['this', 'This month'], ['next', 'Next month']];
 
   function invSummary() {
     return grp('Invoicing: raised this month', GTIPS.invoicing) +
@@ -211,9 +207,7 @@
       vrow('GST', 'inv.gst') +
       vrow('Total + GST', 'inv.total') +
       vrow('TDS deposited by clients', 'inv.tds', 'kneg') +
-      vrow('Collection (total + GST &minus; TDS)', 'inv.collection', 'k', 'bold') +
-      vrow('Received in bank (after payment lag)', 'inv.received', 'k', 'sub') +
-      vrow('Still to collect at month end', 'inv.outstanding', 'k', 'sub');
+      vrow('Collection (total + GST &minus; TDS)', 'inv.collection', 'k', 'bold');
   }
 
   function topBar() {
@@ -255,7 +249,7 @@
       vrow('Costs (excl. GST)', 'out.costs') +
       vrow('Profit for the month (invoices &minus; costs)', 'profit', 'k', 'tot', 1) +
       grp('Cash position', GTIPS.cash) +
-      vrow('Net (received &minus; paid out)', 'net', 'k', '', 1) +
+      vrow('Net (collection &minus; paid out)', 'net', 'k', '', 1) +
       vrow('Opening cash', 'opening', 'k', '', 1) +
       vrow('Closing cash', 'closing', 'k', 'tot', 2) +
       vrow('Months of payroll covered', 'coverage', 'x1', 'sub') +
@@ -278,13 +272,12 @@
   function invoicesPanel() {
     var d = st.data, h = '';
     h += '<div class="card"><h2>Invoices to raise' + tip('One row per client. Enter the amount you will invoice each month, before GST.') + '</h2>' +
-      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Invoice each client as India (18% GST, 10% TDS) or Export (no GST, no TDS), and choose whether you collect in the invoice month or the month after.</div>' +
+      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Invoice each client as India (18% GST, 10% TDS) or Export (no GST, no TDS). The planner assumes each client pays in the month you invoice them.</div>' +
       '<div class="wrap"><table class="g inv">' + head('Client');
     d.invoices.forEach(function (inv, i) {
       var p = 'invoices.' + i;
       h += '<tr><td><div class="lblrow">' + txt(p + '.client', inv.client) + delBtn(p) + '</div>' +
         '<div class="set"><span class="rl">Invoice to</span>' + radios('m' + i, p + '.mode', inv.mode, MODE_OPTS) + tip('India: 18% GST and 10% TDS. Export: no GST and no TDS.') +
-        '<span class="rl sp">Collected</span>' + radios('c' + i, p + '.collect', inv.collect, COLLECT_OPTS) + tip('When the client pays: in the month you invoice, or a month later. For next month, the first month assumes last month\'s invoice was the same amount, so its cash still arrives.') +
         '</div></td>' + cellsK(p + '.amounts', inv.amounts) + '</tr>';
     });
     h += addRow('invoices', 'Add client or pipeline deal') + '</table></div></div>';
@@ -411,7 +404,7 @@
     var m = st.data.months, burn = -r.avgNet;
     el.innerHTML =
       (r.firstNegative >= 0 ? card('bad', 'Cash goes negative', monthLong(m[r.firstNegative]), 'The first month the closing balance drops below zero.') : card('good', 'Cash stays positive', 'Through ' + monthLong(m[m.length - 1]), 'The closing balance never drops below zero in this window.')) +
-      card('', burn >= 0 ? 'Average monthly burn' : 'Average monthly surplus', fmtL(Math.abs(burn)), 'Average of cash received minus cash paid out across the window. Burn means the balance is shrinking.') +
+      card('', burn >= 0 ? 'Average monthly burn' : 'Average monthly surplus', fmtL(Math.abs(burn)), 'Average of collection minus cash paid out across the window. Burn means the balance is shrinking.') +
       card('', 'Lowest closing cash', fmtL(r.lowest) + ' <span style="font-size:.75rem;font-weight:400;color:#6b7280">' + monthLabel(m[r.lowestIdx], false) + '</span>', 'The lowest month-end balance in the window, and the month it happens.');
   }
 
@@ -488,7 +481,7 @@
 
   function blankRow(what) {
     var n = nMonths(), z = zeros(n), d = st.data;
-    if (what === 'invoices') d.invoices.push({ id: uid(), client: 'New client', mode: 'indian', collect: 'this', amounts: z });
+    if (what === 'invoices') d.invoices.push({ id: uid(), client: 'New client', mode: 'indian', amounts: z });
     else if (what === 'salaries') d.salaries.push({ id: uid(), name: 'New person', group: 'ICs', amounts: z });
     else if (what === 'rent') d.rent.push({ id: uid(), label: 'New rent line', kind: 'fixed', amounts: z });
     else if (what === 'consultants') d.consultants.push({ id: uid(), label: 'New consultant', amounts: z });
