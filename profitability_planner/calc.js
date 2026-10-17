@@ -3,10 +3,6 @@
 
   function num(v) { v = Number(v); return isFinite(v) ? v : 0; }
   function zeros(n) { var a = []; for (var i = 0; i < n; i++) a.push(0); return a; }
-  function prob(v) {
-    if (v === undefined || v === null || v === '') return 1;
-    return Math.max(0, Math.min(1, num(v) / 100));
-  }
   var MODES = {
     indian: { gst: 18, tds: 10 },
     export: { gst: 0, tds: 0 }
@@ -18,41 +14,30 @@
 
     var exGst = zeros(n), gst = zeros(n), tds = zeros(n), collection = zeros(n), received = zeros(n);
 
+    var outstandingStart = 0;
     (d.invoices || []).forEach(function (inv) {
       var m = MODES[inv.mode] || MODES.indian;
       var gp = m.gst / 100;
       var tp = m.tds / 100;
-      var pr = prob(inv.prob);
-      var shift = inv.collect === 'next' ? 1 : 0;
+      var k = 1 + gp - tp;
+      var next = inv.collect === 'next';
       for (var i = 0; i < n; i++) {
-        var a = num((inv.amounts || [])[i]) * pr;
+        var a = num((inv.amounts || [])[i]);
         if (!a) continue;
         exGst[i] += a;
         gst[i] += a * gp;
         tds[i] += a * tp;
-        collection[i] += a * (1 + gp - tp);
-        var j = i + shift;
-        if (j < n) received[j] += a * (1 + gp - tp);
+        collection[i] += a * k;
+        var j = next ? i + 1 : i;
+        if (j < n) received[j] += a * k;
       }
-    });
-
-    var preWindowCash = 0, preWindowCount = 0, outstandingStart = 0;
-    var rc = [];
-    (d.receivables || []).forEach(function (r) {
-      var cash = (num(r.gross) - num(r.tds)) * prob(r.prob);
-      var j = r.expect === 'opening' || !r.expect ? -1 : d.months.indexOf(r.expect);
-      var bucket;
-      if (r.expect === 'opening' || !r.expect) {
-        preWindowCash += cash; preWindowCount++;
-        bucket = 'Before window';
-      } else if (j >= 0) {
-        received[j] += cash; outstandingStart += cash;
-        bucket = d.months[j];
-      } else {
-        outstandingStart += cash;
-        bucket = 'After window';
+      // Next-month payers: assume the invoice just before the window matched
+      // the first month, so that month still sees last month's cash arrive.
+      if (next && num((inv.amounts || [])[0])) {
+        var c0 = num(inv.amounts[0]) * k;
+        received[0] += c0;
+        outstandingStart += c0;
       }
-      rc.push({ cash: cash, bucket: bucket });
     });
 
     var outstanding = zeros(n), prev = outstandingStart;
@@ -132,9 +117,6 @@
       profit: profit,
       payrollByGroup: byGroup,
       gstAuto: gstAuto,
-      rc: rc,
-      preWindowCash: preWindowCash,
-      preWindowCount: preWindowCount,
       net: net, opening: opening, closing: closing, coverage: coverage,
       firstNegative: firstNeg, lowest: lowest, lowestIdx: lowestIdx, avgNet: avgNet
     };

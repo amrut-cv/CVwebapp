@@ -43,12 +43,6 @@
       case 'k': return fmtK(v);
       case 'kneg': return fmtK(-num(v));
       case 'x1': return v == null ? '—' : Number(v).toFixed(1);
-      case 'int': return String(v);
-      case 'lakh': return (num(v) / 100000).toFixed(1) + 'L';
-      case 'bucket':
-        if (v === 'Before window') return 'In opening cash';
-        if (v === 'After window') return 'After window';
-        return /^\d{4}-\d{2}$/.test(v) ? monthLabel(v, false) : String(v);
       default: return String(v);
     }
   }
@@ -63,7 +57,7 @@
     return {
       version: 1, months: months, opening: 0,
       settings: { gstInputCreditPct: 15, priorMonthGst: 0, crisis: { on: false, fromMonth: months[0], pct: { Leaders: 40, Managers: 25, ICs: 10 } } },
-      invoices: [], receivables: [], salaries: [], rent: [], consultants: [], expenses: [],
+      invoices: [], salaries: [], rent: [], consultants: [], expenses: [],
       gstOverride: [null, null, null, null, null, null], buffer: zeros(6)
     };
   }
@@ -81,7 +75,8 @@
     d.settings.crisis.fromMonth = d.settings.crisis.fromMonth || d.months[0];
     d.settings.crisis.pct = d.settings.crisis.pct || {};
     GROUPS.forEach(function (g) { if (d.settings.crisis.pct[g] == null) d.settings.crisis.pct[g] = b.settings.crisis.pct[g]; });
-    ['invoices', 'receivables', 'salaries', 'rent', 'consultants', 'expenses'].forEach(function (k) { d[k] = d[k] || []; });
+    delete d.receivables;
+    ['invoices', 'salaries', 'rent', 'consultants', 'expenses'].forEach(function (k) { d[k] = d[k] || []; });
     ['invoices', 'salaries', 'rent', 'consultants', 'expenses'].forEach(function (k) {
       d[k].forEach(function (row) {
         row.id = row.id || uid();
@@ -89,7 +84,11 @@
         while (row.amounts.length < n) row.amounts.push(0);
       });
     });
-    d.receivables.forEach(function (row) { row.id = row.id || uid(); });
+    d.invoices.forEach(function (row) {
+      row.mode = row.mode === 'export' ? 'export' : 'indian';
+      row.collect = row.collect === 'next' ? 'next' : 'this';
+      delete row.prob; delete row.gstPct; delete row.tdsPct; delete row.lagDays; delete row.invoiceDay;
+    });
     d.gstOverride = d.gstOverride || [];
     while (d.gstOverride.length < n) d.gstOverride.push(null);
     d.buffer = d.buffer || [];
@@ -121,12 +120,12 @@
 
   /* ---------- tooltips ---------- */
   var TIPS = {
-    'inv.exGst': 'Invoices you raise this month, before GST, multiplied by each row\'s probability.',
+    'inv.exGst': 'Invoices you raise this month, before GST.',
     'inv.gst': 'GST charged on those invoices: 18% for Indian clients, none for export clients.',
     'inv.total': 'Invoice value including GST. This is what clients are billed.',
     'inv.tds': 'TDS that Indian clients deduct and deposit with the government instead of paying you (10%). It reduces the cash that reaches your bank.',
     'inv.collection': 'What this month\'s invoices will bring in: total + GST \u2212 TDS. When the cash actually lands is shown in the next two rows.',
-    'inv.received': 'Cash that actually reaches your bank this month. Rows marked \'next month\' arrive a month later, and older unpaid invoices land in the month you set for them.',
+    'inv.received': 'Cash that actually reaches your bank this month. Clients marked next month pay a month after you invoice them.',
     'inv.outstanding': 'Billed but not yet received at the end of the month.',
     'out.payroll': 'Gross monthly pay for everyone on the Salaries tab, after any crisis-mode cuts.',
     'out.consultants': 'External consultant payments from the Rent and expenses tab.',
@@ -198,12 +197,17 @@
     pairs.forEach(function (p) { h += '<option value="' + esc(p[0]) + '"' + (p[0] === val ? ' selected' : '') + '>' + esc(p[1]) + '</option>'; });
     return h + '</select>';
   }
-  var MODE_OPTS = [['indian', 'Indian (18% GST, 10% TDS)'], ['export', 'Export (no GST, no TDS)']];
-  var COLLECT_OPTS = [['this', 'this month'], ['next', 'next month']];
+  function radios(name, path, val, pairs) {
+    return pairs.map(function (p) {
+      return '<label class="rad"><input type="radio" name="' + name + '" data-path="' + path + '" data-unit="str" value="' + p[0] + '"' + (p[0] === val ? ' checked' : '') + '> ' + p[1] + '</label>';
+    }).join('');
+  }
+  var MODE_OPTS = [['indian', 'India'], ['export', 'Export']];
+  var COLLECT_OPTS = [['this', 'This month'], ['next', 'Next month']];
 
   function invSummary() {
     return grp('Invoicing: raised this month', GTIPS.invoicing) +
-      vrow('Total invoices (ex-GST, probability-weighted)', 'inv.exGst') +
+      vrow('Total invoices (ex-GST)', 'inv.exGst') +
       vrow('GST', 'inv.gst') +
       vrow('Total + GST', 'inv.total') +
       vrow('TDS deposited by clients', 'inv.tds', 'kneg') +
@@ -232,10 +236,9 @@
     var d = st.data, n = nMonths();
     var win = monthLong(d.months[0]) + ' to ' + monthLong(d.months[n - 1]);
     return '<div class="card">' +
-      '<div class="openbox"><label for="open">Opening cash on 1 ' + monthLabel(d.months[0], false) + ' ' + d.months[0].slice(0, 4) + '</label>' + tip('Money in the bank on day one of the window. You type this each time. Include unpaid invoices you expect before then.') +
+      '<div class="openbox"><label for="open">Opening cash on 1 ' + monthLabel(d.months[0], false) + ' ' + d.months[0].slice(0, 4) + '</label>' + tip('Money in the bank on day one of the window. You type this each time.') +
       '&#8377; <input id="open" inputmode="numeric" placeholder="0" data-path="opening" data-unit="rs" value="' + fmtOpening(d.opening) + '">' +
       '<span class="span">Window: ' + win + '</span></div>' +
-      '<div class="remind"><span data-v="preWindowCount" data-f="int"></span> unpaid invoices worth &#8377;<span data-v="preWindowCash" data-f="lakh"></span> are expected before the window starts. Include them in the number you type.</div>' +
       '<div class="cards" id="cards"></div>' +
       '<div class="chart" id="chart"></div>' +
       '<div class="wrap"><table class="g">' + head('') +
@@ -257,7 +260,7 @@
       vrow('Closing cash', 'closing', 'k', 'tot', 2) +
       vrow('Months of payroll covered', 'coverage', 'x1', 'sub') +
       '</table></div>' +
-      '<div class="note">All figures in &#8377; thousands. Invoices are probability-weighted. Edit the numbers on the other tabs and everything here updates.</div></div>' +
+      '<div class="note">All figures in &#8377; thousands. Edit the numbers on the other tabs and everything here updates.</div></div>' +
       '<div class="card"><h2>Compare scenarios</h2>' +
       '<div class="cmpsel"><label for="cmpSel">Compare with</label><select id="cmpSel">' + compareOptions() + '</select></div>' +
       '<div class="cmpwrap" id="cmp"></div></div>';
@@ -275,33 +278,19 @@
   function invoicesPanel() {
     var d = st.data, h = '';
     h += '<div class="card"><h2>Invoices to raise' + tip('One row per client. Enter the amount you will invoice each month, before GST.') + '</h2>' +
-      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Pick Indian (18% GST, 10% TDS) or Export (no GST, no TDS) for each client, and whether you collect in the invoice month or the month after. Probability weights the whole row.</div>' +
+      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Invoice each client as India (18% GST, 10% TDS) or Export (no GST, no TDS), and choose whether you collect in the invoice month or the month after.</div>' +
       '<div class="wrap"><table class="g inv">' + head('Client');
     d.invoices.forEach(function (inv, i) {
       var p = 'invoices.' + i;
       h += '<tr><td><div class="lblrow">' + txt(p + '.client', inv.client) + delBtn(p) + '</div>' +
-        '<div class="set">' + sel(p + '.mode', inv.mode, MODE_OPTS, 'modesel') + tip('Indian clients are billed 18% GST and deduct 10% TDS. Export clients have neither.') + ' &middot; collected ' + sel(p + '.collect', inv.collect, COLLECT_OPTS, 'kind') + tip('Whether this client pays in the invoice month or the month after.') +
-        ' &middot; prob ' + mini(p + '.prob', inv.prob == null ? 100 : inv.prob) + '%' + tip('How likely this revenue is. 100% counts it in full, 50% counts half. It applies to the whole row.') + '</div></td>' + cellsK(p + '.amounts', inv.amounts) + '</tr>';
+        '<div class="set"><span class="rl">Invoice to</span>' + radios('m' + i, p + '.mode', inv.mode, MODE_OPTS) + tip('India: 18% GST and 10% TDS. Export: no GST and no TDS.') +
+        '<span class="rl sp">Collected</span>' + radios('c' + i, p + '.collect', inv.collect, COLLECT_OPTS) + tip('When the client pays: in the month you invoice, or a month later. For next month, the first month assumes last month\'s invoice was the same amount, so its cash still arrives.') +
+        '</div></td>' + cellsK(p + '.amounts', inv.amounts) + '</tr>';
     });
     h += addRow('invoices', 'Add client or pipeline deal') + '</table></div></div>';
 
     h += '<div class="card"><div class="wrap"><table class="g">' + head('') + invSummary() + '</table></div></div>';
 
-    var landOpts = [['opening', 'In opening cash']].concat(d.months.map(function (k) { return [k, monthLabel(k, true)]; }));
-    h += '<div class="card"><h2>Already invoiced, unpaid' + tip('Invoices you raised before the window that are still unpaid. "In opening cash" means you expect the money before the window starts, so it is already in the balance you typed.') + '</h2>' +
-      '<div class="hint">Invoices raised before the window that haven&#8217;t been paid. Mark the ones you expect to land before the window starts as &ldquo;In opening cash&rdquo;. The rest count in the month you pick.</div>' +
-      '<div class="wrap"><table class="rc"><colgroup><col style="width:110px"><col><col style="width:100px"><col style="width:90px"><col style="width:110px"><col style="width:150px"><col style="width:80px"><col style="width:34px"></colgroup>' +
-      '<tr><th>Invoice</th><th>Client</th><th class="n">Total + GST</th><th class="n">TDS</th><th class="n">Cash (weighted)</th><th>Lands</th><th class="n">Prob %</th><th></th></tr>';
-    d.receivables.forEach(function (r, i) {
-      var p = 'receivables.' + i;
-      h += '<tr><td>' + txt(p + '.ref', r.ref) + '</td><td>' + txt(p + '.client', r.client) + '</td>' +
-        '<td><input class="cell" inputmode="decimal" data-path="' + p + '.gross" data-unit="k" value="' + inputK(r.gross) + '"></td>' +
-        '<td><input class="cell" inputmode="decimal" data-path="' + p + '.tds" data-unit="k" value="' + inputK(r.tds) + '"></td>' +
-        '<td class="n" data-v="rc.' + i + '.cash" data-f="k"></td>' +
-        '<td>' + sel(p + '.expect', r.expect || 'opening', landOpts, 'landsel') + '</td>' +
-        '<td>' + mini(p + '.prob', r.prob == null ? 100 : r.prob) + '</td><td>' + delBtn(p) + '</td></tr>';
-    });
-    h += '<tr class="addrow"><td colspan="8"><button data-add="receivables">+ Add unpaid invoice</button></td></tr></table></div></div>';
     return h;
   }
 
@@ -480,6 +469,7 @@
     var t = e.target;
     var p = t.getAttribute && t.getAttribute('data-path');
     if (!p) return;
+    if (t.type === 'radio' && !t.checked) return;
     var u = t.getAttribute('data-unit'), val;
     if (u === 'bool') val = t.checked;
     else if (u === 'k') {
@@ -498,8 +488,7 @@
 
   function blankRow(what) {
     var n = nMonths(), z = zeros(n), d = st.data;
-    if (what === 'invoices') d.invoices.push({ id: uid(), client: 'New client', mode: 'indian', collect: 'this', prob: 100, amounts: z });
-    else if (what === 'receivables') d.receivables.push({ id: uid(), ref: '', client: '', gross: 0, tds: 0, expect: d.months[0], prob: 100 });
+    if (what === 'invoices') d.invoices.push({ id: uid(), client: 'New client', mode: 'indian', collect: 'this', amounts: z });
     else if (what === 'salaries') d.salaries.push({ id: uid(), name: 'New person', group: 'ICs', amounts: z });
     else if (what === 'rent') d.rent.push({ id: uid(), label: 'New rent line', kind: 'fixed', amounts: z });
     else if (what === 'consultants') d.consultants.push({ id: uid(), label: 'New consultant', amounts: z });
