@@ -310,7 +310,7 @@
       d.salaries.forEach(function (p, idx) {
         if ((GROUPS.indexOf(p.group) >= 0 ? p.group : 'ICs') !== g) return;
         var path = 'salaries.' + idx;
-        h += '<tr><td><div class="lblrow">' + txt(path + '.name', p.name) +
+        h += '<tr><td><div class="lblrow">' + txt(path + '.name', p.name) + (p.note ? tip(p.note) : '') +
           '<select class="kind" data-path="' + path + '.group" data-unit="str" data-rebuild="1">' +
           GROUPS.map(function (o) { return '<option' + (o === p.group ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>' +
           delBtn(path) + '</div></td>' + cellsK(path + '.amounts', p.amounts) + '</tr>';
