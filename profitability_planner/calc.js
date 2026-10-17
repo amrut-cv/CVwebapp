@@ -28,12 +28,12 @@
       }
     });
 
-    var credit = Math.max(0, Math.min(1, num(s.gstInputCreditPct) / 100));
+    var credit = Math.max(0, num(s.gstInputCredit));
     var gstAuto = zeros(n), gstPaid = zeros(n);
     var ov = d.gstOverride || [];
     for (var i = 0; i < n; i++) {
       var base = i === 0 ? num(s.priorMonthGst) : gst[i - 1];
-      gstAuto[i] = base * (1 - credit);
+      gstAuto[i] = Math.max(0, base - credit);
       gstPaid[i] = (ov[i] === null || ov[i] === undefined || ov[i] === '') ? gstAuto[i] : num(ov[i]);
     }
 

@@ -56,7 +56,7 @@
     }
     return {
       version: 1, months: months, opening: 0,
-      settings: { gstInputCreditPct: 15, priorMonthGst: 0, crisis: { on: false, fromMonth: months[0], pct: { Leaders: 40, Managers: 25, ICs: 10 } } },
+      settings: { gstInputCredit: 0, priorMonthGst: 0, crisis: { on: false, fromMonth: months[0], pct: { Leaders: 40, Managers: 25, ICs: 10 } } },
       invoices: [], salaries: [], rent: [], consultants: [], expenses: [],
       gstOverride: [null, null, null, null, null, null], buffer: zeros(6)
     };
@@ -68,8 +68,12 @@
     var n = d.months.length;
     d.opening = num(d.opening);
     d.settings = d.settings || {};
-    d.settings.gstInputCreditPct = d.settings.gstInputCreditPct == null ? 15 : d.settings.gstInputCreditPct;
     d.settings.priorMonthGst = num(d.settings.priorMonthGst);
+    if (d.settings.gstInputCredit == null) {
+      d.settings.gstInputCredit = d.settings.gstInputCreditPct != null ? Math.round(num(d.settings.gstInputCreditPct) / 100 * d.settings.priorMonthGst) : 0;
+    }
+    d.settings.gstInputCredit = num(d.settings.gstInputCredit);
+    delete d.settings.gstInputCreditPct;
     d.settings.crisis = d.settings.crisis || {};
     d.settings.crisis.on = !!d.settings.crisis.on;
     d.settings.crisis.fromMonth = d.settings.crisis.fromMonth || d.months[0];
@@ -128,7 +132,7 @@
     'out.consultants': 'External consultant payments from the Rent and expenses tab.',
     'out.rent': 'Seats, podcast studio and day-passes from the Rent and expenses tab.',
     'out.other': 'Software, client-facing ads and studio, travel and other lines from the Rent and expenses tab.',
-    'out.gst': 'GST you charged last month, less input credit, paid to the government this month. Edit it on the Rent and expenses tab.',
+    'out.gst': 'GST you charged last month, less the fixed input credit you set, paid to the government this month. Edit it on the Rent and expenses tab.',
     'out.buffer': 'A cushion for costs that usually run over plan. Set it on the Rent and expenses tab.',
     'out.total': 'Everything that leaves the bank this month: payroll, consultants, rent, other expenses, GST paid and the buffer.',
     'out.costs': 'Payroll + consultants + rent + other expenses + overrun buffer. GST is left out because it passes through to the government.',
@@ -339,7 +343,7 @@
     for (var i = 0; i < nMonths(); i++) h += '<td class="n" data-v="out.gst.' + i + '" data-f="k"></td>';
     h += '</tr>';
     h += '<tr><td><div class="lblrow"><span>GST paid to government</span><span class="tag">auto</span>' + tipOf('out.gst') + '</div>' +
-      '<div class="set">Last month&#8217;s output GST, less <input class="mini" inputmode="decimal" data-path="settings.gstInputCreditPct" data-unit="n" value="' + esc(d.settings.gstInputCreditPct) + '">% input credit &middot; first month uses output GST of ' +
+      '<div class="set">Last month&#8217;s output GST, less &#8377;<input class="mini" style="width:80px" inputmode="decimal" data-path="settings.gstInputCredit" data-unit="rs" value="' + esc(Math.round(d.settings.gstInputCredit)) + '"> input credit each month &middot; first month uses output GST of ' +
       '&#8377;<input class="mini" style="width:80px" inputmode="decimal" data-path="settings.priorMonthGst" data-unit="rs" value="' + esc(Math.round(d.settings.priorMonthGst)) + '"> &middot; type in a cell to override</div></td>';
     for (i = 0; i < nMonths(); i++) {
       var ov = d.gstOverride[i];
