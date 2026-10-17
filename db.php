@@ -57,6 +57,18 @@ function getDB(): PDO {
         $pdo->exec("ALTER TABLE contracts ADD COLUMN drive_file_id_contract VARCHAR(100) NULL DEFAULT NULL");
     } catch (PDOException $e) { /* column already exists */ }
 
+    // Saved scenarios for the profitability planner. The whole scenario (lines,
+    // settings, monthly amounts) lives in one JSON document, like contracts.data.
+    $pdo->exec("CREATE TABLE IF NOT EXISTS planner_scenarios (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        name       VARCHAR(255) NOT NULL,
+        data       MEDIUMTEXT   NOT NULL,
+        created_by VARCHAR(255) NOT NULL DEFAULT '',
+        updated_by VARCHAR(255) NOT NULL DEFAULT '',
+        created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id         INT AUTO_INCREMENT PRIMARY KEY,
         email      VARCHAR(255) NOT NULL,

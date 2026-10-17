@@ -7,4 +7,5 @@ return [
     'deal_tracker'     => 'Deal Tracker',
     'guest_tracker'    => 'Guest Tracker',
     'inquiries'        => 'Inquiries',
+    'profitability_planner' => 'Profitability Planner',
 ];
