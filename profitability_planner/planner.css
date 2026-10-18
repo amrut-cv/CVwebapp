@@ -95,3 +95,8 @@ select.kind{font-size:.72rem;padding:2px 4px;border-radius:5px;max-width:92px}
 .rad input{margin:0;accent-color:#1a1a2e}
 .set .rl{color:#9ca3af;margin-right:2px}
 .set .rl.sp{margin-left:6px}
+
+.q.q-empty{background:#f1f2f6;color:#c0c4cf}
+.q.q-empty:hover,.q.q-empty:focus{background:#C9972A;color:#fff}
+input.txt.note{margin-top:4px;font-size:.72rem;color:#4b5563;padding:3px 7px}
+input.txt.note::placeholder{color:#c0c4cf}

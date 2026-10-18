@@ -152,6 +152,11 @@
   function tip(text) {
     return '<span class="q" tabindex="0" role="note" aria-label="' + esc(text) + '" data-tip="' + esc(text) + '">?</span>';
   }
+  var NO_NOTE = 'No note yet. Type one in the field below the name.';
+  function noteTip(path, note) {
+    var t = note ? note : NO_NOTE;
+    return '<span class="q' + (note ? '' : ' q-empty') + '" tabindex="0" role="note" aria-label="' + esc(t) + '" data-note-for="' + path + '" data-tip="' + esc(t) + '">?</span>';
+  }
   function tipOf(base) { return TIPS[base] ? tip(TIPS[base]) : ''; }
 
   /* ---------- html builders ---------- */
@@ -310,10 +315,10 @@
       d.salaries.forEach(function (p, idx) {
         if ((GROUPS.indexOf(p.group) >= 0 ? p.group : 'ICs') !== g) return;
         var path = 'salaries.' + idx;
-        h += '<tr><td><div class="lblrow">' + txt(path + '.name', p.name) + (p.note ? tip(p.note) : '') +
+        h += '<tr><td><div class="lblrow">' + txt(path + '.name', p.name) + noteTip(path, p.note) +
           '<select class="kind" data-path="' + path + '.group" data-unit="str" data-rebuild="1">' +
           GROUPS.map(function (o) { return '<option' + (o === p.group ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select>' +
-          delBtn(path) + '</div></td>' + cellsK(path + '.amounts', p.amounts) + '</tr>';
+          delBtn(path) + '</div><input class="txt note" data-path="' + path + '.note" data-unit="str" placeholder="Add a note (shows in the ? tooltip)" value="' + esc(p.note || '') + '"></td>' + cellsK(path + '.amounts', p.amounts) + '</tr>';
       });
     });
     h += addRow('salaries', 'Add person') + vrow('Total payroll', 'out.payroll', 'k', 'tot') + '</table></div></div>';
@@ -478,6 +483,16 @@
     else val = t.value;
     setp(st.data, p, val);
     setDirty(true);
+    if (/\.note$/.test(p)) {
+      var qn = root.querySelector('.q[data-note-for="' + p.slice(0, -5) + '"]');
+      if (qn) {
+        var nv = String(val).trim();
+        qn.setAttribute('data-tip', nv || NO_NOTE);
+        qn.setAttribute('aria-label', nv || NO_NOTE);
+        qn.classList.toggle('q-empty', !nv);
+      }
+      return;
+    }
     if (t.hasAttribute('data-rebuild') && e.type === 'change') { buildAll(); return; }
     if (p === 'settings.crisis.on' && e.type === 'change') { buildAll(); return; }
     paint();
