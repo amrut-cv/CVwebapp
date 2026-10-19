@@ -6,7 +6,17 @@ if (empty($_SESSION['auth_email']) ||
     time() - (int)$_SESSION['auth_time'] > 28800) { // 8 hours
     session_unset();
     session_destroy();
-    header('Location: login.php');
+    // API requests (JSON body or XHR) get a 401 JSON response so fetch() callers
+    // can detect the expired session without chasing a redirect to login.php.
+    $ct = $_SERVER['CONTENT_TYPE'] ?? '';
+    $xr = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+    if (str_contains($ct, 'application/json') || stripos($xr, 'XMLHttpRequest') !== false) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'session_expired', 'redirect' => '/CVwebapp/login.php']);
+        exit;
+    }
+    header('Location: /CVwebapp/login.php');
     exit;
 }
 

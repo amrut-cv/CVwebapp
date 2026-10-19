@@ -1775,6 +1775,7 @@ This proposal outlines what we'd recommend, what's in scope, and what it costs. 
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({action: 'share', contract_id: currentDraftId, shared_with_email: email, permission: perm})
       });
+      if (res.status === 401) { showToast('Session expired — please reload the page'); return; }
       var json = await res.json();
       if (json.ok) {
         document.getElementById('shareEmail').value = '';
