@@ -8,4 +8,5 @@ return [
     'guest_tracker'    => 'Guest Tracker',
     'inquiries'        => 'Inquiries',
     'profitability_planner' => 'Profitability Planner',
+    'payroll_planner'  => 'Payroll Planner',
 ];
