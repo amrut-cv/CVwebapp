@@ -28,7 +28,7 @@ select{padding:7px 10px;border:1.5px solid #d1d5db;border-radius:7px;background:
 .simrow input[type=range]{flex:1;min-width:200px;accent-color:#1a1a2e}
 .simrow .unit{font-size:.82rem;color:#6b7280}
 
-.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:6px}
 .mc{background:#f3f4f8;border-radius:9px;padding:11px 14px;min-width:0}
 .mc .l{font-size:.75rem;color:#6b7280}
 .mc .v{font-size:1.35rem;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
@@ -37,18 +37,19 @@ select{padding:7px 10px;border:1.5px solid #d1d5db;border-radius:7px;background:
 .mc.good{background:#ecfdf3}.mc.good .l,.mc.good .v{color:#15803d}
 .status{font-size:.82rem;color:#4b5563;margin:10px 0 0}
 
-.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
 .fld label{display:block;font-size:.75rem;color:#6b7280;margin-bottom:4px;font-weight:600}
 .fld input{width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:7px;text-align:right;background:#fff}
 .suggest{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.8rem;color:#4b5563;margin-bottom:10px}
 .chart svg{display:block;width:100%;height:auto}
 
 .wrap{overflow-x:auto}
-table.g{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.8rem;min-width:900px}
+table.g{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.8rem;min-width:980px}
 table.g th{font-weight:500;color:#6b7280;text-align:right;padding:7px 4px;font-size:.75rem}
 table.g td{padding:5px 4px;text-align:right;border-top:1px solid #eef0f6;font-variant-numeric:tabular-nums;vertical-align:middle}
 table.g th:first-child,table.g td:first-child{text-align:left;width:230px}
 table.g th.lv,table.g td.lv{text-align:left;width:120px}
+table.g th.pl,table.g td.pl{text-align:left;width:92px}
 table.g tr.grp td{background:#f3f4f8;font-weight:600;color:#4b5563}
 table.g tr.grp td.lv{background:#f3f4f8}
 table.g tr.tot td{font-weight:700;border-top:2px solid #e2e5ef}
@@ -69,4 +70,4 @@ select.kind{font-size:.75rem;padding:3px 4px;border-radius:5px;width:100%;max-wi
 .q:hover,.q:focus{background:#C9972A;color:#fff;outline:none}
 .tip{position:fixed;z-index:1000;max-width:290px;background:#1a1a2e;color:#fff;font-size:.78rem;line-height:1.45;padding:9px 12px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none;font-weight:400;text-align:left}
 
-@media (max-width:900px){.page{padding:20px 16px}.cards,.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.page{padding:20px 16px}}

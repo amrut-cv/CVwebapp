@@ -16,17 +16,21 @@
 
   function blankTotals() { return { fixed: 0, variable: 0, full: 0, earned: 0, pay: 0 }; }
 
+  // Pool 1 is paid first (scale r0 to r1). Pool 2 only starts once pool 1 is
+  // full (scale r1 to r2). Everyone in a pool gets the same percentage of
+  // their own variable target.
   function compute(plan) {
     var s = plan.settings || {};
-    var pct = payoutPct(s.revenue, s.r0, s.r1);
-    var total = blankTotals(), groups = {};
+    var pcts = { 1: payoutPct(s.revenue, s.r0, s.r1), 2: payoutPct(s.revenue, s.r1, s.r2) };
+    var total = blankTotals(), groups = {}, pools = { 1: { count: 0, variable: 0, earned: 0 }, 2: { count: 0, variable: 0, earned: 0 } };
     GROUPS.forEach(function (g) { groups[g] = blankTotals(); });
 
     var rows = (plan.people || []).map(function (p) {
       var fixed = Math.max(0, num(p.fixed)), variable = Math.max(0, num(p.variable));
-      var earned = variable * pct;
+      var pool = p.pool === 2 ? 2 : 1;
+      var earned = variable * pcts[pool];
       var row = {
-        fixed: fixed, variable: variable, full: fixed + variable,
+        pool: pool, fixed: fixed, variable: variable, full: fixed + variable,
         share: fixed + variable > 0 ? variable / (fixed + variable) : 0,
         earned: earned, pay: fixed + earned
       };
@@ -34,23 +38,26 @@
       [groups[g], total].forEach(function (t) {
         t.fixed += fixed; t.variable += variable; t.full += row.full; t.earned += earned; t.pay += row.pay;
       });
+      pools[pool].count += 1; pools[pool].variable += variable; pools[pool].earned += earned;
       return row;
     });
 
+    var r0 = num(s.r0), r1 = num(s.r1), r2 = num(s.r2);
     var overhead = Math.max(0, num(s.overhead));
     var keep = Math.max(0, Math.min(99, num(s.keepPct))) / 100;
     var r0s = ceil10k(total.fixed + overhead);
-    var r1s = ceil10k(r0s + total.variable / (1 - keep));
+    var r1s = ceil10k(r0s + pools[1].variable / (1 - keep));
+    var r2s = ceil10k(r1s + pools[2].variable / (1 - keep));
 
     return {
-      payout: pct,
-      rows: rows,
-      groups: groups,
-      total: total,
+      payout1: pcts[1], payout2: pcts[2],
+      rows: rows, groups: groups, pools: pools, total: total,
       profit: num(s.revenue) - total.pay - overhead,
-      suggested: { r0: r0s, r1: r1s },
-      scaleBroken: num(s.r1) <= num(s.r0),
-      underfunded: num(s.r1) > num(s.r0) && (num(s.r1) - num(s.r0)) < total.variable
+      suggested: { r0: r0s, r1: r1s, r2: r2s },
+      broken1: pools[1].variable > 0 && r1 <= r0,
+      broken2: pools[2].variable > 0 && r2 <= r1,
+      underfunded1: pools[1].variable > 0 && r1 > r0 && (r1 - r0) < pools[1].variable,
+      underfunded2: pools[2].variable > 0 && r2 > r1 && (r2 - r1) < pools[2].variable
     };
   }
 
