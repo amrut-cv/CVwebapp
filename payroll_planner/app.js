@@ -133,13 +133,14 @@
     var opts = '';
     if (!st.meta.id) opts += '<option value="">' + esc(st.meta.name || '(unsaved plan)') + '</option>';
     st.list.forEach(function (s) {
-      opts += '<option value="' + s.id + '"' + (String(s.id) === String(st.meta.id) ? ' selected' : '') + '>' + esc(s.name) + '</option>';
+      opts += '<option value="' + s.id + '"' + (String(s.id) === String(st.meta.id) ? ' selected' : '') + '>' + (+s.locked ? '\uD83D\uDD12 ' : '') + esc(s.name) + '</option>';
     });
     return '<div class="bar"><h1>Payroll <span>planner</span></h1>' +
       '<select id="planSel" aria-label="Plan">' + opts + '</select>' +
       '<button class="btn primary" data-act="save">Save</button>' +
       '<button class="btn" data-act="saveas">Save as</button>' +
       '<button class="btn" data-act="rename">Rename</button>' +
+      '<button class="btn" data-act="lock">' + (st.meta.locked ? 'Unlock' : 'Lock') + '</button>' +
       '<button class="btn" data-act="new">New blank</button>' +
       '<button class="btn danger" data-act="delete">Delete</button>' +
       '<span class="dirty" id="dirty" style="display:none">Unsaved changes</span></div>';
@@ -215,9 +216,25 @@
   }
 
   function buildAll() {
-    root.innerHTML = topBar() + simPanel() + scalePanel() + peoplePanel();
+    root.innerHTML = topBar() + (st.meta.locked ? lockBanner() : '') + simPanel() + scalePanel() + peoplePanel();
+    if (st.meta.locked) applyLock();
     paint();
     setDirty(st.dirty);
+  }
+
+  function lockBanner() {
+    return '<div class="lockbar">&#128274; This plan is locked. It can\'t be edited, renamed or deleted. The revenue box above still works for what-ifs. Use Save as to make an editable copy, or Unlock to change it.</div>';
+  }
+  // Everything except the revenue what-if controls becomes read-only.
+  function applyLock() {
+    root.querySelectorAll('input[data-path],select[data-path]').forEach(function (el) {
+      if (el.getAttribute('data-path') !== 'settings.revenue') el.disabled = true;
+    });
+    ['save', 'rename', 'delete', 'usesuggest'].forEach(function (a) {
+      var b = root.querySelector('[data-act="' + a + '"]');
+      if (b) b.disabled = true;
+    });
+    root.querySelectorAll('[data-add],[data-del]').forEach(function (b) { b.disabled = true; });
   }
 
   /* ---------- painting ---------- */
@@ -359,6 +376,8 @@
     var t = e.target;
     var p = t.getAttribute && t.getAttribute('data-path');
     if (!p) return;
+    var isRev = p === 'settings.revenue';
+    if (st.meta.locked && !isRev) return;
     var u = t.getAttribute('data-unit'), val;
     if (u === 'lakh') val = Math.max(0, Math.round(num(t.value.replace(/[,\s]/g, '')) * 100000));
     else if (u === 'rs') val = Math.max(0, Math.round(num(t.value)));
@@ -367,7 +386,7 @@
     else if (u === 'n') val = Math.max(0, num(t.value.replace(/[,\s]/g, '')));
     else val = t.value;
     setp(st.data, p, val);
-    setDirty(true);
+    if (!(st.meta.locked && isRev)) setDirty(true);
     if (t.hasAttribute('data-rebuild') && e.type === 'change') { buildAll(); return; }
     paint();
   }
@@ -380,7 +399,7 @@
       name = name.trim();
     }
     post({ action: 'save', id: asNew ? null : st.meta.id, name: name, data: st.data }).then(function (j) {
-      st.meta = { id: j.id, name: j.name };
+      st.meta = { id: j.id, name: j.name, locked: false };
       return getList();
     }).then(function (list) {
       st.list = list;
@@ -391,7 +410,7 @@
 
   function openPlan(id) {
     return post({ action: 'load', id: id }).then(function (j) {
-      st.meta = { id: j.plan.id, name: j.plan.name };
+      st.meta = { id: j.plan.id, name: j.plan.name, locked: !!(+j.plan.locked) };
       st.data = normalize(j.plan.data);
       st.dirty = false;
       buildAll();
@@ -410,6 +429,7 @@
   function onClick(e) {
     var t = e.target.closest('[data-del],[data-add],[data-act]');
     if (!t) return;
+    if (t.disabled) return;
     if (t.hasAttribute('data-add')) {
       st.data.people.push({ id: uid(), name: 'New person', group: 'ICs', fixed: 0, fromClient: 0, variable1: 0, variable2: 0, variable3: 0 });
       setDirty(true); buildAll(); return;
@@ -427,6 +447,14 @@
       st.data.settings.r2 = st.r.suggested.r2;
       st.data.settings.r3 = st.r.suggested.r3;
       setDirty(true); buildAll();
+    } else if (act === 'lock') {
+      if (!st.meta.id) { window.alert('Save this plan first, then lock it.'); return; }
+      var lockIt = !st.meta.locked;
+      if (lockIt && st.dirty) { window.alert('Save your changes before locking, so the lock covers what you want to keep.'); return; }
+      if (!lockIt && !window.confirm('Unlock "' + st.meta.name + '"? Anyone with access will be able to change it.')) return;
+      post({ action: 'lock', id: st.meta.id, locked: lockIt }).then(getList).then(function (list) {
+        st.list = list; st.meta.locked = lockIt; buildAll();
+      }).catch(function (err) { window.alert((lockIt ? 'Lock' : 'Unlock') + ' failed: ' + err.message); });
     } else if (act === 'rename') {
       var nn = window.prompt('Plan name', st.meta.name || '');
       if (nn && nn.trim()) { st.meta.name = nn.trim(); setDirty(true); if (st.meta.id) save(false); else buildAll(); }

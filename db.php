@@ -81,6 +81,11 @@ function getDB(): PDO {
         updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // A locked plan can't be edited, renamed or deleted until it is unlocked.
+    try {
+        $pdo->exec("ALTER TABLE payroll_plans ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (PDOException $e) { /* column already exists */ }
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id         INT AUTO_INCREMENT PRIMARY KEY,
         email      VARCHAR(255) NOT NULL,
