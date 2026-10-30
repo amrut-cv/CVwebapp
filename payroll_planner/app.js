@@ -60,6 +60,7 @@
       return {
         id: p.id || uid(), name: String(p.name || ''),
         group: GROUPS.indexOf(p.group) >= 0 ? p.group : 'ICs',
+        email: String(p.email || '').trim(),
         fixed: num(p.fixed), fromClient: Math.max(0, num(p.fromClient)),
         variable1: Math.max(0, v1), variable2: Math.max(0, v2), variable3: Math.max(0, num(p.variable3))
       };
@@ -195,7 +196,8 @@
         if (p.group !== g) return;
         var path = 'people.' + i;
         h += '<tr><td><div class="lblrow"><input class="txt" data-path="' + path + '.name" data-unit="str" value="' + esc(p.name) + '" aria-label="Name">' +
-          '<button class="xbtn" data-del="' + i + '" title="Remove" aria-label="Remove person">&times;</button></div></td>' +
+          '<button class="xbtn" data-del="' + i + '" title="Remove" aria-label="Remove person">&times;</button></div>' +
+          '<input class="txt email" data-path="' + path + '.email" data-unit="str" value="' + esc(p.email) + '" placeholder="email (for the employee tool)" aria-label="Email"></td>' +
           '<td class="lv"><select class="kind" data-path="' + path + '.group" data-unit="str" data-rebuild="1" aria-label="Level">' +
           GROUPS.map(function (o) { return '<option value="' + o + '"' + (o === p.group ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></td>' +
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.fixed" data-unit="ks" value="' + esc(inputK(p.fixed)) + '" aria-label="Fixed"></td>' +
@@ -431,7 +433,7 @@
     if (!t) return;
     if (t.disabled) return;
     if (t.hasAttribute('data-add')) {
-      st.data.people.push({ id: uid(), name: 'New person', group: 'ICs', fixed: 0, fromClient: 0, variable1: 0, variable2: 0, variable3: 0 });
+      st.data.people.push({ id: uid(), name: 'New person', email: '', group: 'ICs', fixed: 0, fromClient: 0, variable1: 0, variable2: 0, variable3: 0 });
       setDirty(true); buildAll(); return;
     }
     if (t.hasAttribute('data-del')) {
