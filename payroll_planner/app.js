@@ -39,7 +39,7 @@
   function blank() {
     return {
       version: 1,
-      settings: { revenue: 1950000, r0: 1810000, r1: 1950000, r2: 2080000, overhead: 600000, keepPct: 30 },
+      settings: { revenue: 1950000, r0: 1810000, r1: 1950000, r2: 2080000, r3: 2250000, overhead: 600000, keepPct: 30 },
       people: []
     };
   }
@@ -48,6 +48,7 @@
     d = d || {};
     d.settings = d.settings || {};
     if (d.settings.r2 == null && d.settings.r1 != null) d.settings.r2 = d.settings.r1;
+    if (d.settings.r3 == null && d.settings.r2 != null) d.settings.r3 = num(d.settings.r2) + 200000;
     Object.keys(b.settings).forEach(function (k) {
       d.settings[k] = d.settings[k] == null ? b.settings[k] : num(d.settings[k]);
     });
@@ -60,7 +61,7 @@
         id: p.id || uid(), name: String(p.name || ''),
         group: GROUPS.indexOf(p.group) >= 0 ? p.group : 'ICs',
         fixed: num(p.fixed), fromClient: Math.max(0, num(p.fromClient)),
-        variable1: Math.max(0, v1), variable2: Math.max(0, v2)
+        variable1: Math.max(0, v1), variable2: Math.max(0, v2), variable3: Math.max(0, num(p.variable3))
       };
     });
     return d;
@@ -103,13 +104,15 @@
     revenue: 'The month\'s service invoices before GST. Leave out reimbursements and pass-through costs.',
     payout1: 'The share of each Pool 1 variable target that is paid. It is 0% at or below R0 and rises in a straight line to 100% at R1.',
     payout2: 'The share of each Pool 2 variable target that is paid. Pool 2 pays nothing until Pool 1 is full at R1, then rises in a straight line to 100% at R2.',
+    payout3: 'The share of each Pool 3 variable target that is paid. Pool 3 pays nothing until Pool 2 is full at R2, then rises in a straight line to 100% at R3.',
     varpaid: 'Variable pay across everyone at this revenue.',
     payroll: 'What CV pays: fixed pay (which can be negative) plus the variable pay earned at this revenue. Pay a client makes directly is not included.',
     profit: 'Revenue minus total payroll minus overhead. This is what the company keeps after paying everyone.',
-    scale: 'Two pools on one revenue line. Pool 1 is paid first, from R0 to R1. Pool 2 starts only once Pool 1 is full, from R1 to R2. Each person\'s variable target in a pool is paid at that pool\'s percentage.',
+    scale: 'Three pools on one revenue line. Pool 1 is paid first, from R0 to R1. Pool 2 starts only once Pool 1 is full, from R1 to R2. Pool 3 starts only once Pool 2 is full, from R2 to R3. Each person\'s variable target in a pool is paid at that pool\'s percentage.',
     r0: 'The revenue where variable pay starts. Below it nobody earns any. A sound starting point is fixed payroll plus overhead.',
     r1: 'The revenue where Pool 1 reaches 100% of its variable targets. Pool 2 starts paying from here. Keep the gap from R0 at least as large as the Pool 1 targets.',
     r2: 'The revenue where Pool 2 reaches 100% of its variable targets. Keep the gap from R1 at least as large as the Pool 2 targets.',
+    r3: 'The revenue where Pool 3 reaches 100% of its variable targets. Keep the gap from R2 at least as large as the Pool 3 targets.',
     overhead: 'Monthly costs other than payroll, such as rent, software and consultants, before GST. Used for the profit figure and the suggested R0.',
     keep: 'The share of the revenue above R0 that the company keeps while pay is being restored. At 30%, 70% of that surplus can go to variable pay. Used for the suggested R1.',
     people: 'One row per person. Fixed pay is guaranteed. Each pool\'s variable target is paid in full only when that pool reaches 100%.',
@@ -117,7 +120,8 @@
     client: 'Income a client pays the person directly, in ₹ thousands a month. It counts toward their pay but is not CV payroll.',
     variable1: 'Monthly variable pay in ₹ thousands from Pool 1, which is paid first. Earned in full only when Pool 1 reaches 100% at R1.',
     variable2: 'Monthly variable pay in ₹ thousands from Pool 2, which only starts once Pool 1 is full. Earned in full only when Pool 2 reaches 100% at R2.',
-    share: 'Variable target as a share of full pay (fixed plus from client plus both variable targets).',
+    variable3: 'Monthly variable pay in ₹ thousands from Pool 3, which only starts once Pool 2 is full. Earned in full only when Pool 3 reaches 100% at R3.',
+    share: 'Variable target as a share of full pay (fixed plus from client plus all variable targets).',
     earned: 'The variable pay this person earns at the revenue above: each pool\'s target times that pool\'s payout percentage.'
   };
   function tip(text) {
@@ -160,29 +164,30 @@
   function scalePanel() {
     var s = st.data.settings;
     return '<div class="card"><h2>Payout scale' + tip(TIPS.scale) + '</h2>' +
-      '<div class="hint">Pool 1 is paid first: 0% at or below R0, rising to 100% at R1. Pool 2 starts only once Pool 1 is full: 0% at R1, rising to 100% at R2. Each person\'s variable target in a pool is paid at that pool\'s percentage.</div>' +
+      '<div class="hint">Pool 1 is paid first: 0% at or below R0, rising to 100% at R1. Pool 2 starts only once Pool 1 is full: 0% at R1, rising to 100% at R2. Pool 3 starts only once Pool 2 is full: 0% at R2, rising to 100% at R3. Each person\'s variable target in a pool is paid at that pool\'s percentage.</div>' +
       '<div class="grid4">' +
       field('r0', 'R0, variable pay starts (₹ lakh)', 'settings.r0', 'lakh', lakh(s.r0), TIPS.r0) +
       field('r1', 'R1, Pool 1 full (₹ lakh)', 'settings.r1', 'lakh', lakh(s.r1), TIPS.r1) +
       field('r2', 'R2, Pool 2 full (₹ lakh)', 'settings.r2', 'lakh', lakh(s.r2), TIPS.r2) +
+      field('r3', 'R3, Pool 3 full (₹ lakh)', 'settings.r3', 'lakh', lakh(s.r3), TIPS.r3) +
       field('ovh', 'Overhead (₹ lakh a month)', 'settings.overhead', 'lakh', lakh(s.overhead), TIPS.overhead) +
       field('keep', 'Company keeps (% of surplus)', 'settings.keepPct', 'n', String(s.keepPct), TIPS.keep) +
       '</div>' +
-      '<div class="suggest"><span id="suggestTxt"></span><button class="btn" data-act="usesuggest">Use suggested R0, R1 and R2</button></div>' +
+      '<div class="suggest"><span id="suggestTxt"></span><button class="btn" data-act="usesuggest">Use suggested R0 to R3</button></div>' +
       '<div id="scaleWarn"></div><div class="chart" id="chart"></div></div>';
   }
 
   function peoplePanel() {
     var d = st.data;
     var h = '<div class="card"><h2>People' + tip(TIPS.people) + '</h2>' +
-      '<div class="hint">Fixed, from client and the two variable targets are in &#8377; thousands a month. Fixed can be negative; from client is pay a client makes directly, so it counts toward the person&#39;s pay but not CV payroll. Pool 1 is paid first and Pool 2 only once Pool 1 is full. The last two columns show what each person earns at the revenue above.</div>' +
+      '<div class="hint">Fixed, from client and the three variable targets are in &#8377; thousands a month. Fixed can be negative; from client is pay a client makes directly, so it counts toward the person&#39;s pay but not CV payroll. Pool 1 is paid first and Pool 2 only once Pool 1 is full. The last two columns show what each person earns at the revenue above.</div>' +
       '<div class="wrap"><table class="g"><tr><th>Person</th><th class="lv">Level</th>' +
-      '<th>Fixed (&#8377;K)' + tip(TIPS.fixed) + '</th><th>From client (&#8377;K)' + tip(TIPS.client) + '</th><th>Variable, Pool 1 (&#8377;K)' + tip(TIPS.variable1) + '</th><th>Variable, Pool 2 (&#8377;K)' + tip(TIPS.variable2) + '</th>' +
+      '<th>Fixed (&#8377;K)' + tip(TIPS.fixed) + '</th><th>From client (&#8377;K)' + tip(TIPS.client) + '</th><th>Variable, Pool 1 (&#8377;K)' + tip(TIPS.variable1) + '</th><th>Variable, Pool 2 (&#8377;K)' + tip(TIPS.variable2) + '</th><th>Variable, Pool 3 (&#8377;K)' + tip(TIPS.variable3) + '</th>' +
       '<th>Full pay (&#8377;K)</th><th>Variable share' + tip(TIPS.share) + '</th>' +
       '<th>Variable earned' + tip(TIPS.earned) + '</th><th>Pay this month</th></tr>';
     GROUPS.forEach(function (g) {
       h += '<tr class="grp"><td>' + GLABEL[g] + '</td><td class="lv"></td>' +
-        '<td data-v="groups.' + g + '.fixed" data-f="k"></td><td data-v="groups.' + g + '.client" data-f="k"></td><td data-v="groups.' + g + '.variable1" data-f="k"></td><td data-v="groups.' + g + '.variable2" data-f="k"></td>' +
+        '<td data-v="groups.' + g + '.fixed" data-f="k"></td><td data-v="groups.' + g + '.client" data-f="k"></td><td data-v="groups.' + g + '.variable1" data-f="k"></td><td data-v="groups.' + g + '.variable2" data-f="k"></td><td data-v="groups.' + g + '.variable3" data-f="k"></td>' +
         '<td data-v="groups.' + g + '.full" data-f="k"></td><td></td>' +
         '<td data-v="groups.' + g + '.earned" data-f="rs"></td><td data-v="groups.' + g + '.pay" data-f="rs"></td></tr>';
       d.people.forEach(function (p, i) {
@@ -196,13 +201,14 @@
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.fromClient" data-unit="k" value="' + esc(inputK(p.fromClient)) + '" aria-label="From client"></td>' +
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.variable1" data-unit="k" value="' + esc(inputK(p.variable1)) + '" aria-label="Variable, Pool 1"></td>' +
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.variable2" data-unit="k" value="' + esc(inputK(p.variable2)) + '" aria-label="Variable, Pool 2"></td>' +
+          '<td><input class="cell" inputmode="decimal" data-path="' + path + '.variable3" data-unit="k" value="' + esc(inputK(p.variable3)) + '" aria-label="Variable, Pool 3"></td>' +
           '<td data-v="rows.' + i + '.full" data-f="k"></td><td data-v="rows.' + i + '.share" data-f="pct"></td>' +
           '<td data-v="rows.' + i + '.earned" data-f="rs"></td><td data-v="rows.' + i + '.pay" data-f="rs"></td></tr>';
       });
     });
-    h += '<tr class="addrow"><td colspan="10"><button data-add="1">+ Add person</button></td></tr>' +
+    h += '<tr class="addrow"><td colspan="11"><button data-add="1">+ Add person</button></td></tr>' +
       '<tr class="tot"><td>Total</td><td class="lv"></td>' +
-      '<td data-v="total.fixed" data-f="k"></td><td data-v="total.client" data-f="k"></td><td data-v="total.variable1" data-f="k"></td><td data-v="total.variable2" data-f="k"></td><td data-v="total.full" data-f="k"></td><td></td>' +
+      '<td data-v="total.fixed" data-f="k"></td><td data-v="total.client" data-f="k"></td><td data-v="total.variable1" data-f="k"></td><td data-v="total.variable2" data-f="k"></td><td data-v="total.variable3" data-f="k"></td><td data-v="total.full" data-f="k"></td><td></td>' +
       '<td data-v="total.earned" data-f="rs"></td><td data-v="total.pay" data-f="rs"></td></tr></table></div>';
     if (!d.people.length) h += '<div class="empty">No people yet. Add the first person to start planning.</div>';
     return h + '</div>';
@@ -231,7 +237,7 @@
     if (rin && document.activeElement !== rin) rin.value = lakh(rev);
     var sl = root.querySelector('#revr');
     if (sl) {
-      var top = Math.max(num(s.r1), num(s.r2));
+      var top = Math.max(num(s.r1), num(s.r2), r.pools[3].count ? num(s.r3) : 0);
       var span = Math.max(top - num(s.r0), 200000);
       var lo = Math.max(0, Math.min(Math.floor((num(s.r0) - span) / 100000) * 100000, Math.floor(rev / 100000) * 100000));
       var hi = Math.max(Math.ceil((top + span) / 100000) * 100000, Math.ceil(rev / 100000) * 100000);
@@ -240,10 +246,11 @@
 
     var cards = root.querySelector('#cards');
     if (cards) {
-      var n1 = r.pools[1].count, n2 = r.pools[2].count;
+      var n1 = r.pools[1].count, n2 = r.pools[2].count, n3 = r.pools[3].count;
       cards.innerHTML =
         card('', 'Pool 1 payout', Math.round(r.payout1 * 100) + '%', n1 + (n1 === 1 ? ' person' : ' people') + ', paid first', TIPS.payout1) +
         card('', 'Pool 2 payout', Math.round(r.payout2 * 100) + '%', n2 + (n2 === 1 ? ' person' : ' people') + ', paid after Pool 1', TIPS.payout2) +
+        card('', 'Pool 3 payout', Math.round(r.payout3 * 100) + '%', n3 + (n3 === 1 ? ' person' : ' people') + ', paid after Pool 2', TIPS.payout3) +
         card('', 'Variable paid', inr(r.total.earned), 'of ' + inr(r.total.variable) + ' at 100%', TIPS.varpaid) +
         card('', 'Total payroll', inr(r.total.cv), 'fixed ' + inr(r.total.fixed) + (r.total.client > 0 ? ', plus ' + inr(r.total.client) + ' paid by clients' : ''), TIPS.payroll) +
         card(r.profit < 0 ? 'bad' : 'good', 'Profit after payroll', inr(r.profit), 'revenue − payroll − ' + rupeeL(s.overhead) + ' overhead', TIPS.profit);
@@ -257,6 +264,8 @@
         if (r.pools[1].count) parts.push(r.payout1 >= 1 ? 'Pool 1 is paid in full.' : 'Pool 1 is ' + Math.round(r.payout1 * 100) + '% of the way to full at R1 (' + rupeeL(s.r1) + ').');
         if (r.pools[2].count) parts.push(rev <= num(s.r1) ? 'Pool 2 has not started. It starts once Pool 1 is full at R1.' :
           (r.payout2 >= 1 ? 'Pool 2 is paid in full.' : 'Pool 2 is ' + Math.round(r.payout2 * 100) + '% of the way to full at R2 (' + rupeeL(s.r2) + ').'));
+        if (r.pools[3].count) parts.push(rev <= num(s.r2) ? 'Pool 3 has not started. It starts once Pool 2 is full at R2.' :
+          (r.payout3 >= 1 ? 'Pool 3 is paid in full.' : 'Pool 3 is ' + Math.round(r.payout3 * 100) + '% of the way to full at R3 (' + rupeeL(s.r3) + ').'));
         if (!parts.length) parts.push('Add variable targets to see what the scale pays.');
       }
       status.textContent = parts.join(' ');
@@ -267,7 +276,8 @@
       var kp = Math.round(num(s.keepPct));
       sug.innerHTML = 'Suggested: R0 <strong>' + rupeeL(r.suggested.r0) + '</strong> = fixed payroll ' + rupeeL(r.total.fixed) + ' + overhead ' + rupeeL(s.overhead) +
         '. R1 <strong>' + rupeeL(r.suggested.r1) + '</strong> = R0 + Pool 1 targets ' + rupeeL(r.pools[1].variable) + ' ÷ (1 − ' + kp + '%).' +
-        ' R2 <strong>' + rupeeL(r.suggested.r2) + '</strong> = R1 + Pool 2 targets ' + rupeeL(r.pools[2].variable) + ' ÷ (1 − ' + kp + '%).';
+        ' R2 <strong>' + rupeeL(r.suggested.r2) + '</strong> = R1 + Pool 2 targets ' + rupeeL(r.pools[2].variable) + ' ÷ (1 − ' + kp + '%).' +
+        ' R3 <strong>' + rupeeL(r.suggested.r3) + '</strong> = R2 + Pool 3 targets ' + rupeeL(r.pools[3].variable) + ' ÷ (1 − ' + kp + '%).';
     }
 
     var warn = root.querySelector('#scaleWarn');
@@ -279,6 +289,9 @@
       if (r.broken2) msgs.push('R2 needs to be higher than R1 for Pool 2 to work.');
       else if (r.underfunded2) msgs.push('The gap between R1 and R2 (' + rupeeL(num(s.r2) - num(s.r1)) + ') is smaller than the Pool 2 targets (' + rupeeL(r.pools[2].variable) +
         '), so near R2 variable pay can exceed the revenue above R0. Widen the gap or use the suggested values.');
+      if (r.broken3) msgs.push('R3 needs to be higher than R2 for Pool 3 to work.');
+      else if (r.underfunded3) msgs.push('The gap between R2 and R3 (' + rupeeL(num(s.r3) - num(s.r2)) + ') is smaller than the Pool 3 targets (' + rupeeL(r.pools[3].variable) +
+        '), so near R3 variable pay can exceed the revenue above R0. Widen the gap or use the suggested values.');
       if (num(s.r0) < r.total.fixed + num(s.overhead) - 1) msgs.push('R0 is below fixed payroll plus overhead (' + rupeeL(r.total.fixed + num(s.overhead)) +
         '), so variable pay can start while the company is still making a loss.');
       warn.innerHTML = msgs.map(function (m) { return '<div class="warn">' + esc(m) + '</div>'; }).join('');
@@ -290,9 +303,9 @@
   function paintChart(r) {
     var el = root.querySelector('#chart');
     if (!el) return;
-    var s = st.data.settings, r0 = num(s.r0), r1 = num(s.r1), r2 = num(s.r2), rev = num(s.revenue);
-    var has1 = r.pools[1].count > 0, has2 = r.pools[2].count > 0;
-    var top = Math.max(r1, has2 ? r2 : r1);
+    var s = st.data.settings, r0 = num(s.r0), r1 = num(s.r1), r2 = num(s.r2), r3 = num(s.r3), rev = num(s.revenue);
+    var has1 = r.pools[1].count > 0, has2 = r.pools[2].count > 0, has3 = r.pools[3].count > 0;
+    var top = Math.max(r1, has2 ? r2 : r1, has3 ? r3 : r1);
     var span = Math.max(top - r0, 100000);
     var xmin = Math.max(0, Math.min(r0 - span * 0.25, rev - span * 0.1));
     var xmax = Math.max(top + span * 0.25, rev + span * 0.1);
@@ -304,7 +317,7 @@
     function poly(a, b, color, dash) {
       a = clampX(a); b = clampX(Math.max(b, a));
       var pts = [[xmin, 0], [a, 0], [b, 1], [xmax, 1]];
-      return '<polyline fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="7 4"' : '') + ' points="' +
+      return '<polyline fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="' + (dash === 'dot' ? '2 4' : '7 4') + '"' : '') + ' points="' +
         pts.map(function (p) { return X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1); }).join(' ') + '"/>';
     }
     var out = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Payout percentage by revenue for each pool">';
@@ -314,21 +327,24 @@
     });
     if (has1) out += poly(r0, r1, '#1a1a2e', false);
     if (has2) out += poly(r1, r2, '#0F6E56', true);
-    [['R0', r0, 19], ['R1', r1, 32], ['R2', r2, 19]].forEach(function (m) {
+    if (has3) out += poly(r2, r3, '#B4482F', 'dot');
+    [['R0', r0, 19], ['R1', r1, 32], ['R2', r2, 19]].concat(has3 ? [['R3', r3, 32]] : []).forEach(function (m) {
       if (m[1] < xmin || m[1] > xmax) return;
       out += '<line x1="' + X(m[1]) + '" y1="' + Y(0) + '" x2="' + X(m[1]) + '" y2="' + (Y(0) + 5) + '" stroke="#6b7280" stroke-width="1"/>' +
         '<text x="' + X(m[1]) + '" y="' + (Y(0) + m[2]) + '" font-size="11" fill="#4b5563" text-anchor="middle">' + m[0] + ' ' + rupeeL(m[1]) + '</text>';
     });
     var mx = X(rev);
-    var label = rupeeL(rev) + (has1 ? ': Pool 1 ' + Math.round(r.payout1 * 100) + '%' : '') + (has2 ? (has1 ? ', ' : ': ') + 'Pool 2 ' + Math.round(r.payout2 * 100) + '%' : '');
+    var label = rupeeL(rev) + (has1 ? ': Pool 1 ' + Math.round(r.payout1 * 100) + '%' : '') + (has2 ? (has1 ? ', ' : ': ') + 'Pool 2 ' + Math.round(r.payout2 * 100) + '%' : '') + (has3 ? (has1 || has2 ? ', ' : ': ') + 'Pool 3 ' + Math.round(r.payout3 * 100) + '%' : '');
     var anchor = mx > W - 170 ? 'end' : (mx < L + 170 ? 'start' : 'middle');
     out += '<line x1="' + mx + '" y1="' + Y(1) + '" x2="' + mx + '" y2="' + Y(0) + '" stroke="#C9972A" stroke-width="1.5" stroke-dasharray="4 3"/>';
     if (has1) out += '<circle cx="' + mx + '" cy="' + Y(r.payout1) + '" r="5" fill="#1a1a2e" stroke="#ffffff" stroke-width="1.5"/>';
     if (has2) out += '<circle cx="' + mx + '" cy="' + Y(r.payout2) + '" r="4" fill="#0F6E56" stroke="#ffffff" stroke-width="1.5"/>';
+    if (has3) out += '<circle cx="' + mx + '" cy="' + Y(r.payout3) + '" r="3.5" fill="#B4482F" stroke="#ffffff" stroke-width="1.5"/>';
     out += '<text x="' + mx + '" y="' + (T - 12) + '" font-size="12" font-weight="600" fill="#1a1a2e" text-anchor="' + anchor + '">' + label + '</text>';
     var lx = L;
     if (has1) { out += '<line x1="' + lx + '" y1="' + (H - 8) + '" x2="' + (lx + 22) + '" y2="' + (H - 8) + '" stroke="#1a1a2e" stroke-width="2.5"/><text x="' + (lx + 28) + '" y="' + (H - 4) + '" font-size="11" fill="#4b5563">Pool 1, paid first</text>'; lx += 150; }
-    if (has2) out += '<line x1="' + lx + '" y1="' + (H - 8) + '" x2="' + (lx + 22) + '" y2="' + (H - 8) + '" stroke="#0F6E56" stroke-width="2.5" stroke-dasharray="7 4"/><text x="' + (lx + 28) + '" y="' + (H - 4) + '" font-size="11" fill="#4b5563">Pool 2, paid after Pool 1</text>';
+    if (has2) { out += '<line x1="' + lx + '" y1="' + (H - 8) + '" x2="' + (lx + 22) + '" y2="' + (H - 8) + '" stroke="#0F6E56" stroke-width="2.5" stroke-dasharray="7 4"/><text x="' + (lx + 28) + '" y="' + (H - 4) + '" font-size="11" fill="#4b5563">Pool 2, paid after Pool 1</text>'; lx += 180; }
+    if (has3) out += '<line x1="' + lx + '" y1="' + (H - 8) + '" x2="' + (lx + 22) + '" y2="' + (H - 8) + '" stroke="#B4482F" stroke-width="2.5" stroke-dasharray="2 4"/><text x="' + (lx + 28) + '" y="' + (H - 4) + '" font-size="11" fill="#4b5563">Pool 3, paid after Pool 2</text>';
     el.innerHTML = out + '</svg>';
   }
 
@@ -395,7 +411,7 @@
     var t = e.target.closest('[data-del],[data-add],[data-act]');
     if (!t) return;
     if (t.hasAttribute('data-add')) {
-      st.data.people.push({ id: uid(), name: 'New person', group: 'ICs', fixed: 0, fromClient: 0, variable1: 0, variable2: 0 });
+      st.data.people.push({ id: uid(), name: 'New person', group: 'ICs', fixed: 0, fromClient: 0, variable1: 0, variable2: 0, variable3: 0 });
       setDirty(true); buildAll(); return;
     }
     if (t.hasAttribute('data-del')) {
@@ -409,6 +425,7 @@
       st.data.settings.r0 = st.r.suggested.r0;
       st.data.settings.r1 = st.r.suggested.r1;
       st.data.settings.r2 = st.r.suggested.r2;
+      st.data.settings.r3 = st.r.suggested.r3;
       setDirty(true); buildAll();
     } else if (act === 'rename') {
       var nn = window.prompt('Plan name', st.meta.name || '');
