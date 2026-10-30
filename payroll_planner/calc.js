@@ -14,11 +14,11 @@
     return Math.max(0, Math.min(1, (revenue - r0) / (r1 - r0)));
   }
 
-  function blankTotals() { return { fixed: 0, client: 0, variable: 0, full: 0, earned: 0, pay: 0, cv: 0 }; }
+  function blankTotals() { return { fixed: 0, client: 0, variable1: 0, variable2: 0, variable: 0, full: 0, earned: 0, pay: 0, cv: 0 }; }
 
   // Pool 1 is paid first (scale r0 to r1). Pool 2 only starts once pool 1 is
-  // full (scale r1 to r2). Everyone in a pool gets the same percentage of
-  // their own variable target.
+  // full (scale r1 to r2). Each person has a variable target in each pool and
+  // gets the pool's percentage of each.
   function compute(plan) {
     var s = plan.settings || {};
     var pcts = { 1: payoutPct(s.revenue, s.r0, s.r1), 2: payoutPct(s.revenue, s.r1, s.r2) };
@@ -28,20 +28,22 @@
     var rows = (plan.people || []).map(function (p) {
       // Fixed may be negative (it then reduces CV payroll). "From client" is pay a
       // client makes directly: it counts in the person's pay but not in CV payroll.
-      var fixed = num(p.fixed), client = Math.max(0, num(p.fromClient)), variable = Math.max(0, num(p.variable));
-      var pool = p.pool === 2 ? 2 : 1;
-      var earned = variable * pcts[pool];
+      var fixed = num(p.fixed), client = Math.max(0, num(p.fromClient));
+      var v1 = Math.max(0, num(p.variable1)), v2 = Math.max(0, num(p.variable2));
+      var variable = v1 + v2;
+      var e1 = v1 * pcts[1], e2 = v2 * pcts[2], earned = e1 + e2;
       var full = fixed + client + variable;
       var row = {
-        pool: pool, fixed: fixed, client: client, variable: variable, full: full,
+        fixed: fixed, client: client, variable1: v1, variable2: v2, variable: variable, full: full,
         share: full > 0 ? variable / full : 0,
         earned: earned, pay: fixed + client + earned, cv: fixed + earned
       };
       var g = groups[p.group] ? p.group : 'ICs';
       [groups[g], total].forEach(function (t) {
-        t.fixed += fixed; t.client += client; t.variable += variable; t.full += row.full; t.earned += earned; t.pay += row.pay; t.cv += row.cv;
+        t.fixed += fixed; t.client += client; t.variable1 += v1; t.variable2 += v2; t.variable += variable; t.full += row.full; t.earned += earned; t.pay += row.pay; t.cv += row.cv;
       });
-      pools[pool].count += 1; pools[pool].variable += variable; pools[pool].earned += earned;
+      if (v1 > 0) { pools[1].count += 1; pools[1].variable += v1; pools[1].earned += e1; }
+      if (v2 > 0) { pools[2].count += 1; pools[2].variable += v2; pools[2].earned += e2; }
       return row;
     });
 

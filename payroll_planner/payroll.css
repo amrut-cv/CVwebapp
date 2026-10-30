@@ -49,7 +49,6 @@ table.g th{font-weight:500;color:#6b7280;text-align:right;padding:7px 4px;font-s
 table.g td{padding:5px 4px;text-align:right;border-top:1px solid #eef0f6;font-variant-numeric:tabular-nums;vertical-align:middle}
 table.g th:first-child,table.g td:first-child{text-align:left;width:230px}
 table.g th.lv,table.g td.lv{text-align:left;width:120px}
-table.g th.pl,table.g td.pl{text-align:left;width:92px}
 table.g tr.grp td{background:#f3f4f8;font-weight:600;color:#4b5563}
 table.g tr.grp td.lv{background:#f3f4f8}
 table.g tr.tot td{font-weight:700;border-top:2px solid #e2e5ef}
