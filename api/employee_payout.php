@@ -42,4 +42,4 @@ if (!is_array($plan)) employee_api_fail(503, 'Plan not available');
 $payload = payroll_employee_payload($plan, $email);
 if ($payload === null) employee_api_fail(404, 'Unknown employee');
 
-echo json_encode($payload);
+echo json_encode($payload, JSON_UNESCAPED_UNICODE);
