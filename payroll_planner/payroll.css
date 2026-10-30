@@ -44,7 +44,7 @@ select{padding:7px 10px;border:1.5px solid #d1d5db;border-radius:7px;background:
 .chart svg{display:block;width:100%;height:auto}
 
 .wrap{overflow-x:auto}
-table.g{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.8rem;min-width:980px}
+table.g{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.8rem;min-width:1060px}
 table.g th{font-weight:500;color:#6b7280;text-align:right;padding:7px 4px;font-size:.75rem}
 table.g td{padding:5px 4px;text-align:right;border-top:1px solid #eef0f6;font-variant-numeric:tabular-nums;vertical-align:middle}
 table.g th:first-child,table.g td:first-child{text-align:left;width:230px}
