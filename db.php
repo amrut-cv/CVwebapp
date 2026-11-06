@@ -81,6 +81,16 @@ function getDB(): PDO {
         updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // The payroll planner's current-month income estimate: one row, kept apart from the
+    // plans so it can be updated even when a plan is locked.
+    $pdo->exec("CREATE TABLE IF NOT EXISTS payroll_current_income (
+        id         TINYINT      NOT NULL PRIMARY KEY,
+        month      CHAR(7)      NOT NULL,
+        amount     BIGINT       NOT NULL,
+        updated_by VARCHAR(255) NOT NULL DEFAULT '',
+        updated_at DATETIME     NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // A locked plan can't be edited, renamed or deleted until it is unlocked.
     try {
         $pdo->exec("ALTER TABLE payroll_plans ADD COLUMN locked TINYINT(1) NOT NULL DEFAULT 0");

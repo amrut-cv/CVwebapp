@@ -83,6 +83,26 @@ if ($action === 'delete') {
     exit;
 }
 
+if ($action === 'income') {
+    $row = $pdo->query("SELECT month, amount, updated_by, updated_at FROM payroll_current_income WHERE id = 1")->fetch();
+    echo json_encode(['ok' => true, 'income' => $row ?: null]);
+    exit;
+}
+
+if ($action === 'setincome') {
+    $amount = $body['amount'] ?? null;
+    if (!is_numeric($amount) || $amount < 0 || $amount > 1000000000) {
+        http_response_code(400); echo json_encode(['error' => 'Enter an amount between 0 and 100 crore']); exit;
+    }
+    // Stamped in Indian time so the "last updated" the page shows matches the clock people read.
+    $now = new DateTime('now', new DateTimeZone('Asia/Kolkata'));
+    $pdo->prepare("REPLACE INTO payroll_current_income (id, month, amount, updated_by, updated_at) VALUES (1, ?, ?, ?, ?)")
+        ->execute([$now->format('Y-m'), (int)round((float)$amount), $email, $now->format('Y-m-d H:i:s')]);
+    $row = $pdo->query("SELECT month, amount, updated_by, updated_at FROM payroll_current_income WHERE id = 1")->fetch();
+    echo json_encode(['ok' => true, 'income' => $row]);
+    exit;
+}
+
 if ($action === 'lock') {
     $id = (int)($body['id'] ?? 0);
     if (!$id) { http_response_code(400); echo json_encode(['error' => 'Missing id']); exit; }

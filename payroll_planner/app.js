@@ -7,7 +7,7 @@
   var GROUPS = C.GROUPS;
   var GLABEL = { Leaders: 'Leaders', Managers: 'Managers', ICs: 'Individual contributors' };
 
-  var st = { meta: { id: null, name: '' }, data: null, list: [], dirty: false, r: null };
+  var st = { meta: { id: null, name: '' }, data: null, list: [], dirty: false, r: null, income: null };
 
   /* ---------- helpers ---------- */
   function esc(s) {
@@ -101,7 +101,8 @@
 
   /* ---------- tooltips ---------- */
   var TIPS = {
-    sim: 'Try different revenue figures to see the payout percentage and what each person would earn. Nothing here is saved until you press Save.',
+    sim: 'Try different revenue figures to see the pool payouts, total payroll and profit. Nothing here is saved until you press Save. Each person\'s pay in the People table uses the current month estimate instead.',
+    income: 'Your best estimate of this month\'s service revenue before GST, on the same basis as the scale. It drives Variable earned and Pay this month in the People table. It is saved on its own, with the time of the last update, so it can be changed even when the plan is locked.',
     revenue: 'The month\'s service invoices before GST. Leave out reimbursements and pass-through costs.',
     payout1: 'The share of each Pool 1 variable target that is paid. It is 0% at or below R0 and rises in a straight line to 100% at R1.',
     payout2: 'The share of each Pool 2 variable target that is paid. Pool 2 pays nothing until Pool 1 is full at R1, then rises in a straight line to 100% at R2.',
@@ -123,7 +124,8 @@
     variable2: 'Monthly variable pay in ₹ thousands from Pool 2, which only starts once Pool 1 is full. Earned in full only when Pool 2 reaches 100% at R2.',
     variable3: 'Monthly variable pay in ₹ thousands from Pool 3, which only starts once Pool 2 is full. Earned in full only when Pool 3 reaches 100% at R3.',
     share: 'Variable target as a share of full pay (fixed plus from client plus all variable targets).',
-    earned: 'The variable pay this person earns at the revenue above: each pool\'s target times that pool\'s payout percentage.'
+    earned: 'The variable pay this person earns at the current month estimate: each pool\'s target times that pool\'s payout percentage.',
+    paymonth: 'Fixed plus from client plus the variable pay earned at the current month estimate.'
   };
   function tip(text) {
     return '<span class="q" tabindex="0" role="note" aria-label="' + esc(text) + '" data-tip="' + esc(text) + '">?</span>';
@@ -152,10 +154,37 @@
       '<input type="text" id="' + id + '" inputmode="decimal" data-path="' + path + '" data-unit="' + unit + '" value="' + esc(value) + '"></div>';
   }
 
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function monthLabel(m) { var p = String(m).split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; }
+  // "2026-11-06 15:42:10" (Indian time, as saved) becomes "6 Nov 2026, 3:42 pm".
+  function stampLabel(t) {
+    var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/.exec(String(t));
+    if (!m) return String(t);
+    var h = +m[4], ap = h >= 12 ? 'pm' : 'am';
+    return (+m[3]) + ' ' + MON[+m[2] - 1] + ' ' + m[1] + ', ' + (h % 12 || 12) + ':' + m[5] + ' ' + ap;
+  }
+  function thisMonth() { var n = new Date(); return n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2); }
+
+  function incomePanel() {
+    var inc = st.income, now = thisMonth();
+    var status = inc
+      ? 'Last updated ' + esc(stampLabel(inc.updated_at)) + ' by ' + esc(inc.updated_by)
+      : 'Not set yet. The People table shows no earned or pay figures until you add an estimate.';
+    var stale = inc && inc.month !== now
+      ? '<div class="warn">This estimate is for ' + esc(monthLabel(inc.month)) + '. Update it for ' + esc(monthLabel(now)) + '.</div>' : '';
+    return '<div class="card"><h2>Current month estimate' + tip(TIPS.income) + '</h2>' +
+      '<div class="hint">Your best estimate of this month&#39;s service revenue before GST. It is saved on its own, so you can update it even when the plan is locked.</div>' +
+      '<div class="simrow"><label for="curinc">Estimated income' + (inc ? ' for ' + esc(monthLabel(inc.month)) : '') + '</label>&#8377; ' +
+      '<input type="text" id="curinc" inputmode="decimal" value="' + (inc ? esc(lakh(inc.amount)) : '') + '" placeholder="e.g. 19.5">' +
+      '<span class="unit">lakh</span><button class="btn primary" data-act="setincome">Update estimate</button></div>' +
+      '<p class="status" id="curStatus">' + status + '</p><p class="status" id="curPct"></p>' + stale + '</div>';
+  }
+
   function simPanel() {
     var s = st.data.settings;
     return '<div class="card"><h2>Simulate a month' + tip(TIPS.sim) + '</h2>' +
-      '<div class="hint">Change the revenue to see the payout percentage and what each person earns.</div>' +
+      '<div class="hint">Change the revenue to see the pool payouts and the company totals. Each person&#39;s pay below uses the current month estimate.</div>' +
       '<div class="simrow"><label for="rev">If revenue is</label>&#8377; ' +
       '<input type="text" id="rev" inputmode="decimal" data-path="settings.revenue" data-unit="lakh" value="' + esc(lakh(s.revenue)) + '">' +
       '<span class="unit">lakh</span>' + tip(TIPS.revenue) +
@@ -182,16 +211,16 @@
   function peoplePanel() {
     var d = st.data;
     var h = '<div class="card"><h2>People' + tip(TIPS.people) + '</h2>' +
-      '<div class="hint">Fixed, from client and the three variable targets are in &#8377; thousands a month. Fixed can be negative; from client is pay a client makes directly, so it counts toward the person&#39;s pay but not CV payroll. Pool 1 is paid first and Pool 2 only once Pool 1 is full. The last two columns show what each person earns at the revenue above.</div>' +
+      '<div class="hint">Fixed, from client and the three variable targets are in &#8377; thousands a month. Fixed can be negative; from client is pay a client makes directly, so it counts toward the person&#39;s pay but not CV payroll. Pool 1 is paid first and Pool 2 only once Pool 1 is full. The last two columns show what each person earns at the current month estimate.</div>' +
       '<div class="wrap"><table class="g"><tr><th>Person</th><th class="lv">Level</th>' +
       '<th>Fixed (&#8377;K)' + tip(TIPS.fixed) + '</th><th>From client (&#8377;K)' + tip(TIPS.client) + '</th><th>Variable, Pool 1 (&#8377;K)' + tip(TIPS.variable1) + '</th><th>Variable, Pool 2 (&#8377;K)' + tip(TIPS.variable2) + '</th><th>Variable, Pool 3 (&#8377;K)' + tip(TIPS.variable3) + '</th>' +
       '<th>Full pay (&#8377;K)</th><th>Variable share' + tip(TIPS.share) + '</th>' +
-      '<th>Variable earned' + tip(TIPS.earned) + '</th><th>Pay this month</th></tr>';
+      '<th>Variable earned' + tip(TIPS.earned) + '</th><th>Pay this month' + tip(TIPS.paymonth) + '</th></tr>';
     GROUPS.forEach(function (g) {
       h += '<tr class="grp"><td>' + GLABEL[g] + '</td><td class="lv"></td>' +
         '<td data-v="groups.' + g + '.fixed" data-f="k"></td><td data-v="groups.' + g + '.client" data-f="k"></td><td data-v="groups.' + g + '.variable1" data-f="k"></td><td data-v="groups.' + g + '.variable2" data-f="k"></td><td data-v="groups.' + g + '.variable3" data-f="k"></td>' +
         '<td data-v="groups.' + g + '.full" data-f="k"></td><td></td>' +
-        '<td data-v="groups.' + g + '.earned" data-f="rs"></td><td data-v="groups.' + g + '.pay" data-f="rs"></td></tr>';
+        '<td data-v="cur.groups.' + g + '.earned" data-f="rs"></td><td data-v="cur.groups.' + g + '.pay" data-f="rs"></td></tr>';
       d.people.forEach(function (p, i) {
         if (p.group !== g) return;
         var path = 'people.' + i;
@@ -206,26 +235,26 @@
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.variable2" data-unit="k" value="' + esc(inputK(p.variable2)) + '" aria-label="Variable, Pool 2"></td>' +
           '<td><input class="cell" inputmode="decimal" data-path="' + path + '.variable3" data-unit="k" value="' + esc(inputK(p.variable3)) + '" aria-label="Variable, Pool 3"></td>' +
           '<td data-v="rows.' + i + '.full" data-f="k"></td><td data-v="rows.' + i + '.share" data-f="pct"></td>' +
-          '<td data-v="rows.' + i + '.earned" data-f="rs"></td><td data-v="rows.' + i + '.pay" data-f="rs"></td></tr>';
+          '<td data-v="cur.rows.' + i + '.earned" data-f="rs"></td><td data-v="cur.rows.' + i + '.pay" data-f="rs"></td></tr>';
       });
     });
     h += '<tr class="addrow"><td colspan="11"><button data-add="1">+ Add person</button></td></tr>' +
       '<tr class="tot"><td>Total</td><td class="lv"></td>' +
       '<td data-v="total.fixed" data-f="k"></td><td data-v="total.client" data-f="k"></td><td data-v="total.variable1" data-f="k"></td><td data-v="total.variable2" data-f="k"></td><td data-v="total.variable3" data-f="k"></td><td data-v="total.full" data-f="k"></td><td></td>' +
-      '<td data-v="total.earned" data-f="rs"></td><td data-v="total.pay" data-f="rs"></td></tr></table></div>';
+      '<td data-v="cur.total.earned" data-f="rs"></td><td data-v="cur.total.pay" data-f="rs"></td></tr></table></div>';
     if (!d.people.length) h += '<div class="empty">No people yet. Add the first person to start planning.</div>';
     return h + '</div>';
   }
 
   function buildAll() {
-    root.innerHTML = topBar() + (st.meta.locked ? lockBanner() : '') + simPanel() + scalePanel() + peoplePanel();
+    root.innerHTML = topBar() + (st.meta.locked ? lockBanner() : '') + incomePanel() + simPanel() + scalePanel() + peoplePanel();
     if (st.meta.locked) applyLock();
     paint();
     setDirty(st.dirty);
   }
 
   function lockBanner() {
-    return '<div class="lockbar">&#128274; This plan is locked. It can\'t be edited, renamed or deleted. The revenue box above still works for what-ifs. Use Save as to make an editable copy, or Unlock to change it.</div>';
+    return '<div class="lockbar">&#128274; This plan is locked. It can\'t be edited, renamed or deleted. The revenue box and the current month estimate still work. Use Save as to make an editable copy, or Unlock to change it.</div>';
   }
   // Everything except the revenue what-if controls becomes read-only.
   function applyLock() {
@@ -247,9 +276,15 @@
   function paint() {
     var r = C.compute(st.data), s = st.data.settings;
     st.r = r;
+    // Per-person pay is worked out at the saved current month estimate, not the simulator.
+    var rc = st.income ? C.compute({ people: st.data.people, settings: Object.assign({}, s, { revenue: num(st.income.amount) }) }) : null;
     root.querySelectorAll('[data-v]').forEach(function (el) {
-      el.textContent = fmt(getp(r, el.getAttribute('data-v')), el.getAttribute('data-f'));
+      var path = el.getAttribute('data-v'), f = el.getAttribute('data-f');
+      if (path.indexOf('cur.') === 0) el.textContent = rc ? fmt(getp({ cur: rc }, path), f) : '\u2014';
+      else el.textContent = fmt(getp(r, path), f);
     });
+    var cp = root.querySelector('#curPct');
+    if (cp) cp.textContent = rc ? 'At this income: Pool 1 ' + Math.round(rc.payout1 * 100) + '%, Pool 2 ' + Math.round(rc.payout2 * 100) + '%, Pool 3 ' + Math.round(rc.payout3 * 100) + '%. Profit after payroll ' + inr(rc.profit) + '.' : '';
 
     var rev = num(s.revenue);
     var rin = root.querySelector('#rev');
@@ -449,6 +484,14 @@
       st.data.settings.r2 = st.r.suggested.r2;
       st.data.settings.r3 = st.r.suggested.r3;
       setDirty(true); buildAll();
+    } else if (act === 'setincome') {
+      var inp = root.querySelector('#curinc');
+      var txt = inp ? inp.value.replace(/[,\s]/g, '') : '';
+      if (txt === '' || !isFinite(Number(txt)) || Number(txt) < 0) { window.alert('Enter the estimate in lakh, for example 19.5'); return; }
+      post({ action: 'setincome', amount: Math.round(Number(txt) * 100000) }).then(function (j) {
+        st.income = j.income;
+        buildAll();
+      }).catch(function (err) { window.alert('Could not save the estimate: ' + err.message); });
     } else if (act === 'lock') {
       if (!st.meta.id) { window.alert('Save this plan first, then lock it.'); return; }
       var lockIt = !st.meta.locked;
@@ -504,6 +547,9 @@
   root.addEventListener('click', function (e) { var t = qOf(e); if (t) { if (tipEl.style.display === 'block') hideTip(); else showTip(t); } });
   window.addEventListener('scroll', hideTip, true);
 
+  root.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.id === 'curinc') { e.preventDefault(); var b = root.querySelector('[data-act="setincome"]'); if (b) b.click(); }
+  });
   root.addEventListener('input', onEdit);
   root.addEventListener('change', function (e) { onEdit(e); onSelect(e); });
   root.addEventListener('click', onClick);
@@ -517,7 +563,10 @@
   });
 
   /* ---------- boot ---------- */
-  getList().then(function (list) {
+  // The estimate is a nice-to-have on first paint: a failure here must not block the plans.
+  var incomeLoad = post({ action: 'income' }).then(function (j) { st.income = j.income || null; }).catch(function () { st.income = null; });
+  Promise.all([getList(), incomeLoad]).then(function (res) {
+    var list = res[0];
     st.list = list;
     if (list.length) return openPlan(list[0].id);
     newBlank('');
