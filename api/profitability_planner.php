@@ -77,4 +77,37 @@ if ($action === 'delete') {
     exit;
 }
 
+// Payroll planner plans, read-only, for "Calculate salaries from the payroll planner".
+// Only what the pay formula needs is sent (no emails, no from-client amounts), and only
+// to people who also have the Payroll planner module.
+if ($action === 'payroll_plans' || $action === 'payroll_plan') {
+    if (!has_module_access('payroll_planner')) {
+        http_response_code(403); echo json_encode(['error' => 'Needs access to the Payroll planner']); exit;
+    }
+    if ($action === 'payroll_plans') {
+        $rows = $pdo->query("SELECT id, name, locked FROM payroll_plans ORDER BY locked DESC, updated_at DESC, id DESC")->fetchAll();
+        echo json_encode(['ok' => true, 'plans' => $rows]);
+        exit;
+    }
+    $stmt = $pdo->prepare("SELECT id, name, locked, data FROM payroll_plans WHERE id = ?");
+    $stmt->execute([(int)($body['id'] ?? 0)]);
+    $r = $stmt->fetch();
+    if (!$r) { http_response_code(404); echo json_encode(['error' => 'Payroll plan not found']); exit; }
+    $d = json_decode($r['data'], true) ?: [];
+    $s = $d['settings'] ?? [];
+    $people = array_map(function ($p) {
+        return [
+            'name' => (string)($p['name'] ?? ''), 'group' => (string)($p['group'] ?? 'ICs'),
+            'fixed' => (float)($p['fixed'] ?? 0),
+            'variable1' => (float)($p['variable1'] ?? 0), 'variable2' => (float)($p['variable2'] ?? 0), 'variable3' => (float)($p['variable3'] ?? 0),
+        ];
+    }, $d['people'] ?? []);
+    echo json_encode(['ok' => true, 'plan' => [
+        'id' => (int)$r['id'], 'name' => $r['name'], 'locked' => (int)$r['locked'],
+        'settings' => ['r0' => (float)($s['r0'] ?? 0), 'r1' => (float)($s['r1'] ?? 0), 'r2' => (float)($s['r2'] ?? 0), 'r3' => (float)($s['r3'] ?? 0)],
+        'people' => $people,
+    ]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 http_response_code(400); echo json_encode(['error' => 'Unknown action']);

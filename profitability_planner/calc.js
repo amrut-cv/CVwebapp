@@ -37,10 +37,6 @@
       gstPaid[i] = (ov[i] === null || ov[i] === undefined || ov[i] === '') ? gstAuto[i] : num(ov[i]);
     }
 
-    var crisis = s.crisis || {};
-    var fromIdx = d.months.indexOf(crisis.fromMonth);
-    if (fromIdx < 0) fromIdx = 0;
-    var cp = crisis.pct || {};
     var groups = ['Leaders', 'Managers', 'ICs'];
     var byGroup = { Leaders: zeros(n), Managers: zeros(n), ICs: zeros(n) };
     var payroll = zeros(n);
@@ -48,7 +44,6 @@
       var g = groups.indexOf(p.group) >= 0 ? p.group : 'ICs';
       for (var i = 0; i < n; i++) {
         var a = num((p.amounts || [])[i]);
-        if (crisis.on && i >= fromIdx) a = a * (1 - Math.max(0, Math.min(100, num(cp[g]))) / 100);
         byGroup[g][i] += a;
         payroll[i] += a;
       }

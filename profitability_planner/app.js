@@ -2,13 +2,14 @@
   'use strict';
 
   var C = window.PlannerCalc;
+  var PC = window.PayrollCalc;
   var API = window.PLANNER_API || '/CVwebapp/api/profitability_planner.php';
   var root = document.getElementById('app');
   var MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var GROUPS = ['Leaders', 'Managers', 'ICs'];
   var GLABEL = { Leaders: 'Leaders', Managers: 'Managers', ICs: 'Individual contributors' };
 
-  var st = { meta: { id: null, name: '' }, data: null, list: [], tab: 'overview', dirty: false, compare: null, r: null };
+  var st = { meta: { id: null, name: '' }, data: null, list: [], tab: 'overview', dirty: false, compare: null, r: null, plans: {}, planList: null, planAccess: true, planErr: '' };
 
   /* ---------- helpers ---------- */
   function esc(s) {
@@ -42,6 +43,7 @@
     switch (f) {
       case 'k': return fmtK(v);
       case 'kneg': return fmtK(-num(v));
+      case 'pct': return Math.round(num(v) * 100) + '%';
       case 'x1': return v == null ? '—' : Number(v).toFixed(1);
       default: return String(v);
     }
@@ -56,7 +58,7 @@
     }
     return {
       version: 1, months: months, opening: 0,
-      settings: { gstInputCredit: 0, priorMonthGst: 0, crisis: { on: false, fromMonth: months[0], pct: { Leaders: 40, Managers: 25, ICs: 10 } } },
+      settings: { gstInputCredit: 0, priorMonthGst: 0 },
       invoices: [], salaries: [], rent: [], consultants: [], expenses: [],
       gstOverride: [null, null, null, null, null, null], buffer: zeros(6)
     };
@@ -74,11 +76,10 @@
     }
     d.settings.gstInputCredit = num(d.settings.gstInputCredit);
     delete d.settings.gstInputCreditPct;
-    d.settings.crisis = d.settings.crisis || {};
-    d.settings.crisis.on = !!d.settings.crisis.on;
-    d.settings.crisis.fromMonth = d.settings.crisis.fromMonth || d.months[0];
-    d.settings.crisis.pct = d.settings.crisis.pct || {};
-    GROUPS.forEach(function (g) { if (d.settings.crisis.pct[g] == null) d.settings.crisis.pct[g] = b.settings.crisis.pct[g]; });
+    delete d.settings.crisis;   // Crisis mode was removed; drop it from older scenarios.
+    d.settings.payroll = d.settings.payroll || {};
+    d.settings.payroll.on = !!d.settings.payroll.on;
+    d.settings.payroll.planId = d.settings.payroll.planId ? +d.settings.payroll.planId : null;
     delete d.receivables;
     ['invoices', 'salaries', 'rent', 'consultants', 'expenses'].forEach(function (k) { d[k] = d[k] || []; });
     ['invoices', 'salaries', 'rent', 'consultants', 'expenses'].forEach(function (k) {
@@ -117,6 +118,52 @@
       });
     });
   }
+  function loadPlans() {
+    return post({ action: 'payroll_plans' }).then(function (j) {
+      st.planList = j.plans; st.planAccess = true;
+    }).catch(function (e) {
+      st.planList = []; st.planAccess = !/access/i.test(e.message || '');
+      if (st.planAccess) st.planErr = e.message;
+    });
+  }
+  // Loads a payroll plan once and keeps it; resolves either way so callers can repaint.
+  function ensurePlan(id) {
+    if (!id || st.plans[id]) return Promise.resolve();
+    return post({ action: 'payroll_plan', id: id }).then(function (j) {
+      st.plans[id] = j.plan; st.planErr = '';
+    }).catch(function (e) { st.planErr = e.message || 'Could not load the payroll plan'; });
+  }
+  function defaultPlanId() {
+    var l = st.planList || [];
+    return l.length ? +l[0].id : null;   // the API lists locked plans first
+  }
+
+  // When "Calculate from payroll planner" is on, the salary rows are replaced by each
+  // person's pay in the chosen payroll plan, priced at that month's projected invoices.
+  function effective(d) {
+    var pr = d.settings && d.settings.payroll;
+    var plan = pr && pr.on ? st.plans[pr.planId] : null;
+    if (!plan || !PC) return d;
+    var n = d.months.length, rev = zeros(n);
+    (d.invoices || []).forEach(function (inv) {
+      for (var i = 0; i < n; i++) rev[i] += num((inv.amounts || [])[i]);
+    });
+    var res = rev.map(function (r) {
+      return PC.compute({ people: plan.people, settings: { r0: plan.settings.r0, r1: plan.settings.r1, r2: plan.settings.r2, r3: plan.settings.r3, revenue: r } });
+    });
+    var eff = Object.assign({}, d);
+    // CV payroll per person is fixed plus variable earned; pay a client makes directly is not CV cash.
+    eff.salaries = plan.people.map(function (p, j) {
+      return { id: 'pp' + j, name: p.name, group: p.group, amounts: res.map(function (x) { return x.rows[j].cv; }) };
+    });
+    eff.pp = { name: plan.name, rev: rev, pct1: res.map(function (x) { return x.payout1; }), pct2: res.map(function (x) { return x.payout2; }), pct3: res.map(function (x) { return x.payout3; }) };
+    return eff;
+  }
+  function payrollPending(d) {
+    var pr = d.settings.payroll;
+    return !!(pr && pr.on && !st.plans[pr.planId]);
+  }
+
   function showError(e) {
     root.innerHTML = '<div class="card"><h2>Something went wrong</h2><p class="hint">' + esc(e.message || e) + '</p></div>';
   }
@@ -128,7 +175,11 @@
     'inv.total': 'Invoice value including GST. This is what clients are billed.',
     'inv.tds': 'TDS that Indian clients deduct and deposit with the government instead of paying you (10%). It reduces the cash that reaches your bank.',
     'inv.collection': 'What this month\'s invoices bring into the bank: total + GST \u2212 TDS. The planner assumes clients pay in the month you invoice them.',
-    'out.payroll': 'Gross monthly pay for everyone on the Salaries tab, after any crisis-mode cuts.',
+    'out.payroll': 'Gross monthly pay for everyone on the Salaries tab. With Calculate from payroll planner on, it is what the payroll planner pays at each month\'s projected invoices.',
+    'eff.pp.rev': 'This month\'s projected invoices before GST, added up from the Invoices tab. The payroll planner pools are run on this figure.',
+    'eff.pp.pct1': 'How much of every Pool 1 variable target is paid at this revenue.',
+    'eff.pp.pct2': 'How much of every Pool 2 variable target is paid at this revenue. Pool 2 starts once Pool 1 is full.',
+    'eff.pp.pct3': 'How much of every Pool 3 variable target is paid at this revenue. Pool 3 starts once Pool 2 is full.',
     'out.consultants': 'External consultant payments from the Rent and expenses tab.',
     'out.rent': 'Seats, podcast studio and day-passes from the Rent and expenses tab.',
     'out.other': 'Software, client-facing ads and studio, travel and other lines from the Rent and expenses tab.',
@@ -291,24 +342,49 @@
     return h;
   }
 
+  function payrollControl(pr) {
+    var plans = st.planList || [];
+    var h = '<div class="optbar"><label><input type="checkbox" data-path="settings.payroll.on" data-unit="bool"' + (pr.on ? ' checked' : '') + (st.planAccess ? '' : ' disabled') + '> <strong>Calculate from payroll planner</strong></label>' +
+      tip('Works out each person\'s pay for every month from that month\'s projected invoices before GST, using the pools in a payroll planner plan. Replaces the manual rows below while it is on.');
+    if (st.planAccess && plans.length) {
+      h += '<span class="lab">plan</span><select data-path="settings.payroll.planId" data-unit="int">' +
+        plans.map(function (p) { return '<option value="' + p.id + '"' + (+p.id === +pr.planId ? ' selected' : '') + '>' + (+p.locked ? '\uD83D\uDD12 ' : '') + esc(p.name) + '</option>'; }).join('') + '</select>';
+    }
+    h += '</div>';
+    if (!st.planAccess) h += '<div class="hint">You need access to the Payroll planner module to use this.</div>';
+    else if (pr.on && st.planErr) h += '<div class="warn">Could not load the payroll plan: ' + esc(st.planErr) + '. The manual rows are being used.</div>';
+    else if (pr.on && payrollPending(st.data)) h += '<div class="hint">Loading the payroll plan&hellip; the manual rows are used until it arrives.</div>';
+    return h;
+  }
+
   function salariesPanel() {
-    var d = st.data, c = d.settings.crisis, h = '';
-    var monthOpts = d.months.map(function (k) { return '<option value="' + k + '"' + (k === c.fromMonth ? ' selected' : '') + '>' + monthLabel(k, true) + '</option>'; }).join('');
-    h += '<div class="card"><h2>Salaries' + tip('Gross monthly pay for each person. Totals use these amounts after any crisis cuts.') + '</h2>' +
-      '<div class="hint">Gross monthly pay in &#8377; thousands. Totals count what you pay out. Crisis mode cuts each group by the percentage you set, from the month you pick.</div>' +
-      '<div class="crisis"><label><input type="checkbox" data-path="settings.crisis.on" data-unit="bool"' + (c.on ? ' checked' : '') + '> <strong>Crisis mode</strong></label>' + tip('Cuts each group\'s pay by the percentage you set, from the month you pick, so you can see the effect of a salary cut.') +
-      '<span class="lab">from</span><select data-path="settings.crisis.fromMonth" data-unit="str">' + monthOpts + '</select>';
+    var d = st.data, pr = d.settings.payroll, h = '';
+    var eff = effective(d), formula = eff !== d;
+    h += '<div class="card"><h2>Salaries' + tip('Gross monthly pay for each person. Totals use these amounts.') + '</h2>';
+    h += payrollControl(pr);
+    if (formula) {
+      h += '<div class="hint">Each month\'s pay is worked out from that month\'s projected invoices before GST, using the pools in &ldquo;' + esc(eff.pp.name) + '&rdquo;: fixed pay plus the variable pay earned, in &#8377; thousands. Pay a client makes directly is not counted, since it never leaves your bank. The manual rows are kept but ignored while this is on.</div>';
+    } else {
+      h += '<div class="hint">Gross monthly pay in &#8377; thousands. Totals count what you pay out.</div>';
+    }
+    h += '<div class="wrap"><table class="g wide">' + head('Person');
+    if (formula) {
+      h += vrow('Projected invoices (ex-GST)', 'eff.pp.rev', 'k', 'sub') + vrow('Pool 1 payout', 'eff.pp.pct1', 'pct', 'sub') +
+        vrow('Pool 2 payout', 'eff.pp.pct2', 'pct', 'sub') + vrow('Pool 3 payout', 'eff.pp.pct3', 'pct', 'sub');
+    }
     GROUPS.forEach(function (g) {
-      h += '<span class="lab">' + g + ' cut</span><input type="number" min="0" max="100" data-path="settings.crisis.pct.' + g + '" data-unit="n" value="' + esc(c.pct[g]) + '">%';
-    });
-    h += '</div><div class="wrap"><table class="g wide">' + head('Person');
-    GROUPS.forEach(function (g) {
-      var label = GLABEL[g] + (c.on ? ' (after cuts)' : '');
+      var label = GLABEL[g];
       h += '<tr class="grp"><td>' + label + '</td>';
       for (var i = 0; i < nMonths(); i++) h += '<td class="n" data-v="payrollByGroup.' + g + '.' + i + '" data-f="k"></td>';
       h += '</tr>';
-      d.salaries.forEach(function (p, idx) {
+      eff.salaries.forEach(function (p, idx) {
         if ((GROUPS.indexOf(p.group) >= 0 ? p.group : 'ICs') !== g) return;
+        if (formula) {
+          h += '<tr><td><div class="lblrow"><span class="pname">' + esc(p.name) + '</span></div></td>';
+          for (var m = 0; m < nMonths(); m++) h += '<td class="n" data-v="eff.salaries.' + idx + '.amounts.' + m + '" data-f="k" data-neg="1"></td>';
+          h += '</tr>';
+          return;
+        }
         var path = 'salaries.' + idx;
         h += '<tr><td><div class="lblrow">' + txt(path + '.name', p.name) + (p.note ? tip(p.note) : '') +
           '<select class="kind" data-path="' + path + '.group" data-unit="str" data-rebuild="1">' +
@@ -316,7 +392,7 @@
           delBtn(path) + '</div></td>' + cellsK(path + '.amounts', p.amounts) + '</tr>';
       });
     });
-    h += addRow('salaries', 'Add person') + vrow('Total payroll', 'out.payroll', 'k', 'tot') + '</table></div></div>';
+    h += (formula ? '' : addRow('salaries', 'Add person')) + vrow('Total payroll', 'out.payroll', 'k', 'tot') + '</table></div></div>';
     return h;
   }
 
@@ -380,7 +456,9 @@
 
   /* ---------- painting computed values ---------- */
   function paint() {
-    var r = C.compute(st.data);
+    var eff = effective(st.data);
+    var r = C.compute(eff);
+    r.eff = eff;
     st.r = r;
     root.querySelectorAll('[data-v]').forEach(function (el) {
       var v = getp(r, el.getAttribute('data-v'));
@@ -440,7 +518,7 @@
       box.innerHTML = '<p class="hint">Pick another saved scenario to see closing cash side by side.</p>';
       return;
     }
-    var a = st.r, b = C.compute(st.compare.data), m = st.data.months;
+    var a = st.r, b = C.compute(effective(st.compare.data)), m = st.data.months;
     function row(label, arr, cls) {
       return '<tr class="' + (cls || '') + '"><td>' + esc(label) + '</td>' + arr.map(function (v) {
         return '<td class="' + (v < 0 ? 'neg' : '') + '">' + fmtK(v) + '</td>';
@@ -475,11 +553,19 @@
       else val = Math.round(num(raw) * 1000);
     } else if (u === 'n') val = num(t.value.replace(/[,\s]/g, ''));
     else if (u === 'rs') val = Math.round(num(t.value.replace(/[^0-9.\-]/g, '')));
+    else if (u === 'int') val = Math.round(num(t.value));
     else val = t.value;
     setp(st.data, p, val);
     setDirty(true);
     if (t.hasAttribute('data-rebuild') && e.type === 'change') { buildAll(); return; }
-    if (p === 'settings.crisis.on' && e.type === 'change') { buildAll(); return; }
+    if ((p === 'settings.payroll.on' || p === 'settings.payroll.planId') && e.type === 'change') {
+      var pr = st.data.settings.payroll;
+      if (pr.on && !pr.planId) pr.planId = defaultPlanId();
+      st.planErr = '';
+      buildAll();
+      if (pr.on) ensurePlan(pr.planId).then(buildAll);
+      return;
+    }
     paint();
   }
 
@@ -516,6 +602,8 @@
       st.compare = null;
       st.dirty = false;
       buildAll();
+      var pr = st.data.settings.payroll;
+      if (pr.on) return ensurePlan(pr.planId).then(buildAll);
     });
   }
 
@@ -569,7 +657,7 @@
       if (!t.value) { st.compare = null; paintCompare(); return; }
       post({ action: 'load', id: t.value }).then(function (j) {
         st.compare = { id: j.scenario.id, name: j.scenario.name, data: normalize(j.scenario.data) };
-        paintCompare();
+        return ensurePlan(st.compare.data.settings.payroll.on ? st.compare.data.settings.payroll.planId : null).then(paintCompare);
       }).catch(function (err) { window.alert('Could not load: ' + err.message); });
     }
   }
@@ -609,7 +697,9 @@
   });
 
   /* ---------- boot ---------- */
-  getList().then(function (list) {
+  // The payroll plan list is optional: no access or a failure here must not block the scenarios.
+  Promise.all([getList(), loadPlans()]).then(function (res) {
+    var list = res[0];
     st.list = list;
     if (list.length) return openScenario(list[0].id);
     newBlank('');
