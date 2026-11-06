@@ -247,7 +247,7 @@
   }
 
   function buildAll() {
-    root.innerHTML = topBar() + (st.meta.locked ? lockBanner() : '') + incomePanel() + simPanel() + scalePanel() + peoplePanel();
+    root.innerHTML = topBar() + (st.meta.locked ? lockBanner() : '') + incomePanel() + scalePanel() + simPanel() + peoplePanel();
     if (st.meta.locked) applyLock();
     paint();
     setDirty(st.dirty);

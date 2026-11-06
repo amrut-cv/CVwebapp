@@ -120,9 +120,22 @@ function payroll_arrangement(array $person, array $settings): array {
     ];
 }
 
-// $plan is the saved plan document (settings + people). Returns null when no
-// person has this email.
-function payroll_employee_payload(array $plan, string $email): ?array {
+// The saved current-month estimate ($income: month, amount, updated_at as Indian
+// time "Y-m-d H:i:s") priced for one person, in the same shape as an actual month.
+// updated_by is deliberately not passed on.
+function payroll_current_block(array $person, array $settings, ?array $income): ?array {
+    if ($income === null) return null;
+    $at = DateTime::createFromFormat('Y-m-d H:i:s', (string)$income['updated_at'], new DateTimeZone('Asia/Kolkata'));
+    return [
+        'month' => (string)$income['month'],
+        'revenue' => (int)$income['amount'],
+        'updatedAt' => $at ? $at->format('c') : null,
+    ] + payroll_row($person, $settings, (float)$income['amount']);
+}
+
+// $plan is the saved plan document (settings + people); $income is the saved
+// current-month estimate or null. Returns null when no person has this email.
+function payroll_employee_payload(array $plan, string $email, ?array $income = null): ?array {
     $settings = $plan['settings'] ?? [];
     $match = null;
     foreach (($plan['people'] ?? []) as $p) {
@@ -136,6 +149,7 @@ function payroll_employee_payload(array $plan, string $email): ?array {
         'r0' => (int)round((float)($settings['r0'] ?? 0)), 'r1' => (int)round((float)($settings['r1'] ?? 0)),
         'r2' => (int)round((float)($settings['r2'] ?? 0)), 'r3' => (int)round((float)($settings['r3'] ?? 0)),
     ] + payroll_arrangement($match, $settings) + [
+        'current' => payroll_current_block($match, $settings, $income),
         'actual' => [], 'whatIf' => [],
     ];
     foreach (PAYROLL_ACTUAL_REVENUE as $month => $rev) {

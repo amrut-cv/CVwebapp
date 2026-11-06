@@ -39,7 +39,9 @@ $data = $stmt->fetchColumn();
 $plan = $data ? json_decode($data, true) : null;
 if (!is_array($plan)) employee_api_fail(503, 'Plan not available');
 
-$payload = payroll_employee_payload($plan, $email);
+$income = getDB()->query("SELECT month, amount, updated_at FROM payroll_current_income WHERE id = 1")->fetch() ?: null;
+
+$payload = payroll_employee_payload($plan, $email, $income);
 if ($payload === null) employee_api_fail(404, 'Unknown employee');
 
 echo json_encode($payload, JSON_UNESCAPED_UNICODE);
