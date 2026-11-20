@@ -221,7 +221,7 @@
     return h + '</tr>';
   }
   function cellK(path, r) {
-    return '<td><input class="cell" inputmode="decimal" data-path="' + path + '" data-unit="k" value="' + inputK(r) + '"></td>';
+    return '<td><input class="cell' + (num(r) === 0 ? ' z' : '') + '" inputmode="decimal" data-path="' + path + '" data-unit="k" value="' + inputK(r) + '"></td>';
   }
   function cellsK(base, arr) {
     var h = '';
@@ -249,12 +249,11 @@
     pairs.forEach(function (p) { h += '<option value="' + esc(p[0]) + '"' + (p[0] === val ? ' selected' : '') + '>' + esc(p[1]) + '</option>'; });
     return h + '</select>';
   }
-  function radios(name, path, val, pairs) {
-    return pairs.map(function (p) {
-      return '<label class="rad"><input type="radio" name="' + name + '" data-path="' + path + '" data-unit="str" value="' + p[0] + '"' + (p[0] === val ? ' checked' : '') + '> ' + p[1] + '</label>';
-    }).join('');
-  }
   var MODE_OPTS = [['indian', 'India'], ['export', 'Export']];
+  function modeSelect(path, val) {
+    return '<select class="mode ' + (val === 'export' ? 'export' : 'india') + '" data-path="' + path + '" data-unit="str" data-rebuild="1" aria-label="Invoice type">' +
+      MODE_OPTS.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === val ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+  }
 
   function invSummary() {
     return grp('Invoicing: raised this month', GTIPS.invoicing) +
@@ -324,24 +323,22 @@
     return h;
   }
 
+  // One table for the client rows and the month totals under them, so the month columns
+  // line up exactly. Each client's invoice type sits on the same line as the name.
   function invoicesPanel() {
     var d = st.data, h = '';
-    h += '<div class="card"><h2>Invoices to raise' + tip('One row per client. Enter the amount you will invoice each month, before GST.') + '</h2>' +
-      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Invoice each client as India (18% GST, 10% TDS) or Export (no GST, no TDS). The planner assumes each client pays in the month you invoice them.</div>' +
-      '<div class="wrap"><table class="g inv">' + head('Client');
+    h += '<div class="card"><h2>Invoices' + tip('One row per client. Enter the amount you will invoice each month, before GST. The totals underneath update as you type.') + '</h2>' +
+      '<div class="hint">Amounts are ex-GST, in &#8377; thousands. Pick India (18% GST, 10% TDS) or Export (no GST, no TDS) for each client. The planner assumes each client pays in the month you invoice them.</div>' +
+      '<div class="wrap"><table class="g inv">' +
+      head('<div class="lblrow"><span class="grow">Client</span><span class="modehead">Invoice type</span><span class="xsp"></span></div>');
     d.invoices.forEach(function (inv, i) {
       var p = 'invoices.' + i;
-      h += '<tr><td><div class="lblrow">' + txt(p + '.client', inv.client) + delBtn(p) + '</div>' +
-        '<div class="set"><span class="rl">Invoice to</span>' + radios('m' + i, p + '.mode', inv.mode, MODE_OPTS) + tip('India: 18% GST and 10% TDS. Export: no GST and no TDS.') +
-        '</div></td>' + cellsK(p + '.amounts', inv.amounts) + '</tr>';
+      h += '<tr><td><div class="lblrow">' + txt(p + '.client', inv.client) + modeSelect(p + '.mode', inv.mode) + delBtn(p) + '</div></td>' +
+        cellsK(p + '.amounts', inv.amounts) + '</tr>';
     });
-    h += addRow('invoices', 'Add client or pipeline deal') + '</table></div></div>';
-
-    h += '<div class="card"><div class="wrap"><table class="g">' + head('') + invSummary() + '</table></div></div>';
-
+    h += addRow('invoices', 'Add client or pipeline deal') + invSummary() + '</table></div></div>';
     return h;
   }
-
   function payrollControl(pr) {
     var plans = st.planList || [];
     var h = '<div class="optbar"><label><input type="checkbox" data-path="settings.payroll.on" data-unit="bool"' + (pr.on ? ' checked' : '') + (st.planAccess ? '' : ' disabled') + '> <strong>Calculate from payroll planner</strong></label>' +
@@ -398,7 +395,7 @@
 
   function expensesPanel() {
     var d = st.data, h = '<div class="card"><h2>Rent and other expenses' + tip('Fixed and recurring costs outside payroll, plus the GST you pay and a buffer for overruns.') + '</h2>' +
-      '<div class="hint">&#8377; thousands per month. Bordered cells are yours to edit. Amounts are gross, so there is no separate TDS line.</div>' +
+      '<div class="hint">&#8377; thousands per month. Shaded cells are yours to edit. Amounts are gross, so there is no separate TDS line.</div>' +
       '<div class="wrap"><table class="g wide">' + head('Line');
 
     function section(title, arr, key, kinds, addLabel, totalPath, tipText) {
@@ -556,6 +553,7 @@
     else if (u === 'int') val = Math.round(num(t.value));
     else val = t.value;
     setp(st.data, p, val);
+    if (u === 'k' && t.classList.contains('cell')) t.classList.toggle('z', !num(val));
     setDirty(true);
     if (t.hasAttribute('data-rebuild') && e.type === 'change') { buildAll(); return; }
     if ((p === 'settings.payroll.on' || p === 'settings.payroll.planId') && e.type === 'change') {
